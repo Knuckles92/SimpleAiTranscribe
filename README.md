@@ -51,5 +51,5 @@ A feature-rich desktop application for recording and transcribing audio. It leve
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/<your-username>/audio-recorder.git
+   git clone https://github.com/knuckles92/audio-recorder.git
    cd audio-recorder
