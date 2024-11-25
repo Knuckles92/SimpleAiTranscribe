@@ -1,0 +1,10 @@
+pyaudio==0.2.13
+numpy
+wave
+sounddevice
+soundfile
+pywin32
+pynput
+whisper
+pyperclip
+openai
