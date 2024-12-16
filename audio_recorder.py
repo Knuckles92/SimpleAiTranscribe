@@ -97,9 +97,6 @@ class AudioRecorder:
         # Handle window close button
         self.root.protocol('WM_DELETE_WINDOW', self.minimize_to_tray)
 
-    def handle_global_keypress(self, event):
-        """This method is no longer used as we're using keyboard.add_hotkey instead"""
-        pass
 
     def toggle_recording(self):
         """Handle toggle recording with model loading check"""
