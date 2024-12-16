@@ -1,6 +1,6 @@
 # Audio Recorder
 
-A feature-rich desktop application for recording and transcribing audio. It leverages **OpenAI Whisper** for transcription and supports both local and API-based transcription methods. The app is built using `Tkinter` for the GUI and integrates seamlessly with system keyboard shortcuts.
+A lite and simple desktop application for recording and transcribing audio. It leverages **OpenAI Whisper** for transcription and supports both local and API-based transcription methods. The app is built using `Tkinter` for the GUI and integrates seamlessly with system keyboard shortcuts.
 
 ---
 
