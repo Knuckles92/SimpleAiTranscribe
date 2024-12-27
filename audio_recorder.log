@@ -1,0 +1,692 @@
+2024-12-21 03:14:24,538 - DEBUG - load_ssl_context verify=True cert=None trust_env=True http2=False
+2024-12-21 03:14:24,540 - DEBUG - load_verify_locations cafile='C:\\Users\\Big D\\AppData\\Roaming\\Python\\Python312\\site-packages\\certifi\\cacert.pem'
+2024-12-21 03:14:25,024 - INFO - Loading Whisper model...
+2024-12-21 03:14:26,173 - INFO - Model loaded!
+2024-12-21 03:14:39,977 - INFO - 
+=== Using Local Whisper Model ===
+2024-12-21 03:14:39,977 - INFO - Processing audio with local model...
+2024-12-21 03:14:42,458 - INFO - Local transcription complete. Length: 67 characters
+2024-12-21 03:14:42,458 - INFO - Final transcription: Make it so that the author field is not required to add a new book.
+2024-12-21 03:14:42,460 - INFO - Pasting transcription to active window...
+2024-12-21 03:14:42,472 - INFO - Transcription process complete
+
+2024-12-21 03:16:33,060 - INFO - 
+=== Using Local Whisper Model ===
+2024-12-21 03:16:33,061 - INFO - Processing audio with local model...
+2024-12-21 03:16:35,296 - INFO - Local transcription complete. Length: 118 characters
+2024-12-21 03:16:35,297 - INFO - Final transcription: the when trying to add a book from the library by hitting the green plus icon it doesn't seem to be working right now.
+2024-12-21 03:16:35,299 - INFO - Pasting transcription to active window...
+2024-12-21 03:16:35,310 - INFO - Transcription process complete
+
+2024-12-21 03:20:31,108 - INFO - 
+=== Using Local Whisper Model ===
+2024-12-21 03:20:31,108 - INFO - Processing audio with local model...
+2024-12-21 03:20:33,226 - INFO - Local transcription complete. Length: 104 characters
+2024-12-21 03:20:33,227 - INFO - Final transcription: When we're in the chat menu it's not showing the profile picture correctly for each character companion.
+2024-12-21 03:20:33,229 - INFO - Pasting transcription to active window...
+2024-12-21 03:20:33,241 - INFO - Transcription process complete
+
+2024-12-21 03:21:21,781 - DEBUG - Importing BlpImagePlugin
+2024-12-21 03:21:21,786 - DEBUG - Importing BmpImagePlugin
+2024-12-21 03:21:21,787 - DEBUG - Importing BufrStubImagePlugin
+2024-12-21 03:21:21,790 - DEBUG - Importing CurImagePlugin
+2024-12-21 03:21:21,792 - DEBUG - Importing DcxImagePlugin
+2024-12-21 03:21:21,807 - DEBUG - Importing DdsImagePlugin
+2024-12-21 03:21:21,823 - DEBUG - Importing EpsImagePlugin
+2024-12-21 03:21:21,826 - DEBUG - Importing FitsImagePlugin
+2024-12-21 03:21:21,830 - DEBUG - Importing FliImagePlugin
+2024-12-21 03:21:21,834 - DEBUG - Importing FpxImagePlugin
+2024-12-21 03:21:21,840 - DEBUG - Image: failed to import FpxImagePlugin: No module named 'olefile'
+2024-12-21 03:21:21,841 - DEBUG - Importing FtexImagePlugin
+2024-12-21 03:21:21,846 - DEBUG - Importing GbrImagePlugin
+2024-12-21 03:21:21,851 - DEBUG - Importing GifImagePlugin
+2024-12-21 03:21:21,852 - DEBUG - Importing GribStubImagePlugin
+2024-12-21 03:21:21,857 - DEBUG - Importing Hdf5StubImagePlugin
+2024-12-21 03:21:21,865 - DEBUG - Importing IcnsImagePlugin
+2024-12-21 03:21:21,875 - DEBUG - Importing IcoImagePlugin
+2024-12-21 03:21:21,884 - DEBUG - Importing ImImagePlugin
+2024-12-21 03:21:21,892 - DEBUG - Importing ImtImagePlugin
+2024-12-21 03:21:21,896 - DEBUG - Importing IptcImagePlugin
+2024-12-21 03:21:21,902 - DEBUG - Importing JpegImagePlugin
+2024-12-21 03:21:21,905 - DEBUG - Importing Jpeg2KImagePlugin
+2024-12-21 03:21:21,906 - DEBUG - Importing McIdasImagePlugin
+2024-12-21 03:21:21,911 - DEBUG - Importing MicImagePlugin
+2024-12-21 03:21:21,918 - DEBUG - Image: failed to import MicImagePlugin: No module named 'olefile'
+2024-12-21 03:21:21,919 - DEBUG - Importing MpegImagePlugin
+2024-12-21 03:21:21,926 - DEBUG - Importing MpoImagePlugin
+2024-12-21 03:21:22,001 - DEBUG - Importing MspImagePlugin
+2024-12-21 03:21:22,008 - DEBUG - Importing PalmImagePlugin
+2024-12-21 03:21:22,016 - DEBUG - Importing PcdImagePlugin
+2024-12-21 03:21:22,021 - DEBUG - Importing PcxImagePlugin
+2024-12-21 03:21:22,023 - DEBUG - Importing PdfImagePlugin
+2024-12-21 03:21:22,041 - DEBUG - Importing PixarImagePlugin
+2024-12-21 03:21:22,044 - DEBUG - Importing PngImagePlugin
+2024-12-21 03:21:22,045 - DEBUG - Importing PpmImagePlugin
+2024-12-21 03:21:22,046 - DEBUG - Importing PsdImagePlugin
+2024-12-21 03:21:22,050 - DEBUG - Importing QoiImagePlugin
+2024-12-21 03:21:22,053 - DEBUG - Importing SgiImagePlugin
+2024-12-21 03:21:22,056 - DEBUG - Importing SpiderImagePlugin
+2024-12-21 03:21:22,060 - DEBUG - Importing SunImagePlugin
+2024-12-21 03:21:22,063 - DEBUG - Importing TgaImagePlugin
+2024-12-21 03:21:22,067 - DEBUG - Importing TiffImagePlugin
+2024-12-21 03:21:22,069 - DEBUG - Importing WebPImagePlugin
+2024-12-21 03:21:22,149 - DEBUG - Importing WmfImagePlugin
+2024-12-21 03:21:22,152 - DEBUG - Importing XbmImagePlugin
+2024-12-21 03:21:22,156 - DEBUG - Importing XpmImagePlugin
+2024-12-21 03:21:22,159 - DEBUG - Importing XVThumbImagePlugin
+2024-12-21 03:21:56,125 - INFO - 
+=== Using Local Whisper Model ===
+2024-12-21 03:21:56,125 - INFO - Processing audio with local model...
+2024-12-21 03:21:58,055 - INFO - Local transcription complete. Length: 81 characters
+2024-12-21 03:21:58,055 - INFO - Final transcription: under certain circumstances, chat messages are duplicated. Please look into this.
+2024-12-21 03:21:58,056 - INFO - Pasting transcription to active window...
+2024-12-21 03:21:58,067 - INFO - Transcription process complete
+
+2024-12-21 03:26:05,802 - INFO - 
+=== Using Local Whisper Model ===
+2024-12-21 03:26:05,803 - INFO - Processing audio with local model...
+2024-12-21 03:26:08,381 - INFO - Local transcription complete. Length: 205 characters
+2024-12-21 03:26:08,382 - INFO - Final transcription: It seems like currently if the user enters a book without entering the author, it only auto fills in the author when it gets added to chat. It should be auto filling the author when the user adds the book.
+2024-12-21 03:26:08,382 - INFO - Pasting transcription to active window...
+2024-12-21 03:26:08,393 - INFO - Transcription process complete
+
+2024-12-21 03:29:53,809 - INFO - 
+=== Using Local Whisper Model ===
+2024-12-21 03:29:53,810 - INFO - Processing audio with local model...
+2024-12-21 03:29:56,376 - INFO - Local transcription complete. Length: 234 characters
+2024-12-21 03:29:56,376 - INFO - Final transcription: It should be remembering the user's character slash companion that they pick. Once they choose a companion or a character they should never have to choose one again. Unless they manually go to the reading companion page and change it.
+2024-12-21 03:29:56,377 - INFO - Pasting transcription to active window...
+2024-12-21 03:29:56,388 - INFO - Transcription process complete
+
+2024-12-21 03:32:13,813 - INFO - 
+=== Using Local Whisper Model ===
+2024-12-21 03:32:13,814 - INFO - Processing audio with local model...
+2024-12-21 03:32:16,208 - INFO - Local transcription complete. Length: 166 characters
+2024-12-21 03:32:16,208 - INFO - Final transcription: It still seems to incorrectly be requiring the user to choose a companion before each chap begins. It should be remembering their previous character, Sasha Companion.
+2024-12-21 03:32:16,209 - INFO - Pasting transcription to active window...
+2024-12-21 03:32:16,222 - INFO - Transcription process complete
+
+2024-12-21 03:35:06,729 - INFO - 
+=== Using Local Whisper Model ===
+2024-12-21 03:35:06,729 - INFO - Processing audio with local model...
+2024-12-21 03:35:09,373 - INFO - Local transcription complete. Length: 217 characters
+2024-12-21 03:35:09,373 - INFO - Final transcription: If I leave the chat and come back it seems to duplicate the messages that the user sent previously. I'm not sure if it's just doing this on the front end interface or if it's doing something weird in the back end too.
+2024-12-21 03:35:09,374 - INFO - Pasting transcription to active window...
+2024-12-21 03:35:09,385 - INFO - Transcription process complete
+
+2024-12-21 03:39:42,972 - INFO - 
+=== Using Local Whisper Model ===
+2024-12-21 03:39:42,973 - INFO - Processing audio with local model...
+2024-12-21 03:39:46,455 - INFO - Local transcription complete. Length: 229 characters
+2024-12-21 03:39:46,455 - INFO - Final transcription: When a user enters a book title, before we add it to the library, we should use GPT40 mini to double check the title to make sure that the spelling and everything is correct before we try to use that title to generate the author.
+2024-12-21 03:39:46,456 - INFO - Pasting transcription to active window...
+2024-12-21 03:39:46,467 - INFO - Transcription process complete
+
+2024-12-21 03:42:24,709 - INFO - 
+=== Using Local Whisper Model ===
+2024-12-21 03:42:24,709 - INFO - Processing audio with local model...
+2024-12-21 03:42:28,017 - INFO - Local transcription complete. Length: 180 characters
+2024-12-21 03:42:28,018 - INFO - Final transcription: Whenever we use AI2 update, modify or correct the book title or author, a pop-up should come up letting the user know that we've done that and ask them if everything looks correct.
+2024-12-21 03:42:28,019 - INFO - Pasting transcription to active window...
+2024-12-21 03:42:28,030 - INFO - Transcription process complete
+
+2024-12-21 03:42:38,841 - INFO - 
+=== Using Local Whisper Model ===
+2024-12-21 03:42:38,841 - INFO - Processing audio with local model...
+2024-12-21 03:42:40,760 - INFO - Local transcription complete. Length: 48 characters
+2024-12-21 03:42:40,760 - INFO - Final transcription: ensure that this pop-up is smooth and intuitive.
+2024-12-21 03:42:40,761 - INFO - Pasting transcription to active window...
+2024-12-21 03:42:40,771 - INFO - Transcription process complete
+
+2024-12-21 03:45:24,122 - INFO - 
+=== Using Local Whisper Model ===
+2024-12-21 03:45:24,122 - INFO - Processing audio with local model...
+2024-12-21 03:45:26,138 - INFO - Local transcription complete. Length: 68 characters
+2024-12-21 03:45:26,138 - INFO - Final transcription: We need to move the library paper to be above the suggestions paper.
+2024-12-21 03:45:26,139 - INFO - Pasting transcription to active window...
+2024-12-21 03:45:26,149 - INFO - Transcription process complete
+
+2024-12-21 03:49:36,109 - INFO - 
+=== Using Local Whisper Model ===
+2024-12-21 03:49:36,110 - INFO - Processing audio with local model...
+2024-12-21 03:49:38,335 - INFO - Local transcription complete. Length: 111 characters
+2024-12-21 03:49:38,335 - INFO - Final transcription: I like the style of the pop-up, but the message seems unclear to the user. Make sure it's as clear as possible.
+2024-12-21 03:49:38,336 - INFO - Pasting transcription to active window...
+2024-12-21 03:49:38,345 - INFO - Transcription process complete
+
+2024-12-21 03:51:42,410 - INFO - 
+=== Using Local Whisper Model ===
+2024-12-21 03:51:42,411 - INFO - Processing audio with local model...
+2024-12-21 03:51:45,587 - INFO - Local transcription complete. Length: 151 characters
+2024-12-21 03:51:45,587 - INFO - Final transcription: Currently when it gives the pop up for an AI suggested change, let's add a third option that it gives the user to manually modify what they've entered.
+2024-12-21 03:51:45,588 - INFO - Pasting transcription to active window...
+2024-12-21 03:51:45,598 - INFO - Transcription process complete
+
+2024-12-21 03:53:26,600 - INFO - 
+=== Using Local Whisper Model ===
+2024-12-21 03:53:26,600 - INFO - Processing audio with local model...
+2024-12-21 03:53:29,321 - INFO - Local transcription complete. Length: 187 characters
+2024-12-21 03:53:29,322 - INFO - Final transcription: The changes look really good so far. There's only one error. The problem is that if the user denies the AI changes, it still applies them even though the user sent out to please fix this.
+2024-12-21 03:53:29,324 - INFO - Pasting transcription to active window...
+2024-12-21 03:53:29,341 - INFO - Transcription process complete
+
+2024-12-21 03:56:37,973 - INFO - 
+=== Using Local Whisper Model ===
+2024-12-21 03:56:37,973 - INFO - Processing audio with local model...
+2024-12-21 03:56:42,728 - INFO - Local transcription complete. Length: 302 characters
+2024-12-21 03:56:42,728 - INFO - Final transcription: So, if the user denies the AI changes, sometimes it will add two books instead of one. So in my example, I misspelled the name of a book and then denied the changes and it added my original misspelled book name and it added the changes, the AI suggested changes that the user denied as a separate book.
+2024-12-21 03:56:42,729 - INFO - Pasting transcription to active window...
+2024-12-21 03:56:42,739 - INFO - Transcription process complete
+
+2024-12-21 03:59:24,181 - INFO - 
+=== Using Local Whisper Model ===
+2024-12-21 03:59:24,181 - INFO - Processing audio with local model...
+2024-12-21 03:59:28,522 - INFO - Local transcription complete. Length: 365 characters
+2024-12-21 03:59:28,522 - INFO - Final transcription: Let's update the Suggestions area that's on the library page. It's currently set with filler information. Let's update it to use GPT40 mini to create suggestions based on the user's library. It's also had some sort of styling to make sure or to make it seem like these suggestions came from there. Default Character or Companion or their current selected Companion.
+2024-12-21 03:59:28,523 - INFO - Pasting transcription to active window...
+2024-12-21 03:59:28,534 - INFO - Transcription process complete
+
+2024-12-21 04:03:39,382 - INFO - 
+=== Using Local Whisper Model ===
+2024-12-21 04:03:39,382 - INFO - Processing audio with local model...
+2024-12-21 04:03:41,709 - INFO - Local transcription complete. Length: 103 characters
+2024-12-21 04:03:41,709 - INFO - Final transcription: The AI suggestions don't seem to be loading. They're just to continue as loading animation in the area.
+2024-12-21 04:03:41,711 - INFO - Pasting transcription to active window...
+2024-12-21 04:03:41,721 - INFO - Transcription process complete
+
+2024-12-21 04:07:42,973 - INFO - 
+=== Using Local Whisper Model ===
+2024-12-21 04:07:42,974 - INFO - Processing audio with local model...
+2024-12-21 04:07:45,060 - INFO - Local transcription complete. Length: 46 characters
+2024-12-21 04:07:45,060 - INFO - Final transcription: The suggestions still don't seem to be living.
+2024-12-21 04:07:45,061 - INFO - Pasting transcription to active window...
+2024-12-21 04:07:45,073 - INFO - Transcription process complete
+
+2024-12-21 04:09:03,961 - INFO - 
+=== Using Local Whisper Model ===
+2024-12-21 04:09:03,961 - INFO - Processing audio with local model...
+2024-12-21 04:09:06,170 - INFO - Local transcription complete. Length: 117 characters
+2024-12-21 04:09:06,170 - INFO - Final transcription: It's not that we're loading the API key wrong because we use it correctly in a bunch of other areas in the same file.
+2024-12-21 04:09:06,171 - INFO - Pasting transcription to active window...
+2024-12-21 04:09:06,182 - INFO - Transcription process complete
+
+2024-12-21 04:18:57,318 - INFO - 
+=== Using Local Whisper Model ===
+2024-12-21 04:18:57,319 - INFO - Processing audio with local model...
+2024-12-21 04:18:59,401 - INFO - Local transcription complete. Length: 36 characters
+2024-12-21 04:18:59,401 - INFO - Final transcription: The suggestions are still not ready.
+2024-12-21 04:18:59,402 - INFO - Pasting transcription to active window...
+2024-12-21 04:18:59,414 - INFO - Transcription process complete
+
+2024-12-21 04:50:11,418 - INFO - 
+=== Using Local Whisper Model ===
+2024-12-21 04:50:11,419 - INFO - Processing audio with local model...
+2024-12-21 04:50:13,409 - INFO - Local transcription complete. Length: 90 characters
+2024-12-21 04:50:13,409 - INFO - Final transcription: Please help me figure out why my method is producing undesired asterisk in the book title.
+2024-12-21 04:50:13,410 - INFO - Pasting transcription to active window...
+2024-12-21 04:50:13,423 - INFO - Transcription process complete
+
+2024-12-21 05:04:16,271 - INFO - 
+=== Using Local Whisper Model ===
+2024-12-21 05:04:16,272 - INFO - Processing audio with local model...
+2024-12-21 05:04:20,925 - INFO - Local transcription complete. Length: 341 characters
+2024-12-21 05:04:20,925 - INFO - Final transcription: I'm going to use or enter a lowercase book title for some reason it's not properly getting changed to uppercase. Using, though it seems like the validate book title definition is working or is written fine. I'm wondering if maybe when we save the book we're not using the AI suggested name for some reason we're using the user inputted name.
+2024-12-21 05:04:20,926 - INFO - Pasting transcription to active window...
+2024-12-21 05:04:20,941 - INFO - Transcription process complete
+
+2024-12-21 05:12:02,778 - INFO - 
+=== Using Local Whisper Model ===
+2024-12-21 05:12:02,778 - INFO - Processing audio with local model...
+2024-12-21 05:12:05,081 - INFO - Local transcription complete. Length: 151 characters
+2024-12-21 05:12:05,081 - INFO - Final transcription: When you add a book to the chat via the green plus button, it should automatically take you to the chat page and put your cursor in the text entry box.
+2024-12-21 05:12:05,082 - INFO - Pasting transcription to active window...
+2024-12-21 05:12:05,095 - INFO - Transcription process complete
+
+2024-12-21 05:19:26,584 - INFO - 
+=== Using Local Whisper Model ===
+2024-12-21 05:19:26,585 - INFO - Processing audio with local model...
+2024-12-21 05:19:28,979 - INFO - Local transcription complete. Length: 143 characters
+2024-12-21 05:19:28,979 - INFO - Final transcription: If the user enters only an author, that same AI verification pop-up should offer three or four books the user can choose from from that author.
+2024-12-21 05:19:28,980 - INFO - Pasting transcription to active window...
+2024-12-21 05:19:28,995 - INFO - Transcription process complete
+
+2024-12-21 05:33:38,692 - INFO - 
+=== Using Local Whisper Model ===
+2024-12-21 05:33:38,693 - INFO - Processing audio with local model...
+2024-12-21 05:33:40,970 - INFO - Local transcription complete. Length: 146 characters
+2024-12-21 05:33:40,971 - INFO - Final transcription: at the top of the chat interface JavaScript file, add a settings adjustment area to modify the default size of the chat window just within height.
+2024-12-21 05:33:40,971 - INFO - Pasting transcription to active window...
+2024-12-21 05:33:40,984 - INFO - Transcription process complete
+
+2024-12-23 23:15:08,190 - DEBUG - load_ssl_context verify=True cert=None trust_env=True http2=False
+2024-12-23 23:15:08,194 - DEBUG - load_verify_locations cafile='C:\\Users\\Big D\\AppData\\Roaming\\Python\\Python312\\site-packages\\certifi\\cacert.pem'
+2024-12-23 23:15:08,664 - INFO - Loading Whisper model...
+2024-12-23 23:15:10,318 - INFO - Model loaded!
+2024-12-23 23:15:49,503 - INFO - 
+=== Using Local Whisper Model ===
+2024-12-23 23:15:49,504 - INFO - Processing audio with local model...
+2024-12-23 23:15:53,179 - INFO - Local transcription complete. Length: 44 characters
+2024-12-23 23:15:53,180 - INFO - Final transcription: Can we add streaming for the chat interface?
+2024-12-23 23:15:53,181 - INFO - Pasting transcription to active window...
+2024-12-23 23:15:53,197 - INFO - Transcription process complete
+
+2024-12-23 23:18:23,256 - INFO - 
+=== Using Local Whisper Model ===
+2024-12-23 23:18:23,257 - INFO - Processing audio with local model...
+2024-12-23 23:18:25,133 - INFO - Local transcription complete. Length: 72 characters
+2024-12-23 23:18:25,133 - INFO - Final transcription: It's still not streaming the response that's coming in all in one piece.
+2024-12-23 23:18:25,134 - INFO - Pasting transcription to active window...
+2024-12-23 23:18:25,148 - INFO - Transcription process complete
+
+2024-12-23 23:18:32,957 - INFO - 
+=== Using Local Whisper Model ===
+2024-12-23 23:18:32,958 - INFO - Processing audio with local model...
+2024-12-23 23:18:34,802 - INFO - Local transcription complete. Length: 57 characters
+2024-12-23 23:18:34,802 - INFO - Final transcription: It could be the way our front end is loading the message.
+2024-12-23 23:18:34,803 - INFO - Pasting transcription to active window...
+2024-12-23 23:18:34,816 - INFO - Transcription process complete
+
+2024-12-23 23:20:48,155 - INFO - 
+=== Using Local Whisper Model ===
+2024-12-23 23:20:48,156 - INFO - Processing audio with local model...
+2024-12-23 23:20:50,263 - INFO - Local transcription complete. Length: 132 characters
+2024-12-23 23:20:50,264 - INFO - Final transcription: The chat interface should be scrolling to the bottom when the user sends a message and during streaming to keep everything lined up.
+2024-12-23 23:20:50,265 - INFO - Pasting transcription to active window...
+2024-12-23 23:20:50,280 - INFO - Transcription process complete
+
+2024-12-23 23:23:51,913 - INFO - 
+=== Using Local Whisper Model ===
+2024-12-23 23:23:51,914 - INFO - Processing audio with local model...
+2024-12-23 23:23:53,978 - INFO - Local transcription complete. Length: 109 characters
+2024-12-23 23:23:53,978 - INFO - Final transcription: The text input box on the chat interface page should be expandable and should expand as the user types moron.
+2024-12-23 23:23:53,979 - INFO - Pasting transcription to active window...
+2024-12-23 23:23:53,993 - INFO - Transcription process complete
+
+2024-12-23 23:25:51,368 - INFO - 
+=== Using Local Whisper Model ===
+2024-12-23 23:25:51,368 - INFO - Processing audio with local model...
+2024-12-23 23:25:53,970 - INFO - Local transcription complete. Length: 249 characters
+2024-12-23 23:25:53,971 - INFO - Final transcription: I'd also like the text box to have that little thing in the bottom corner where the user can click and drag it out bigger. And let's also make the outline around the text box and the type your message text. A nice brown color to fit the environment.
+2024-12-23 23:25:53,973 - INFO - Pasting transcription to active window...
+2024-12-23 23:25:53,986 - INFO - Transcription process complete
+
+2024-12-23 23:27:07,024 - INFO - 
+=== Using Local Whisper Model ===
+2024-12-23 23:27:07,025 - INFO - Processing audio with local model...
+2024-12-23 23:27:09,020 - INFO - Local transcription complete. Length: 96 characters
+2024-12-23 23:27:09,020 - INFO - Final transcription: Let's actually make that expansion thing go in the top right corner instead of the bottom right.
+2024-12-23 23:27:09,021 - INFO - Pasting transcription to active window...
+2024-12-23 23:27:09,036 - INFO - Transcription process complete
+
+2024-12-23 23:30:04,899 - INFO - 
+=== Using Local Whisper Model ===
+2024-12-23 23:30:04,900 - INFO - Processing audio with local model...
+2024-12-23 23:30:06,830 - INFO - Local transcription complete. Length: 56 characters
+2024-12-23 23:30:06,830 - INFO - Final transcription: the server just crashed while trying to load the history
+2024-12-23 23:30:06,831 - INFO - Pasting transcription to active window...
+2024-12-23 23:30:06,844 - INFO - Transcription process complete
+
+2024-12-23 23:59:53,926 - INFO - 
+=== Using Local Whisper Model ===
+2024-12-23 23:59:53,927 - INFO - Processing audio with local model...
+2024-12-23 23:59:56,458 - INFO - Local transcription complete. Length: 171 characters
+2024-12-23 23:59:56,459 - INFO - Final transcription: It blows my prompt for my AI book reader, but for some reason it's not really using markdown a lot for emphasis in its output. I'm not sure if my is wrong with the prompt.
+2024-12-23 23:59:56,460 - INFO - Pasting transcription to active window...
+2024-12-23 23:59:56,474 - INFO - Transcription process complete
+
+2024-12-24 00:03:40,767 - INFO - 
+=== Using Local Whisper Model ===
+2024-12-24 00:03:40,767 - INFO - Processing audio with local model...
+2024-12-24 00:03:42,625 - INFO - Local transcription complete. Length: 57 characters
+2024-12-24 00:03:42,625 - INFO - Final transcription: Update the font to something easier to read like Verdana.
+2024-12-24 00:03:42,626 - INFO - Pasting transcription to active window...
+2024-12-24 00:03:42,640 - INFO - Transcription process complete
+
+2024-12-24 00:08:12,276 - INFO - 
+=== Using Local Whisper Model ===
+2024-12-24 00:08:12,276 - INFO - Processing audio with local model...
+2024-12-24 00:08:13,924 - INFO - Local transcription complete. Length: 0 characters
+2024-12-24 00:08:13,925 - INFO - Final transcription: 
+2024-12-24 00:08:13,925 - INFO - Pasting transcription to active window...
+2024-12-24 00:08:13,938 - INFO - Transcription process complete
+
+2024-12-24 00:08:19,847 - DEBUG - Importing BlpImagePlugin
+2024-12-24 00:08:19,851 - DEBUG - Importing BmpImagePlugin
+2024-12-24 00:08:19,851 - DEBUG - Importing BufrStubImagePlugin
+2024-12-24 00:08:19,853 - DEBUG - Importing CurImagePlugin
+2024-12-24 00:08:19,857 - DEBUG - Importing DcxImagePlugin
+2024-12-24 00:08:19,860 - DEBUG - Importing DdsImagePlugin
+2024-12-24 00:08:19,866 - DEBUG - Importing EpsImagePlugin
+2024-12-24 00:08:19,869 - DEBUG - Importing FitsImagePlugin
+2024-12-24 00:08:19,871 - DEBUG - Importing FliImagePlugin
+2024-12-24 00:08:19,873 - DEBUG - Importing FpxImagePlugin
+2024-12-24 00:08:19,878 - DEBUG - Image: failed to import FpxImagePlugin: No module named 'olefile'
+2024-12-24 00:08:19,879 - DEBUG - Importing FtexImagePlugin
+2024-12-24 00:08:19,881 - DEBUG - Importing GbrImagePlugin
+2024-12-24 00:08:19,883 - DEBUG - Importing GifImagePlugin
+2024-12-24 00:08:19,884 - DEBUG - Importing GribStubImagePlugin
+2024-12-24 00:08:19,885 - DEBUG - Importing Hdf5StubImagePlugin
+2024-12-24 00:08:19,886 - DEBUG - Importing IcnsImagePlugin
+2024-12-24 00:08:19,892 - DEBUG - Importing IcoImagePlugin
+2024-12-24 00:08:19,894 - DEBUG - Importing ImImagePlugin
+2024-12-24 00:08:19,897 - DEBUG - Importing ImtImagePlugin
+2024-12-24 00:08:19,899 - DEBUG - Importing IptcImagePlugin
+2024-12-24 00:08:19,901 - DEBUG - Importing JpegImagePlugin
+2024-12-24 00:08:19,902 - DEBUG - Importing Jpeg2KImagePlugin
+2024-12-24 00:08:19,903 - DEBUG - Importing McIdasImagePlugin
+2024-12-24 00:08:19,905 - DEBUG - Importing MicImagePlugin
+2024-12-24 00:08:19,907 - DEBUG - Image: failed to import MicImagePlugin: No module named 'olefile'
+2024-12-24 00:08:19,908 - DEBUG - Importing MpegImagePlugin
+2024-12-24 00:08:19,911 - DEBUG - Importing MpoImagePlugin
+2024-12-24 00:08:19,916 - DEBUG - Importing MspImagePlugin
+2024-12-24 00:08:19,918 - DEBUG - Importing PalmImagePlugin
+2024-12-24 00:08:19,920 - DEBUG - Importing PcdImagePlugin
+2024-12-24 00:08:19,922 - DEBUG - Importing PcxImagePlugin
+2024-12-24 00:08:19,923 - DEBUG - Importing PdfImagePlugin
+2024-12-24 00:08:19,932 - DEBUG - Importing PixarImagePlugin
+2024-12-24 00:08:19,934 - DEBUG - Importing PngImagePlugin
+2024-12-24 00:08:19,934 - DEBUG - Importing PpmImagePlugin
+2024-12-24 00:08:19,934 - DEBUG - Importing PsdImagePlugin
+2024-12-24 00:08:19,936 - DEBUG - Importing QoiImagePlugin
+2024-12-24 00:08:19,939 - DEBUG - Importing SgiImagePlugin
+2024-12-24 00:08:19,940 - DEBUG - Importing SpiderImagePlugin
+2024-12-24 00:08:19,942 - DEBUG - Importing SunImagePlugin
+2024-12-24 00:08:19,944 - DEBUG - Importing TgaImagePlugin
+2024-12-24 00:08:19,946 - DEBUG - Importing TiffImagePlugin
+2024-12-24 00:08:19,947 - DEBUG - Importing WebPImagePlugin
+2024-12-24 00:08:19,978 - DEBUG - Importing WmfImagePlugin
+2024-12-24 00:08:19,981 - DEBUG - Importing XbmImagePlugin
+2024-12-24 00:08:19,983 - DEBUG - Importing XpmImagePlugin
+2024-12-24 00:08:19,985 - DEBUG - Importing XVThumbImagePlugin
+2024-12-27 08:29:18,063 - DEBUG - load_ssl_context verify=True cert=None trust_env=True http2=False
+2024-12-27 08:29:18,065 - DEBUG - load_verify_locations cafile='C:\\Users\\Big D\\AppData\\Roaming\\Python\\Python312\\site-packages\\certifi\\cacert.pem'
+2024-12-27 08:29:18,628 - INFO - Loading Whisper model...
+2024-12-27 08:29:20,049 - INFO - Model loaded!
+2024-12-27 08:30:41,978 - INFO - 
+=== Using Local Whisper Model ===
+2024-12-27 08:30:41,978 - INFO - Processing audio with local model...
+2024-12-27 08:30:48,105 - INFO - Local transcription complete. Length: 384 characters
+2024-12-27 08:30:48,105 - INFO - Final transcription: Okay, so we have most of the idea right for the program, but what it needs to do is when it's disabled, it should stop listening on the key ports because the problem is they use these keyboard shortcuts, but it screws up other programs, so I needed a quick way to disable everything, so it should only be listening for the control alt star command when it's disabled and nothing else.
+2024-12-27 08:30:48,107 - INFO - Pasting transcription to active window...
+2024-12-27 08:30:48,158 - INFO - Transcription process complete
+
+2024-12-27 08:31:22,422 - DEBUG - Importing BlpImagePlugin
+2024-12-27 08:31:22,424 - DEBUG - Importing BmpImagePlugin
+2024-12-27 08:31:22,424 - DEBUG - Importing BufrStubImagePlugin
+2024-12-27 08:31:22,425 - DEBUG - Importing CurImagePlugin
+2024-12-27 08:31:22,427 - DEBUG - Importing DcxImagePlugin
+2024-12-27 08:31:22,430 - DEBUG - Importing DdsImagePlugin
+2024-12-27 08:31:22,435 - DEBUG - Importing EpsImagePlugin
+2024-12-27 08:31:22,437 - DEBUG - Importing FitsImagePlugin
+2024-12-27 08:31:22,438 - DEBUG - Importing FliImagePlugin
+2024-12-27 08:31:22,440 - DEBUG - Importing FpxImagePlugin
+2024-12-27 08:31:22,444 - DEBUG - Image: failed to import FpxImagePlugin: No module named 'olefile'
+2024-12-27 08:31:22,445 - DEBUG - Importing FtexImagePlugin
+2024-12-27 08:31:22,447 - DEBUG - Importing GbrImagePlugin
+2024-12-27 08:31:22,448 - DEBUG - Importing GifImagePlugin
+2024-12-27 08:31:22,449 - DEBUG - Importing GribStubImagePlugin
+2024-12-27 08:31:22,451 - DEBUG - Importing Hdf5StubImagePlugin
+2024-12-27 08:31:22,453 - DEBUG - Importing IcnsImagePlugin
+2024-12-27 08:31:22,457 - DEBUG - Importing IcoImagePlugin
+2024-12-27 08:31:22,458 - DEBUG - Importing ImImagePlugin
+2024-12-27 08:31:22,460 - DEBUG - Importing ImtImagePlugin
+2024-12-27 08:31:22,462 - DEBUG - Importing IptcImagePlugin
+2024-12-27 08:31:22,464 - DEBUG - Importing JpegImagePlugin
+2024-12-27 08:31:22,464 - DEBUG - Importing Jpeg2KImagePlugin
+2024-12-27 08:31:22,465 - DEBUG - Importing McIdasImagePlugin
+2024-12-27 08:31:22,466 - DEBUG - Importing MicImagePlugin
+2024-12-27 08:31:22,469 - DEBUG - Image: failed to import MicImagePlugin: No module named 'olefile'
+2024-12-27 08:31:22,470 - DEBUG - Importing MpegImagePlugin
+2024-12-27 08:31:22,471 - DEBUG - Importing MpoImagePlugin
+2024-12-27 08:31:22,476 - DEBUG - Importing MspImagePlugin
+2024-12-27 08:31:22,477 - DEBUG - Importing PalmImagePlugin
+2024-12-27 08:31:22,479 - DEBUG - Importing PcdImagePlugin
+2024-12-27 08:31:22,480 - DEBUG - Importing PcxImagePlugin
+2024-12-27 08:31:22,480 - DEBUG - Importing PdfImagePlugin
+2024-12-27 08:31:22,487 - DEBUG - Importing PixarImagePlugin
+2024-12-27 08:31:22,489 - DEBUG - Importing PngImagePlugin
+2024-12-27 08:31:22,490 - DEBUG - Importing PpmImagePlugin
+2024-12-27 08:31:22,490 - DEBUG - Importing PsdImagePlugin
+2024-12-27 08:31:22,491 - DEBUG - Importing QoiImagePlugin
+2024-12-27 08:31:22,493 - DEBUG - Importing SgiImagePlugin
+2024-12-27 08:31:22,494 - DEBUG - Importing SpiderImagePlugin
+2024-12-27 08:31:22,495 - DEBUG - Importing SunImagePlugin
+2024-12-27 08:31:22,497 - DEBUG - Importing TgaImagePlugin
+2024-12-27 08:31:22,499 - DEBUG - Importing TiffImagePlugin
+2024-12-27 08:31:22,499 - DEBUG - Importing WebPImagePlugin
+2024-12-27 08:31:22,527 - DEBUG - Importing WmfImagePlugin
+2024-12-27 08:31:22,528 - DEBUG - Importing XbmImagePlugin
+2024-12-27 08:31:22,530 - DEBUG - Importing XpmImagePlugin
+2024-12-27 08:31:22,531 - DEBUG - Importing XVThumbImagePlugin
+2024-12-27 08:31:54,040 - DEBUG - load_ssl_context verify=True cert=None trust_env=True http2=False
+2024-12-27 08:31:54,042 - DEBUG - load_verify_locations cafile='C:\\Users\\Big D\\AppData\\Roaming\\Python\\Python312\\site-packages\\certifi\\cacert.pem'
+2024-12-27 08:31:54,483 - INFO - Loading Whisper model...
+2024-12-27 08:31:55,434 - INFO - Model loaded!
+2024-12-27 08:32:07,168 - INFO - 
+=== Using Local Whisper Model ===
+2024-12-27 08:32:07,168 - INFO - Processing audio with local model...
+2024-12-27 08:32:09,355 - INFO - Local transcription complete. Length: 35 characters
+2024-12-27 08:32:09,355 - INFO - Final transcription: Okay, so now I can use the program.
+2024-12-27 08:32:09,357 - INFO - Pasting transcription to active window...
+2024-12-27 08:32:09,431 - INFO - Transcription process complete
+
+2024-12-27 08:34:13,215 - INFO - 
+=== Using Local Whisper Model ===
+2024-12-27 08:34:13,216 - INFO - Processing audio with local model...
+2024-12-27 08:34:21,787 - INFO - Local transcription complete. Length: 285 characters
+2024-12-27 08:34:21,787 - INFO - Final transcription: Okay, so I actually like that for the disable, we're using kind of the same kind of pop-up we use for the recording message in our program. So let's delete that standard style tk pop-up that comes up and just use the, you know, the black and white display that we're using. Make sense.
+2024-12-27 08:34:21,790 - INFO - Pasting transcription to active window...
+2024-12-27 08:34:21,842 - INFO - Transcription process complete
+
+2024-12-27 08:35:39,475 - DEBUG - Importing BlpImagePlugin
+2024-12-27 08:35:39,478 - DEBUG - Importing BmpImagePlugin
+2024-12-27 08:35:39,479 - DEBUG - Importing BufrStubImagePlugin
+2024-12-27 08:35:39,480 - DEBUG - Importing CurImagePlugin
+2024-12-27 08:35:39,481 - DEBUG - Importing DcxImagePlugin
+2024-12-27 08:35:39,482 - DEBUG - Importing DdsImagePlugin
+2024-12-27 08:35:39,487 - DEBUG - Importing EpsImagePlugin
+2024-12-27 08:35:39,489 - DEBUG - Importing FitsImagePlugin
+2024-12-27 08:35:39,491 - DEBUG - Importing FliImagePlugin
+2024-12-27 08:35:39,492 - DEBUG - Importing FpxImagePlugin
+2024-12-27 08:35:39,494 - DEBUG - Image: failed to import FpxImagePlugin: No module named 'olefile'
+2024-12-27 08:35:39,494 - DEBUG - Importing FtexImagePlugin
+2024-12-27 08:35:39,496 - DEBUG - Importing GbrImagePlugin
+2024-12-27 08:35:39,497 - DEBUG - Importing GifImagePlugin
+2024-12-27 08:35:39,498 - DEBUG - Importing GribStubImagePlugin
+2024-12-27 08:35:39,499 - DEBUG - Importing Hdf5StubImagePlugin
+2024-12-27 08:35:39,501 - DEBUG - Importing IcnsImagePlugin
+2024-12-27 08:35:39,505 - DEBUG - Importing IcoImagePlugin
+2024-12-27 08:35:39,506 - DEBUG - Importing ImImagePlugin
+2024-12-27 08:35:39,508 - DEBUG - Importing ImtImagePlugin
+2024-12-27 08:35:39,509 - DEBUG - Importing IptcImagePlugin
+2024-12-27 08:35:39,510 - DEBUG - Importing JpegImagePlugin
+2024-12-27 08:35:39,511 - DEBUG - Importing Jpeg2KImagePlugin
+2024-12-27 08:35:39,511 - DEBUG - Importing McIdasImagePlugin
+2024-12-27 08:35:39,512 - DEBUG - Importing MicImagePlugin
+2024-12-27 08:35:39,514 - DEBUG - Image: failed to import MicImagePlugin: No module named 'olefile'
+2024-12-27 08:35:39,514 - DEBUG - Importing MpegImagePlugin
+2024-12-27 08:35:39,516 - DEBUG - Importing MpoImagePlugin
+2024-12-27 08:35:39,520 - DEBUG - Importing MspImagePlugin
+2024-12-27 08:35:39,522 - DEBUG - Importing PalmImagePlugin
+2024-12-27 08:35:39,524 - DEBUG - Importing PcdImagePlugin
+2024-12-27 08:35:39,525 - DEBUG - Importing PcxImagePlugin
+2024-12-27 08:35:39,526 - DEBUG - Importing PdfImagePlugin
+2024-12-27 08:35:39,532 - DEBUG - Importing PixarImagePlugin
+2024-12-27 08:35:39,534 - DEBUG - Importing PngImagePlugin
+2024-12-27 08:35:39,535 - DEBUG - Importing PpmImagePlugin
+2024-12-27 08:35:39,535 - DEBUG - Importing PsdImagePlugin
+2024-12-27 08:35:39,537 - DEBUG - Importing QoiImagePlugin
+2024-12-27 08:35:39,538 - DEBUG - Importing SgiImagePlugin
+2024-12-27 08:35:39,541 - DEBUG - Importing SpiderImagePlugin
+2024-12-27 08:35:39,542 - DEBUG - Importing SunImagePlugin
+2024-12-27 08:35:39,543 - DEBUG - Importing TgaImagePlugin
+2024-12-27 08:35:39,544 - DEBUG - Importing TiffImagePlugin
+2024-12-27 08:35:39,545 - DEBUG - Importing WebPImagePlugin
+2024-12-27 08:35:39,547 - DEBUG - Importing WmfImagePlugin
+2024-12-27 08:35:39,549 - DEBUG - Importing XbmImagePlugin
+2024-12-27 08:35:39,551 - DEBUG - Importing XpmImagePlugin
+2024-12-27 08:35:39,552 - DEBUG - Importing XVThumbImagePlugin
+2024-12-27 08:38:20,532 - DEBUG - load_ssl_context verify=True cert=None trust_env=True http2=False
+2024-12-27 08:38:20,534 - DEBUG - load_verify_locations cafile='C:\\Users\\Big D\\AppData\\Roaming\\Python\\Python312\\site-packages\\certifi\\cacert.pem'
+2024-12-27 08:38:20,989 - INFO - Loading Whisper model...
+2024-12-27 08:38:21,935 - INFO - Model loaded!
+2024-12-27 08:40:53,540 - DEBUG - Importing BlpImagePlugin
+2024-12-27 08:40:53,542 - DEBUG - Importing BmpImagePlugin
+2024-12-27 08:40:53,542 - DEBUG - Importing BufrStubImagePlugin
+2024-12-27 08:40:53,543 - DEBUG - Importing CurImagePlugin
+2024-12-27 08:40:53,545 - DEBUG - Importing DcxImagePlugin
+2024-12-27 08:40:53,549 - DEBUG - Importing DdsImagePlugin
+2024-12-27 08:40:53,556 - DEBUG - Importing EpsImagePlugin
+2024-12-27 08:40:53,558 - DEBUG - Importing FitsImagePlugin
+2024-12-27 08:40:53,559 - DEBUG - Importing FliImagePlugin
+2024-12-27 08:40:53,561 - DEBUG - Importing FpxImagePlugin
+2024-12-27 08:40:53,563 - DEBUG - Image: failed to import FpxImagePlugin: No module named 'olefile'
+2024-12-27 08:40:53,564 - DEBUG - Importing FtexImagePlugin
+2024-12-27 08:40:53,566 - DEBUG - Importing GbrImagePlugin
+2024-12-27 08:40:53,568 - DEBUG - Importing GifImagePlugin
+2024-12-27 08:40:53,568 - DEBUG - Importing GribStubImagePlugin
+2024-12-27 08:40:53,569 - DEBUG - Importing Hdf5StubImagePlugin
+2024-12-27 08:40:53,570 - DEBUG - Importing IcnsImagePlugin
+2024-12-27 08:40:53,574 - DEBUG - Importing IcoImagePlugin
+2024-12-27 08:40:53,575 - DEBUG - Importing ImImagePlugin
+2024-12-27 08:40:53,576 - DEBUG - Importing ImtImagePlugin
+2024-12-27 08:40:53,577 - DEBUG - Importing IptcImagePlugin
+2024-12-27 08:40:53,579 - DEBUG - Importing JpegImagePlugin
+2024-12-27 08:40:53,579 - DEBUG - Importing Jpeg2KImagePlugin
+2024-12-27 08:40:53,580 - DEBUG - Importing McIdasImagePlugin
+2024-12-27 08:40:53,582 - DEBUG - Importing MicImagePlugin
+2024-12-27 08:40:53,584 - DEBUG - Image: failed to import MicImagePlugin: No module named 'olefile'
+2024-12-27 08:40:53,584 - DEBUG - Importing MpegImagePlugin
+2024-12-27 08:40:53,586 - DEBUG - Importing MpoImagePlugin
+2024-12-27 08:40:53,590 - DEBUG - Importing MspImagePlugin
+2024-12-27 08:40:53,591 - DEBUG - Importing PalmImagePlugin
+2024-12-27 08:40:53,593 - DEBUG - Importing PcdImagePlugin
+2024-12-27 08:40:53,594 - DEBUG - Importing PcxImagePlugin
+2024-12-27 08:40:53,595 - DEBUG - Importing PdfImagePlugin
+2024-12-27 08:40:53,603 - DEBUG - Importing PixarImagePlugin
+2024-12-27 08:40:53,604 - DEBUG - Importing PngImagePlugin
+2024-12-27 08:40:53,604 - DEBUG - Importing PpmImagePlugin
+2024-12-27 08:40:53,604 - DEBUG - Importing PsdImagePlugin
+2024-12-27 08:40:53,606 - DEBUG - Importing QoiImagePlugin
+2024-12-27 08:40:53,608 - DEBUG - Importing SgiImagePlugin
+2024-12-27 08:40:53,609 - DEBUG - Importing SpiderImagePlugin
+2024-12-27 08:40:53,610 - DEBUG - Importing SunImagePlugin
+2024-12-27 08:40:53,611 - DEBUG - Importing TgaImagePlugin
+2024-12-27 08:40:53,612 - DEBUG - Importing TiffImagePlugin
+2024-12-27 08:40:53,612 - DEBUG - Importing WebPImagePlugin
+2024-12-27 08:40:53,616 - DEBUG - Importing WmfImagePlugin
+2024-12-27 08:40:53,617 - DEBUG - Importing XbmImagePlugin
+2024-12-27 08:40:53,619 - DEBUG - Importing XpmImagePlugin
+2024-12-27 08:40:53,621 - DEBUG - Importing XVThumbImagePlugin
+2024-12-27 08:45:10,739 - INFO - 
+=== Using Local Whisper Model ===
+2024-12-27 08:45:10,740 - INFO - Processing audio with local model...
+2024-12-27 08:45:13,009 - INFO - Local transcription complete. Length: 25 characters
+2024-12-27 08:45:13,010 - INFO - Final transcription: Oh, I hope this is fixed.
+2024-12-27 08:45:13,011 - INFO - Pasting transcription to active window...
+2024-12-27 08:45:13,064 - INFO - Transcription process complete
+
+2024-12-27 08:47:11,100 - DEBUG - load_ssl_context verify=True cert=None trust_env=True http2=False
+2024-12-27 08:47:11,102 - DEBUG - load_verify_locations cafile='C:\\Users\\Big D\\AppData\\Roaming\\Python\\Python312\\site-packages\\certifi\\cacert.pem'
+2024-12-27 08:47:11,537 - INFO - Loading Whisper model...
+2024-12-27 08:47:12,499 - INFO - Model loaded!
+2024-12-27 08:47:30,408 - DEBUG - Importing BlpImagePlugin
+2024-12-27 08:47:30,410 - DEBUG - Importing BmpImagePlugin
+2024-12-27 08:47:30,410 - DEBUG - Importing BufrStubImagePlugin
+2024-12-27 08:47:30,411 - DEBUG - Importing CurImagePlugin
+2024-12-27 08:47:30,413 - DEBUG - Importing DcxImagePlugin
+2024-12-27 08:47:30,416 - DEBUG - Importing DdsImagePlugin
+2024-12-27 08:47:30,420 - DEBUG - Importing EpsImagePlugin
+2024-12-27 08:47:30,422 - DEBUG - Importing FitsImagePlugin
+2024-12-27 08:47:30,423 - DEBUG - Importing FliImagePlugin
+2024-12-27 08:47:30,424 - DEBUG - Importing FpxImagePlugin
+2024-12-27 08:47:30,427 - DEBUG - Image: failed to import FpxImagePlugin: No module named 'olefile'
+2024-12-27 08:47:30,428 - DEBUG - Importing FtexImagePlugin
+2024-12-27 08:47:30,429 - DEBUG - Importing GbrImagePlugin
+2024-12-27 08:47:30,431 - DEBUG - Importing GifImagePlugin
+2024-12-27 08:47:30,431 - DEBUG - Importing GribStubImagePlugin
+2024-12-27 08:47:30,432 - DEBUG - Importing Hdf5StubImagePlugin
+2024-12-27 08:47:30,433 - DEBUG - Importing IcnsImagePlugin
+2024-12-27 08:47:30,436 - DEBUG - Importing IcoImagePlugin
+2024-12-27 08:47:30,437 - DEBUG - Importing ImImagePlugin
+2024-12-27 08:47:30,439 - DEBUG - Importing ImtImagePlugin
+2024-12-27 08:47:30,440 - DEBUG - Importing IptcImagePlugin
+2024-12-27 08:47:30,442 - DEBUG - Importing JpegImagePlugin
+2024-12-27 08:47:30,442 - DEBUG - Importing Jpeg2KImagePlugin
+2024-12-27 08:47:30,443 - DEBUG - Importing McIdasImagePlugin
+2024-12-27 08:47:30,444 - DEBUG - Importing MicImagePlugin
+2024-12-27 08:47:30,447 - DEBUG - Image: failed to import MicImagePlugin: No module named 'olefile'
+2024-12-27 08:47:30,448 - DEBUG - Importing MpegImagePlugin
+2024-12-27 08:47:30,449 - DEBUG - Importing MpoImagePlugin
+2024-12-27 08:47:30,452 - DEBUG - Importing MspImagePlugin
+2024-12-27 08:47:30,454 - DEBUG - Importing PalmImagePlugin
+2024-12-27 08:47:30,456 - DEBUG - Importing PcdImagePlugin
+2024-12-27 08:47:30,457 - DEBUG - Importing PcxImagePlugin
+2024-12-27 08:47:30,457 - DEBUG - Importing PdfImagePlugin
+2024-12-27 08:47:30,464 - DEBUG - Importing PixarImagePlugin
+2024-12-27 08:47:30,465 - DEBUG - Importing PngImagePlugin
+2024-12-27 08:47:30,466 - DEBUG - Importing PpmImagePlugin
+2024-12-27 08:47:30,466 - DEBUG - Importing PsdImagePlugin
+2024-12-27 08:47:30,467 - DEBUG - Importing QoiImagePlugin
+2024-12-27 08:47:30,468 - DEBUG - Importing SgiImagePlugin
+2024-12-27 08:47:30,470 - DEBUG - Importing SpiderImagePlugin
+2024-12-27 08:47:30,471 - DEBUG - Importing SunImagePlugin
+2024-12-27 08:47:30,472 - DEBUG - Importing TgaImagePlugin
+2024-12-27 08:47:30,473 - DEBUG - Importing TiffImagePlugin
+2024-12-27 08:47:30,473 - DEBUG - Importing WebPImagePlugin
+2024-12-27 08:47:30,476 - DEBUG - Importing WmfImagePlugin
+2024-12-27 08:47:30,477 - DEBUG - Importing XbmImagePlugin
+2024-12-27 08:47:30,479 - DEBUG - Importing XpmImagePlugin
+2024-12-27 08:47:30,481 - DEBUG - Importing XVThumbImagePlugin
+2024-12-27 09:09:15,397 - DEBUG - load_ssl_context verify=True cert=None trust_env=True http2=False
+2024-12-27 09:09:15,399 - DEBUG - load_verify_locations cafile='C:\\Users\\Big D\\AppData\\Roaming\\Python\\Python312\\site-packages\\certifi\\cacert.pem'
+2024-12-27 09:09:15,872 - INFO - Loading Whisper model...
+2024-12-27 09:09:16,887 - INFO - Model loaded!
+2024-12-27 09:09:33,678 - DEBUG - Importing BlpImagePlugin
+2024-12-27 09:09:33,680 - DEBUG - Importing BmpImagePlugin
+2024-12-27 09:09:33,680 - DEBUG - Importing BufrStubImagePlugin
+2024-12-27 09:09:33,682 - DEBUG - Importing CurImagePlugin
+2024-12-27 09:09:33,684 - DEBUG - Importing DcxImagePlugin
+2024-12-27 09:09:33,686 - DEBUG - Importing DdsImagePlugin
+2024-12-27 09:09:33,690 - DEBUG - Importing EpsImagePlugin
+2024-12-27 09:09:33,692 - DEBUG - Importing FitsImagePlugin
+2024-12-27 09:09:33,693 - DEBUG - Importing FliImagePlugin
+2024-12-27 09:09:33,695 - DEBUG - Importing FpxImagePlugin
+2024-12-27 09:09:33,698 - DEBUG - Image: failed to import FpxImagePlugin: No module named 'olefile'
+2024-12-27 09:09:33,698 - DEBUG - Importing FtexImagePlugin
+2024-12-27 09:09:33,700 - DEBUG - Importing GbrImagePlugin
+2024-12-27 09:09:33,701 - DEBUG - Importing GifImagePlugin
+2024-12-27 09:09:33,702 - DEBUG - Importing GribStubImagePlugin
+2024-12-27 09:09:33,704 - DEBUG - Importing Hdf5StubImagePlugin
+2024-12-27 09:09:33,705 - DEBUG - Importing IcnsImagePlugin
+2024-12-27 09:09:33,708 - DEBUG - Importing IcoImagePlugin
+2024-12-27 09:09:33,710 - DEBUG - Importing ImImagePlugin
+2024-12-27 09:09:33,711 - DEBUG - Importing ImtImagePlugin
+2024-12-27 09:09:33,713 - DEBUG - Importing IptcImagePlugin
+2024-12-27 09:09:33,714 - DEBUG - Importing JpegImagePlugin
+2024-12-27 09:09:33,714 - DEBUG - Importing Jpeg2KImagePlugin
+2024-12-27 09:09:33,714 - DEBUG - Importing McIdasImagePlugin
+2024-12-27 09:09:33,716 - DEBUG - Importing MicImagePlugin
+2024-12-27 09:09:33,719 - DEBUG - Image: failed to import MicImagePlugin: No module named 'olefile'
+2024-12-27 09:09:33,719 - DEBUG - Importing MpegImagePlugin
+2024-12-27 09:09:33,720 - DEBUG - Importing MpoImagePlugin
+2024-12-27 09:09:33,724 - DEBUG - Importing MspImagePlugin
+2024-12-27 09:09:33,725 - DEBUG - Importing PalmImagePlugin
+2024-12-27 09:09:33,727 - DEBUG - Importing PcdImagePlugin
+2024-12-27 09:09:33,727 - DEBUG - Importing PcxImagePlugin
+2024-12-27 09:09:33,728 - DEBUG - Importing PdfImagePlugin
+2024-12-27 09:09:33,734 - DEBUG - Importing PixarImagePlugin
+2024-12-27 09:09:33,735 - DEBUG - Importing PngImagePlugin
+2024-12-27 09:09:33,735 - DEBUG - Importing PpmImagePlugin
+2024-12-27 09:09:33,736 - DEBUG - Importing PsdImagePlugin
+2024-12-27 09:09:33,738 - DEBUG - Importing QoiImagePlugin
+2024-12-27 09:09:33,739 - DEBUG - Importing SgiImagePlugin
+2024-12-27 09:09:33,741 - DEBUG - Importing SpiderImagePlugin
+2024-12-27 09:09:33,742 - DEBUG - Importing SunImagePlugin
+2024-12-27 09:09:33,743 - DEBUG - Importing TgaImagePlugin
+2024-12-27 09:09:33,744 - DEBUG - Importing TiffImagePlugin
+2024-12-27 09:09:33,745 - DEBUG - Importing WebPImagePlugin
+2024-12-27 09:09:33,747 - DEBUG - Importing WmfImagePlugin
+2024-12-27 09:09:33,748 - DEBUG - Importing XbmImagePlugin
+2024-12-27 09:09:33,752 - DEBUG - Importing XpmImagePlugin
+2024-12-27 09:09:33,754 - DEBUG - Importing XVThumbImagePlugin
