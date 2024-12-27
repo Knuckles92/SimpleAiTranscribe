@@ -368,3 +368,4 @@ class AudioRecorder:
 if __name__ == "__main__":
     app = AudioRecorder()
     app.run()
+#new
