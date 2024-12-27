@@ -15,7 +15,7 @@ import time
 import logging
 
 # Configure logging
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s',
+logging.basicConfig(level=logging.ERROR, format='%(asctime)s - %(levelname)s - %(message)s',
                     handlers=[
                         logging.FileHandler("audio_recorder.log"),
                         logging.StreamHandler()

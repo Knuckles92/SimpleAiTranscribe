@@ -690,3 +690,79 @@
 2024-12-27 09:09:33,748 - DEBUG - Importing XbmImagePlugin
 2024-12-27 09:09:33,752 - DEBUG - Importing XpmImagePlugin
 2024-12-27 09:09:33,754 - DEBUG - Importing XVThumbImagePlugin
+2024-12-27 09:37:54,261 - DEBUG - load_ssl_context verify=True cert=None trust_env=True http2=False
+2024-12-27 09:37:54,263 - DEBUG - load_verify_locations cafile='C:\\Users\\Big D\\AppData\\Roaming\\Python\\Python312\\site-packages\\certifi\\cacert.pem'
+2024-12-27 09:37:54,700 - INFO - Loading Whisper model...
+2024-12-27 09:37:55,645 - INFO - Model loaded!
+2024-12-27 09:38:57,864 - INFO - 
+=== Using Local Whisper Model ===
+2024-12-27 09:38:57,864 - INFO - Processing audio with local model...
+2024-12-27 09:39:03,649 - INFO - Local transcription complete. Length: 432 characters
+2024-12-27 09:39:03,649 - INFO - Final transcription: Here's the issue. I have made a bunch of changes to my repository locally. And I'm happy with the version that I have locally. I want to overwrite everything that I have on my online cloud. The cloud version I guess of the repo. I can do a local commit perfectly fine. And I have my local repo where I want it. I want to just push everything and overwrite everything that's on the GitHub. But I always get confused by push and pull.
+2024-12-27 09:39:03,651 - INFO - Pasting transcription to active window...
+2024-12-27 09:39:03,704 - INFO - Transcription process complete
+
+2024-12-27 09:45:14,103 - INFO - 
+=== Using Local Whisper Model ===
+2024-12-27 09:45:14,103 - INFO - Processing audio with local model...
+2024-12-27 09:45:16,013 - INFO - Local transcription complete. Length: 57 characters
+2024-12-27 09:45:16,013 - INFO - Final transcription: When I try to push it seems to want me to do a pull first
+2024-12-27 09:45:16,015 - INFO - Pasting transcription to active window...
+2024-12-27 09:45:16,064 - INFO - Transcription process complete
+
+2024-12-27 09:49:56,578 - INFO - 
+=== Using Local Whisper Model ===
+2024-12-27 09:49:56,579 - INFO - Processing audio with local model...
+2024-12-27 09:49:58,565 - INFO - Local transcription complete. Length: 50 characters
+2024-12-27 09:49:58,566 - INFO - Final transcription: I think it still copies this to the clipboard too.
+2024-12-27 09:49:58,567 - INFO - Pasting transcription to active window...
+2024-12-27 09:49:58,615 - INFO - Transcription process complete
+
+2024-12-27 11:29:49,037 - DEBUG - Importing BlpImagePlugin
+2024-12-27 11:29:49,048 - DEBUG - Importing BmpImagePlugin
+2024-12-27 11:29:49,050 - DEBUG - Importing BufrStubImagePlugin
+2024-12-27 11:29:49,052 - DEBUG - Importing CurImagePlugin
+2024-12-27 11:29:49,055 - DEBUG - Importing DcxImagePlugin
+2024-12-27 11:29:49,062 - DEBUG - Importing DdsImagePlugin
+2024-12-27 11:29:49,080 - DEBUG - Importing EpsImagePlugin
+2024-12-27 11:29:49,084 - DEBUG - Importing FitsImagePlugin
+2024-12-27 11:29:49,086 - DEBUG - Importing FliImagePlugin
+2024-12-27 11:29:49,088 - DEBUG - Importing FpxImagePlugin
+2024-12-27 11:29:49,096 - DEBUG - Image: failed to import FpxImagePlugin: No module named 'olefile'
+2024-12-27 11:29:49,097 - DEBUG - Importing FtexImagePlugin
+2024-12-27 11:29:49,100 - DEBUG - Importing GbrImagePlugin
+2024-12-27 11:29:49,102 - DEBUG - Importing GifImagePlugin
+2024-12-27 11:29:49,103 - DEBUG - Importing GribStubImagePlugin
+2024-12-27 11:29:49,105 - DEBUG - Importing Hdf5StubImagePlugin
+2024-12-27 11:29:49,107 - DEBUG - Importing IcnsImagePlugin
+2024-12-27 11:29:49,118 - DEBUG - Importing IcoImagePlugin
+2024-12-27 11:29:49,120 - DEBUG - Importing ImImagePlugin
+2024-12-27 11:29:49,128 - DEBUG - Importing ImtImagePlugin
+2024-12-27 11:29:49,131 - DEBUG - Importing IptcImagePlugin
+2024-12-27 11:29:49,133 - DEBUG - Importing JpegImagePlugin
+2024-12-27 11:29:49,134 - DEBUG - Importing Jpeg2KImagePlugin
+2024-12-27 11:29:49,134 - DEBUG - Importing McIdasImagePlugin
+2024-12-27 11:29:49,137 - DEBUG - Importing MicImagePlugin
+2024-12-27 11:29:49,139 - DEBUG - Image: failed to import MicImagePlugin: No module named 'olefile'
+2024-12-27 11:29:49,141 - DEBUG - Importing MpegImagePlugin
+2024-12-27 11:29:49,143 - DEBUG - Importing MpoImagePlugin
+2024-12-27 11:29:49,154 - DEBUG - Importing MspImagePlugin
+2024-12-27 11:29:49,160 - DEBUG - Importing PalmImagePlugin
+2024-12-27 11:29:49,166 - DEBUG - Importing PcdImagePlugin
+2024-12-27 11:29:49,167 - DEBUG - Importing PcxImagePlugin
+2024-12-27 11:29:49,167 - DEBUG - Importing PdfImagePlugin
+2024-12-27 11:29:49,179 - DEBUG - Importing PixarImagePlugin
+2024-12-27 11:29:49,181 - DEBUG - Importing PngImagePlugin
+2024-12-27 11:29:49,182 - DEBUG - Importing PpmImagePlugin
+2024-12-27 11:29:49,182 - DEBUG - Importing PsdImagePlugin
+2024-12-27 11:29:49,183 - DEBUG - Importing QoiImagePlugin
+2024-12-27 11:29:49,187 - DEBUG - Importing SgiImagePlugin
+2024-12-27 11:29:49,190 - DEBUG - Importing SpiderImagePlugin
+2024-12-27 11:29:49,195 - DEBUG - Importing SunImagePlugin
+2024-12-27 11:29:49,197 - DEBUG - Importing TgaImagePlugin
+2024-12-27 11:29:49,199 - DEBUG - Importing TiffImagePlugin
+2024-12-27 11:29:49,200 - DEBUG - Importing WebPImagePlugin
+2024-12-27 11:29:49,264 - DEBUG - Importing WmfImagePlugin
+2024-12-27 11:29:49,266 - DEBUG - Importing XbmImagePlugin
+2024-12-27 11:29:49,271 - DEBUG - Importing XpmImagePlugin
+2024-12-27 11:29:49,273 - DEBUG - Importing XVThumbImagePlugin
