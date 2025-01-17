@@ -1,1 +1,4 @@
 recorded_audio.wav
+*.log
+*.env
+*.spec
