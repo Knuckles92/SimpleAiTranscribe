@@ -13,6 +13,7 @@ import pystray
 from PIL import Image
 import time
 import logging
+import dotenv
 
 # Configure logging
 logging.basicConfig(level=logging.ERROR, format='%(asctime)s - %(levelname)s - %(message)s',
@@ -39,7 +40,22 @@ class AudioRecorder:
         
         # Settings variables
         self.use_api = tk.BooleanVar(value=False)
+        
+        # Try system environment variables first
         self.api_key = os.getenv('OPENAI_API_KEY')
+        
+        # If no API key in system env, try loading from .env file
+        if not self.api_key:
+            try:
+                from dotenv import load_dotenv
+                # Load .env file from the same directory as the script
+                env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '.env')
+                load_dotenv(env_path)
+                self.api_key = os.getenv('OPENAI_API_KEY')
+            except ImportError:
+                logging.warning("python-dotenv not installed. Skipping .env file loading.")
+            except Exception as e:
+                logging.warning(f"Failed to load .env file: {e}")
         
         # Initialize OpenAI client
         self.client = OpenAI(api_key=self.api_key) if self.api_key else None
