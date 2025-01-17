@@ -3,6 +3,7 @@
 A feature-rich desktop application for recording and transcribing audio. It leverages **OpenAI Whisper** for transcription and supports both local and API-based transcription methods. The app is built using `Tkinter` for the GUI and integrates seamlessly with system keyboard shortcuts.
 
 ---
+![notepad_xQrbAMoXs2](https://github.com/user-attachments/assets/2bc2186b-3166-40ba-a104-fa1c4a527853)
 
 ## Features
 
