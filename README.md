@@ -15,8 +15,9 @@ A feature-rich desktop application for recording and transcribing audio. It leve
   - Optional API-based transcription with OpenAI Whisper for enhanced accuracy.
   
 - **Keyboard Shortcuts**:
-  - Start/Stop recording: `Num *`
-  - Cancel transcription: `Esc`
+  - Start/Stop recording: `*` (asterisk)
+  - Cancel transcription: `-` (minus)
+  - Enable/Disable program: `CTRL+ALT+*`
 
 - **Real-time Status Overlay**:
   - Displays the current state (e.g., Recording, Transcribing).
