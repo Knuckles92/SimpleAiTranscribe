@@ -231,8 +231,9 @@ class AudioRecorder:
         # Save the recording
         self.save_recording()
         
-        # Transcribe in a separate thread
-        threading.Thread(target=self.transcribe_audio).start()
+        # Use daemon thread to prevent console flash
+        transcription_thread = threading.Thread(target=self.transcribe_audio, daemon=True)
+        transcription_thread.start()
     
     def save_recording(self):
         # Save recorded audio to WAV file
@@ -376,6 +377,7 @@ class AudioRecorder:
     def run(self):
         # Make window stay on top
         self.root.attributes('-topmost', True)
+        # Remove the self.root.withdraw() line to show window on startup
         self.root.mainloop()
         # Clean up keyboard hook before exiting
         keyboard.unhook_all()
