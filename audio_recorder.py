@@ -40,6 +40,8 @@ class AudioRecorder:
         
         # Settings variables
         self.use_api = tk.BooleanVar(value=False)
+        self.model_choice = tk.StringVar(value="local_whisper")  # Default to local whisper
+        self.model_choice.trace_add("write", self.on_model_changed)  # Add trace to update use_api
         
         # Try system environment variables first
         self.api_key = os.getenv('OPENAI_API_KEY')
@@ -171,11 +173,25 @@ class AudioRecorder:
         # Create Settings menu
         settings_menu = tk.Menu(menubar, tearoff=0)
         menubar.add_cascade(label="Settings", menu=settings_menu)
-        settings_menu.add_checkbutton(label="Use Whisper API", variable=self.use_api)
+        settings_menu.add_checkbutton(label="Use API", variable=self.use_api, command=self.on_api_checkbox_changed)
+        
+        # Create model selection submenu
+        model_menu = tk.Menu(settings_menu, tearoff=0)
+        settings_menu.add_cascade(label="Transcription Model", menu=model_menu)
+        
+        # Add model options
+        model_menu.add_radiobutton(label="Local Whisper", variable=self.model_choice, value="local_whisper")
+        model_menu.add_radiobutton(label="API: Whisper", variable=self.model_choice, value="api_whisper")
+        model_menu.add_radiobutton(label="API: GPT-4o Transcribe", variable=self.model_choice, value="api_gpt4o")
+        model_menu.add_radiobutton(label="API: GPT-4o Mini Transcribe", variable=self.model_choice, value="api_gpt4o_mini")
         
         # Create and pack widgets
         self.status_label = tk.Label(self.root, text="Status: Ready", pady=10)
         self.status_label.pack()
+        
+        # Add model status label
+        self.model_status_label = tk.Label(self.root, text="Model: Local Whisper", pady=5, font=('TkDefaultFont', 8))
+        self.model_status_label.pack()
         
         self.start_button = tk.Button(self.root, text="Start Recording",
                                     command=self.start_recording)
@@ -268,17 +284,32 @@ class AudioRecorder:
             
             self.show_status_overlay("Transcribing...")
             
-            if self.use_api.get():
-                logging.info("\n=== Using OpenAI Whisper API ===")
+            # Determine if we should use API based on model selection
+            use_api = self.model_choice.get().startswith("api_")
+            
+            if use_api:
+                logging.info("\n=== Using OpenAI API ===")
                 if not self.api_key:
                     logging.error("Error: No API key found!")
                     raise ValueError("OpenAI API key not found in environment variables (OPENAI_API_KEY)")
                 
+                logging.info(f"Using model: {self.model_choice.get()}")
+                
+                # Select API model based on choice
+                api_model = "whisper-1"  # Default to whisper API
+                
+                if self.model_choice.get() == "api_gpt4o":
+                    api_model = "gpt-4o-transcribe"
+                elif self.model_choice.get() == "api_gpt4o_mini":
+                    api_model = "gpt-4o-mini-transcribe"
+                
+                logging.info(f"Selected API model: {api_model}")
                 logging.info("Sending audio file to OpenAI API...")
+                
                 # Updated API call using the new client
                 with open("recorded_audio.wav", "rb") as audio_file:
                     response = self.client.audio.transcriptions.create(
-                        model="whisper-1",
+                        model=api_model,
                         file=audio_file,
                         response_format="text"
                     )
@@ -382,6 +413,36 @@ class AudioRecorder:
         # Clean up keyboard hook before exiting
         keyboard.unhook_all()
         self.audio.terminate()
+
+    def on_model_changed(self, *args):
+        """Update the use_api variable when model choice changes"""
+        # If model starts with "api_", it's an API model
+        self.use_api.set(self.model_choice.get().startswith("api_"))
+        
+        # Update model status label
+        model_text = "Model: "
+        choice = self.model_choice.get()
+        
+        if choice == "local_whisper":
+            model_text += "Local Whisper"
+        elif choice == "api_whisper":
+            model_text += "API: Whisper"
+        elif choice == "api_gpt4o":
+            model_text += "API: GPT-4o Transcribe"
+        elif choice == "api_gpt4o_mini":
+            model_text += "API: GPT-4o Mini Transcribe"
+            
+        self.model_status_label.config(text=model_text)
+
+    def on_api_checkbox_changed(self):
+        """Update model choice when the API checkbox is toggled"""
+        if self.use_api.get():
+            # If API is checked and current model is local, set to default API model
+            if self.model_choice.get() == "local_whisper":
+                self.model_choice.set("api_whisper")
+        else:
+            # If API is unchecked, set to local model
+            self.model_choice.set("local_whisper")
 
 if __name__ == "__main__":
     app = AudioRecorder()
