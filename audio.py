@@ -296,7 +296,7 @@ class AudioRecorder:
                 logging.info(f"Using model: {self.model_choice.get()}")
                 
                 # Select API model based on choice
-                api_model = "whisper-1"  # Default to whisper API
+                api_model = "gpt-4o-mini-transcribe"  # Default to mini model
                 
                 if self.model_choice.get() == "api_gpt4o":
                     api_model = "gpt-4o-transcribe"
