@@ -12,7 +12,7 @@ A simple desktop application for recording and transcribing audio. It leverages 
   - Configurable sample rate and channels.
 
 - **Transcription**:
-  - Local transcription using a pretrained Whisper model.
+  - Local transcription using OpenAI Whisper local model.
   - Optional API-based transcription with OpenAI Whisper for enhanced accuracy.
   
 - **Keyboard Shortcuts**:
@@ -53,5 +53,5 @@ A simple desktop application for recording and transcribing audio. It leverages 
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/<your-username>/audio-recorder.git
+   git clone https://github.com/knuckles92/audio-recorder.git
    cd audio-recorder
