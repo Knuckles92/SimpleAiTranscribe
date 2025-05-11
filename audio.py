@@ -14,6 +14,9 @@ from PIL import Image
 import time
 import logging
 import dotenv
+from pathlib import Path
+import pydub
+from pydub import playback
 
 # Configure logging
 logging.basicConfig(level=logging.ERROR, format='%(asctime)s - %(levelname)s - %(message)s',
@@ -21,6 +24,16 @@ logging.basicConfig(level=logging.ERROR, format='%(asctime)s - %(levelname)s - %
                         logging.FileHandler("audio_recorder.log"),
                         logging.StreamHandler()
                     ])
+
+# Load speaking style from file
+try:
+    with open('style.txt', 'r', encoding='utf-8') as file:
+        speaking_style = file.read()
+except FileNotFoundError:
+    speaking_style = "You are a helpful assistant that speaks clearly and naturally."
+    # Create the style file with default content
+    with open('style.txt', 'w', encoding='utf-8') as file:
+        file.write(speaking_style)
 
 class AudioRecorder:
     def __init__(self):
@@ -37,6 +50,7 @@ class AudioRecorder:
         
         # Program enabled state
         self.program_enabled = True
+        self.tts_enabled = True  # TTS feature enabled state
         
         # Settings variables
         self.use_api = tk.BooleanVar(value=False)
@@ -150,6 +164,11 @@ class AudioRecorder:
                 if self.is_recording or self.is_transcribing:
                     self.cancel_transcription()
                     return False  # Suppress - key when handling
+            
+            # TTS feature shortcut (F9)
+            elif event.name == 'f9' and self.tts_enabled:
+                threading.Thread(target=self.text_to_speech).start()
+                return False  # Suppress F9 key
         
         # Let all other keys pass through
         return True
@@ -184,6 +203,13 @@ class AudioRecorder:
         model_menu.add_radiobutton(label="API: Whisper", variable=self.model_choice, value="api_whisper")
         model_menu.add_radiobutton(label="API: GPT-4o Transcribe", variable=self.model_choice, value="api_gpt4o")
         model_menu.add_radiobutton(label="API: GPT-4o Mini Transcribe", variable=self.model_choice, value="api_gpt4o_mini")
+        
+        # Create Features menu
+        features_menu = tk.Menu(menubar, tearoff=0)
+        menubar.add_cascade(label="Features", menu=features_menu)
+        features_menu.add_command(label="Text to Speech (F9)", command=lambda: threading.Thread(target=self.text_to_speech).start())
+        features_menu.add_checkbutton(label="Enable TTS", variable=tk.BooleanVar(value=True), 
+                                     command=lambda: setattr(self, 'tts_enabled', not self.tts_enabled))
         
         # Create and pack widgets
         self.status_label = tk.Label(self.root, text="Status: Ready", pady=10)
@@ -356,7 +382,6 @@ class AudioRecorder:
             self.cancel_button.config(state=tk.DISABLED)
             self.start_button.config(state=tk.NORMAL)
     
-    
     def show_status_overlay(self, message):
         """Show status overlay with given message"""
         if message:
@@ -443,6 +468,60 @@ class AudioRecorder:
         else:
             # If API is unchecked, set to local model
             self.model_choice.set("local_whisper")
+
+    # TTS methods from clip.py
+    def text_to_speech(self):
+        """Convert clipboard text to speech and play it"""
+        try:
+            self.status_label.config(text="Status: Processing TTS...")
+            self.show_status_overlay("Processing TTS...")
+            
+            # Get clipboard content
+            clipboard_text = pyperclip.paste()
+            if not clipboard_text:
+                self.status_label.config(text="Status: Clipboard is empty")
+                self.show_status_overlay("Clipboard is empty")
+                self.root.after(1500, self.show_status_overlay, "")
+                return
+            
+            # Check if API key is available
+            if not self.api_key:
+                self.status_label.config(text="Status: No API key for TTS")
+                self.show_status_overlay("No API key for TTS")
+                self.root.after(1500, self.show_status_overlay, "")
+                return
+            
+            # Initialize OpenAI client if needed
+            if not self.client:
+                self.client = OpenAI(api_key=self.api_key)
+            
+            # Create TTS
+            speech_file_path = Path(os.path.dirname(os.path.abspath(__file__))) / "speech.mp3"
+            
+            self.show_status_overlay("Generating speech...")
+            
+            with self.client.audio.speech.with_streaming_response.create(
+                model="gpt-4o-mini-tts",
+                voice="ash",
+                input=clipboard_text,
+                instructions=speaking_style,
+            ) as response:
+                response.stream_to_file(speech_file_path)
+            
+            self.show_status_overlay("Playing audio...")
+            
+            # Play the audio
+            audio = pydub.AudioSegment.from_file(speech_file_path)
+            playback.play(audio)
+            
+            self.status_label.config(text="Status: TTS completed")
+            self.show_status_overlay("")
+            
+        except Exception as e:
+            logging.error(f"Error in TTS: {e}")
+            self.status_label.config(text=f"Status: TTS Error")
+            self.show_status_overlay(f"TTS Error: {str(e)[:30]}...")
+            self.root.after(3000, self.show_status_overlay, "")
 
 if __name__ == "__main__":
     app = AudioRecorder()
