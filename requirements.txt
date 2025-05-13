@@ -8,3 +8,4 @@ pyperclip>=1.8.2
 openai-whisper
 python-tk>=3.10.0
 python-dotenv>=1.0.0
+pygame>=2.1.2
