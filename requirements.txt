@@ -9,3 +9,4 @@ openai-whisper
 python-tk>=3.10.0
 python-dotenv>=1.0.0
 pygame>=2.1.2
+rich>=13.0.0

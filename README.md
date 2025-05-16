@@ -1,6 +1,6 @@
 # Audio Recorder
 
-A desktop application for recording and transcribing audio with multiple transcription options. It supports both local Whisper models and OpenAI API transcription (including GPT-4o variants). The app features a minimal Tkinter GUI, system tray integration, keyboard shortcuts, and a real-time status overlay.
+A desktop application for recording and transcribing audio with multiple transcription options. It supports both local Whisper models and OpenAI API transcription (including GPT-4o variants). The app features a beautiful CLI interface with colors and progress bars, system tray integration, keyboard shortcuts, and status indicators.
 
 ---
 
@@ -30,10 +30,12 @@ A desktop application for recording and transcribing audio with multiple transcr
   - Auto-paste transcriptions to active window
   - Program can be globally enabled/disabled
 
-- **UI Features**:
-  - Status indicators showing current operation and selected model
-  - Transcription display showing recent transcription result
-  - Minimizes to system tray when closed
+- **Beautiful CLI Features**:
+  - Colorful status panels and indicators showing current operation
+  - Progress bars with spinners for real-time operation status
+  - Rich text formatting and Unicode symbols for better readability
+  - Elegant tables for displaying settings and transcription results
+  - Animated processes with live updates
 
 - **Settings**:
   - Toggle between local and API transcription
@@ -51,7 +53,6 @@ A desktop application for recording and transcribing audio with multiple transcr
 
 - **Python 3.8+**
 - Required Python libraries (see requirements.txt):
-  - `tkinter`
   - `pyaudio`
   - `wave`
   - `whisper`
@@ -62,6 +63,8 @@ A desktop application for recording and transcribing audio with multiple transcr
   - `pystray`
   - `Pillow`
   - `python-dotenv` (optional for .env support)
+  - `rich` (for beautiful CLI interface)
+  - `pygame` (for audio playback)
 
 - For API transcription:
   - OpenAI API key (set as OPENAI_API_KEY environment variable or in .env file)
@@ -102,13 +105,14 @@ A desktop application for recording and transcribing audio with multiple transcr
 
 2. Basic Controls:
    - Press `*` to start/stop recording
-   - Press `-` to cancel current operation
+   - Press `-` to cancel current operation (universal stop button)
+   - Press `F9` or `Ctrl+Shift+T` for text-to-speech from clipboard
    - Use `CTRL+ALT+*` to enable/disable the program globally
 
-3. Settings:
-   - Access via the menu bar
-   - Toggle between local and API transcription
-   - Select your preferred transcription model
+3. Command-line Arguments:
+   - Specify transcription model: `python audio.py --model [local_whisper|api_whisper|api_gpt4o|api_gpt4o_mini]`
+   - Force API usage: `python audio.py --use-api`
+   - Example: `python audio.py --model api_gpt4o`
 
 4. System Tray:
    - Right-click the tray icon to show/hide the window or exit
@@ -122,3 +126,15 @@ A desktop application for recording and transcribing audio with multiple transcr
 - First run with local Whisper will download the model (approx. 150MB)
 - For best API results, use GPT-4o models when available
 - Keyboard hooks operate globally, allowing for use with any application
+- The Rich library powers the beautiful CLI interface
+- You can customize speaking style for TTS by editing the `style.txt` file
+
+## CLI Interface
+
+The application features a beautiful command-line interface powered by the Rich library:
+
+- **Colorful Status Panels**: Visual indicators of recording, transcription, and playback status
+- **Progress Bars**: Real-time feedback for long-running operations
+- **Formatted Output**: Clear, readable text with appropriate styling
+- **Tables and Panels**: Well-organized information display
+- **Unicode Symbols**: Visual indicators for statuses and actions
