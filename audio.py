@@ -4,18 +4,15 @@ import wave
 import threading
 import whisper
 import os
-import numpy as np
 import pyperclip
 import keyboard
-from openai import OpenAI  # (TTS removed: keep for STT only if needed)
+from openai import OpenAI
 import pystray
 from PIL import Image
 import time
 import logging
-import dotenv
-from pathlib import Path
-import pydub
 import pygame  
+import tkinter as tk
 from rich.console import Console
 from rich.panel import Panel
 from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TimeRemainingColumn
@@ -92,9 +89,17 @@ class StoppableAudio:
 class AudioRecorder:
     def __init__(self):
         parser = argparse.ArgumentParser(description="Audio Recorder CLI")
-        parser.add_argument('--model', choices=['local_whisper', 'api_whisper', 'api_gpt4o', 'api_gpt4o_mini'], default='local_whisper', help='Transcription model to use')
-        parser.add_argument('--use-api', action='store_true', help='Use OpenAI API for transcription')
+        parser.add_argument('--model', choices=['local', 'api', '4o', '4om'], default='local', 
+                         help='Transcription model: local=local_whisper, api=api_whisper, 4o=gpt-4o, 4om=gpt-4o-mini')
         args = parser.parse_args()
+
+        self.model_mapping = {
+            'local': 'local_whisper',
+            'api': 'api_whisper',
+            '4o': 'api_gpt4o',
+            '4om': 'api_gpt4o_mini'
+        }
+        self.model_choice = self.model_mapping[args.model]
 
         self.is_recording = False
         self.is_transcribing = False
@@ -107,13 +112,22 @@ class AudioRecorder:
 
         self.program_enabled = True
         
+        # Create status overlay window
+        self.overlay = tk.Tk()
+        self.overlay.title("")
+        self.overlay.geometry("200x30")
+        self.overlay.attributes('-topmost', True)
+        self.overlay.overrideredirect(True)  # Remove window decorations
+        self.overlay.withdraw()  # Hide initially
+        
+        # Create overlay label
+        self.overlay_label = tk.Label(self.overlay, text="", bg='black', fg='white', pady=5)
+        self.overlay_label.pack(fill=tk.BOTH, expand=True)
 
-        self.use_api = args.use_api or args.model.startswith('api_')
-        self.model_choice = args.model
+        self.use_api = self.model_choice.startswith('api_')
 
         self.api_key = os.getenv('OPENAI_API_KEY')
 
-        if not self.api_key:
         if not self.api_key:
             try:
                 from dotenv import load_dotenv
@@ -177,15 +191,17 @@ class AudioRecorder:
                 keyboard.is_pressed('alt')):
                 self.program_enabled = not self.program_enabled
                 if not self.program_enabled:
-                    print("STT Disabled")
-                    time.sleep(1.5)
+                    self.show_status_overlay("STT Disabled")
+                    # Schedule overlay to hide after 1.5 seconds
+                    self.overlay.after(1500, self.show_status_overlay, "")
                     keyboard.unhook_all()
                     keyboard.hook(self._handle_keyboard_event, suppress=True)
                 else:
                     keyboard.unhook_all()
                     keyboard.hook(self._handle_keyboard_event, suppress=True)
-                    print("STT Enabled")
-                    time.sleep(1.5)
+                    self.show_status_overlay("STT Enabled")
+                    # Schedule overlay to hide after 1.5 seconds
+                    self.overlay.after(1500, self.show_status_overlay, "")
                 return False
 
             if not self.program_enabled:
@@ -220,6 +236,9 @@ class AudioRecorder:
         self.is_recording = True
         self.status_label = "Recording..."
         
+        # Show recording status in overlay
+        self.show_status_overlay("Recording...")
+        
         console.print(Panel(
             Text("🎙️ Recording...", style="bold red blink"),
             border_style="red",
@@ -248,8 +267,14 @@ class AudioRecorder:
         self.is_recording = False
         self.status_label = "Processing..."
         
+        # Update status overlay
+        self.show_status_overlay("Processing...")
+        
         with console.status("[bold blue]Processing audio...", spinner="dots"):
             self.save_recording()
+        
+        # Update status overlay
+        self.show_status_overlay("Transcribing...")
         
         console.print(Panel(
             Text("🔍 Transcribing audio...", style="bold yellow"),
@@ -289,6 +314,9 @@ class AudioRecorder:
         if self.is_recording:
             self.is_recording = False
             self.status_label = "Recording Cancelled"
+            self.show_status_overlay("Recording Cancelled")
+            # Schedule overlay to hide after 1.5 seconds
+            self.overlay.after(1500, self.show_status_overlay, "")
             console.print(Panel(
                 Text("⏹️ Recording Cancelled", style="bold red"),
                 border_style="red",
@@ -297,6 +325,9 @@ class AudioRecorder:
             time.sleep(1.5)
         elif self.is_transcribing:
             self.status_label = "Canceling..."
+            self.show_status_overlay("Canceling...")
+            # Schedule overlay to hide after 1.5 seconds
+            self.overlay.after(1500, self.show_status_overlay, "")
             console.print(Panel(
                 Text("⏹️ Cancelling Process...", style="bold red"),
                 border_style="red",
@@ -324,67 +355,69 @@ class AudioRecorder:
                 
                 use_api = self.model_choice.startswith("api_")
 
-            if use_api:
-                logging.info("\n=== Using OpenAI API ===")
-                if not self.api_key:
-                    logging.error("Error: No API key found!")
-                    raise ValueError("OpenAI API key not found in environment variables (OPENAI_API_KEY)")
+                if use_api:
+                    if self.model_choice == "api_whisper":
+                        api_model = "whisper-1"
+                    elif self.model_choice == "api_gpt4o":
+                        api_model = "gpt-4o-transcribe"
+                    elif self.model_choice == "api_gpt4o_mini":
+                        api_model = "gpt-4o-mini-transcribe"
 
-                logging.info(f"Using model: {self.model_choice}")
+                    logging.info("\n=== Using OpenAI API ===")
+                    if not self.api_key:
+                        logging.error("Error: No API key found!")
+                        raise ValueError("OpenAI API key not found in environment variables (OPENAI_API_KEY)")
 
-                api_model = "gpt-4o-mini-transcribe"
+                    logging.info(f"Using model: {self.model_choice}")
 
-                if self.model_choice == "api_gpt4o":
-                    api_model = "gpt-4o-transcribe"
-                elif self.model_choice == "api_gpt4o_mini":
-                    api_model = "gpt-4o-mini-transcribe"
+                    logging.info(f"Selected API model: {api_model}")
+                    logging.info("Sending audio file to OpenAI API...")
+                    progress.update(transcribe_task, description="[magenta]Sending to OpenAI API...", advance=20)
 
-                logging.info(f"Selected API model: {api_model}")
-                logging.info("Sending audio file to OpenAI API...")
-                progress.update(transcribe_task, description="[magenta]Sending to OpenAI API...", advance=20)
+                    with open("recorded_audio.wav", "rb") as audio_file:
+                        response = self.client.audio.transcriptions.create(
+                            model=api_model,
+                            file=audio_file,
+                            response_format="text"
+                        )
+                    transcribed_text = response.strip()
+                    logging.info(f"API Response received. Length: {len(transcribed_text)} characters")
+                    progress.update(transcribe_task, description="[green]Processing API response...", advance=60)
+                else:
+                    logging.info("\n=== Using Local Whisper Model ===")
+                    logging.info("Processing audio with local model...")
+                    progress.update(transcribe_task, description="[magenta]Processing with local Whisper model...", advance=20)
+                    result = self.model.transcribe("recorded_audio.wav")
+                    transcribed_text = result['text'].strip()
+                    logging.info(f"Local transcription complete. Length: {len(transcribed_text)} characters")
+                    progress.update(transcribe_task, description="[green]Finalizing transcription...", advance=60)
 
-                with open("recorded_audio.wav", "rb") as audio_file:
-                    response = self.client.audio.transcriptions.create(
-                        model=api_model,
-                        file=audio_file,
-                        response_format="text"
-                    )
-                transcribed_text = response.strip()
-                logging.info(f"API Response received. Length: {len(transcribed_text)} characters")
-                progress.update(transcribe_task, description="[green]Processing API response...", advance=60)
-            else:
-                logging.info("\n=== Using Local Whisper Model ===")
-                logging.info("Processing audio with local model...")
-                progress.update(transcribe_task, description="[magenta]Processing with local Whisper model...", advance=20)
-                result = self.model.transcribe("recorded_audio.wav")
-                transcribed_text = result['text'].strip()
-                logging.info(f"Local transcription complete. Length: {len(transcribed_text)} characters")
-                progress.update(transcribe_task, description="[green]Finalizing transcription...", advance=60)
+                    if self.should_cancel:
+                        logging.info("Transcription cancelled by user")
+                        console.print("", Text("▶ Ready", style="bold green"), "\n")
+                        self.status_label = "Ready"
+                        return
 
-                if self.should_cancel:
-                    logging.info("Transcription cancelled by user")
-                    console.print("", Text("▶ Ready", style="bold green"), "\n")
-                    self.status_label = "Ready"
-                    return
+                logging.info(f"Final transcription: {transcribed_text}")
+                
+                if 'progress' in locals():
+                    progress.update(transcribe_task, description="[bold green]Transcription complete!", advance=10)
+                
+                console.print(Panel(
+                    Text(transcribed_text, style="white"),
+                    title="[bold green]Transcription Result[/bold green]",
+                    border_style="green",
+                    expand=True
+                ))
 
-            logging.info(f"Final transcription: {transcribed_text}")
-            
-            if 'progress' in locals():
-                progress.update(transcribe_task, description="[bold green]Transcription complete!", advance=10)
-            
-            console.print(Panel(
-                Text(transcribed_text, style="white"),
-                title="[bold green]Transcription Result[/bold green]",
-                border_style="green",
-                expand=True
-            ))
-
-            console.print("[yellow]Pasting transcription to active window...[/yellow]")
-            pyperclip.copy(transcribed_text)
-            keyboard.send('ctrl+v')
-            console.print("", Text("✅ Ready (Pasted to clipboard)", style="bold green"), "\n")
-            self.status_label = "Ready (Pasted)"
-            logging.info("Transcription process complete\n")
+                console.print("[yellow]Pasting transcription to active window...[/yellow]")
+                pyperclip.copy(transcribed_text)
+                keyboard.send('ctrl+v')
+                console.print("", Text("✅ Ready (Pasted to clipboard)", style="bold green"), "\n")
+                self.status_label = "Ready (Pasted)"
+                # Hide the overlay
+                self.show_status_overlay("")
+                logging.info("Transcription process complete\n")
 
         except Exception as e:
             logging.error(f"\nError during transcription: {str(e)}")
@@ -395,6 +428,8 @@ class AudioRecorder:
                 expand=False
             ))
             self.status_label = "Ready"
+            # Hide the overlay
+            self.show_status_overlay("")
         finally:
             self.is_transcribing = False
             self.should_cancel = False
@@ -402,8 +437,21 @@ class AudioRecorder:
             console.print("", Text("▶ Ready", style="bold green"), "\n")
 
     def show_status_overlay(self, message):
+        """Show status overlay with given message"""
         if message:
+            # Position overlay near mouse cursor
+            x = self.overlay.winfo_pointerx() + 10
+            y = self.overlay.winfo_pointery() + 10
+            self.overlay.geometry(f"+{x}+{y}")
+            
+            self.overlay_label.config(text=message)
+            self.overlay.deiconify()
+            self.overlay.update()
+            
+            # Also print to console for CLI mode
             console.print(Text(f"▶ {message}", style="bold blue"))
+        else:
+            self.overlay.withdraw()
 
     def setup_system_tray(self):
         icon_data = Image.new('RGB', (64, 64), color='red')
@@ -438,6 +486,11 @@ class AudioRecorder:
             except Exception as e:
                 logging.error(f"Error cleaning up pygame: {e}")
         self.audio.terminate()
+        # Destroy the overlay window
+        try:
+            self.overlay.destroy()
+        except Exception as e:
+            logging.error(f"Error destroying overlay: {e}")
         console.print(Panel(
             Text("Goodbye! Thank you for using Audio Recorder CLI", style="bold white"),
             border_style="blue", 
@@ -447,8 +500,19 @@ class AudioRecorder:
 
     def run(self):
         try:
-            while True:
-                time.sleep(1)
+            # Update the overlay position periodically when visible
+            def update_overlay_position():
+                if self.overlay.state() == 'normal':  # If overlay is visible
+                    x = self.overlay.winfo_pointerx() + 10
+                    y = self.overlay.winfo_pointery() + 10
+                    self.overlay.geometry(f"+{x}+{y}")
+                self.overlay.after(100, update_overlay_position)  # Schedule next update
+            
+            # Start the position update loop
+            update_overlay_position()
+            
+            # Start the tkinter main loop
+            self.overlay.mainloop()
         except KeyboardInterrupt:
             self.quit_app()
 
