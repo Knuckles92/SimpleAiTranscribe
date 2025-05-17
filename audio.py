@@ -21,9 +21,11 @@ from rich.style import Style
 from rich.live import Live
 from rich.table import Table
 
+# Ensure res directory exists
+os.makedirs('res', exist_ok=True)
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s',
                     handlers=[
-                        logging.FileHandler("audio_recorder.log")
+                        logging.FileHandler(os.path.join("res", "audio_recorder.log"))
                     ])
 
 console = Console()
@@ -32,7 +34,9 @@ class StoppableAudio:
     def __init__(self):
         self.playing = False
         self.initialized = False
-        self.temp_file = "temp_audio.wav"
+        # Ensure res directory exists
+        os.makedirs('res', exist_ok=True)
+        self.temp_file = os.path.join("res", "temp_audio.wav")
 
         self._init_pygame()
 
@@ -238,12 +242,6 @@ class AudioRecorder:
         
         # Show recording status in overlay
         self.show_status_overlay("Recording...")
-        
-        console.print(Panel(
-            Text("🎙️ Recording...", style="bold red blink"),
-            border_style="red",
-            expand=False
-        ))
 
         threading.Thread(target=self._record).start()
 
@@ -275,22 +273,23 @@ class AudioRecorder:
         
         # Update status overlay
         self.show_status_overlay("Transcribing...")
-        
-        console.print(Panel(
-            Text("🔍 Transcribing audio...", style="bold yellow"),
-            border_style="yellow",
-            expand=False
-        ))
 
         transcription_thread = threading.Thread(target=self.transcribe_audio, daemon=True)
         transcription_thread.start()
 
     def save_recording(self):
-        with wave.open("recorded_audio.wav", 'wb') as wf:
+        # Ensure res directory exists
+        os.makedirs('res', exist_ok=True)
+        
+        # Use the res directory for audio files
+        file_path = os.path.join('res', "recorded_audio.wav")
+        
+        with wave.open(file_path, 'wb') as wf:
             wf.setnchannels(self.channels)
             wf.setsampwidth(self.audio.get_sample_size(self.format))
             wf.setframerate(self.rate)
             wf.writeframes(b''.join(self.frames))
+        return file_path
 
     def cancel_transcription(self):
         self.should_cancel = True
@@ -374,7 +373,7 @@ class AudioRecorder:
                     logging.info("Sending audio file to OpenAI API...")
                     progress.update(transcribe_task, description="[magenta]Sending to OpenAI API...", advance=20)
 
-                    with open("recorded_audio.wav", "rb") as audio_file:
+                    with open(os.path.join("res", "recorded_audio.wav"), "rb") as audio_file:
                         response = self.client.audio.transcriptions.create(
                             model=api_model,
                             file=audio_file,
@@ -387,7 +386,7 @@ class AudioRecorder:
                     logging.info("\n=== Using Local Whisper Model ===")
                     logging.info("Processing audio with local model...")
                     progress.update(transcribe_task, description="[magenta]Processing with local Whisper model...", advance=20)
-                    result = self.model.transcribe("recorded_audio.wav")
+                    result = self.model.transcribe(os.path.join("res", "recorded_audio.wav"))
                     transcribed_text = result['text'].strip()
                     logging.info(f"Local transcription complete. Length: {len(transcribed_text)} characters")
                     progress.update(transcribe_task, description="[green]Finalizing transcription...", advance=60)
