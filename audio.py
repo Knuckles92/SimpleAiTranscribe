@@ -15,6 +15,7 @@ import time
 import logging
 import dotenv
 from pathlib import Path
+import json
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s',
@@ -42,6 +43,10 @@ class AudioRecorder:
         # Settings variables
         self.model_choice = tk.StringVar(value="local_whisper")  # Default to local whisper
         self.model_choice.trace_add("write", self.on_model_changed)  # Add trace for model changes
+        
+        # Hotkey configuration
+        self.settings_file = "audio_recorder_settings.json"
+        self.hotkeys = self.load_hotkey_settings()
 
         # Try system environment variables first
         self.api_key = os.getenv('OPENAI_API_KEY')
@@ -109,16 +114,14 @@ class AudioRecorder:
             # Log all keyboard events for debugging
             #logging.info(f"Keyboard event: {event.name}, event_type: {event.event_type}, scan_code: {event.scan_code}")
 
-            # Handle CTRL+ALT+* for enable/disable
-            if (event.name == '*' and
-                keyboard.is_pressed('ctrl') and
-                keyboard.is_pressed('alt')):
+            # Check enable/disable hotkey
+            if self._matches_hotkey(event, self.hotkeys['enable_disable']):
                 self.program_enabled = not self.program_enabled
                 if not self.program_enabled:
                     self.show_status_overlay("STT Disabled")
                     # Schedule overlay to hide after 1.5 seconds
                     self.root.after(1500, self.show_status_overlay, "")
-                    # Unhook all keys except CTRL+ALT+*
+                    # Unhook all keys except enable/disable
                     keyboard.unhook_all()
                     keyboard.hook(self._handle_keyboard_event, suppress=True)
                 else:
@@ -130,15 +133,13 @@ class AudioRecorder:
                     self.root.after(1500, self.show_status_overlay, "")
                 return False  # Suppress the key combination
 
-            # If program is disabled, only allow CTRL+ALT+*
+            # If program is disabled, only allow enable/disable hotkey
             if not self.program_enabled:
-                # Check if the exact CTRL+ALT+* combination is pressed
-                if not (event.name == '*' and
-                       keyboard.is_pressed('ctrl') and
-                       keyboard.is_pressed('alt')):
+                if not self._matches_hotkey(event, self.hotkeys['enable_disable']):
                     return True
 
-            elif event.name == '*' and not self.is_transcribing:
+            # Check record toggle hotkey
+            elif self._matches_hotkey(event, self.hotkeys['record_toggle']) and not self.is_transcribing:
                 if not hasattr(self, '_last_trigger_time'):
                     self._last_trigger_time = 0
 
@@ -147,15 +148,53 @@ class AudioRecorder:
                 if current_time - self._last_trigger_time > 0.3:  # 300ms debounce
                     self._last_trigger_time = current_time
                     self.toggle_recording()
-                return False  # Always suppress * key
+                return False  # Always suppress record toggle key
 
-            elif event.name == '-':
+            # Check cancel hotkey
+            elif self._matches_hotkey(event, self.hotkeys['cancel']):
                 # Always call cancel_transcription to stop any ongoing process
-                # This makes the "-" key a universal stop button
+                # This makes the cancel key a universal stop button
                 self.cancel_transcription()
-                return False  # Suppress - key when handling
+                return False  # Suppress cancel key when handling
 
         # Let all other keys pass through
+        return True
+
+    def _matches_hotkey(self, event, hotkey_string):
+        """Check if the current event matches a hotkey string"""
+        if not hotkey_string:
+            return False
+            
+        # Parse hotkey string (e.g., "ctrl+alt+*", "*", "shift+f1")
+        parts = hotkey_string.lower().split('+')
+        main_key = parts[-1]  # Last part is the main key
+        modifiers = parts[:-1]  # Everything else are modifiers
+        
+        # Check if main key matches
+        if event.name.lower() != main_key:
+            return False
+            
+        # Check modifiers
+        for modifier in modifiers:
+            if modifier == 'ctrl' and not keyboard.is_pressed('ctrl'):
+                return False
+            elif modifier == 'alt' and not keyboard.is_pressed('alt'):
+                return False
+            elif modifier == 'shift' and not keyboard.is_pressed('shift'):
+                return False
+            elif modifier == 'win' and not keyboard.is_pressed('win'):
+                return False
+                
+        # Check that no extra modifiers are pressed
+        if 'ctrl' not in modifiers and keyboard.is_pressed('ctrl'):
+            return False
+        if 'alt' not in modifiers and keyboard.is_pressed('alt'):
+            return False
+        if 'shift' not in modifiers and keyboard.is_pressed('shift'):
+            return False
+        if 'win' not in modifiers and keyboard.is_pressed('win'):
+            return False
+            
         return True
 
     def toggle_recording(self):
@@ -174,7 +213,10 @@ class AudioRecorder:
         menubar.add_cascade(label="File", menu=file_menu)
         file_menu.add_command(label="Exit", command=self.quit_app)
 
-        # Note: Settings menu removed - model selection now in main GUI
+        # Create Settings menu
+        settings_menu = tk.Menu(menubar, tearoff=0)
+        menubar.add_cascade(label="Settings", menu=settings_menu)
+        settings_menu.add_command(label="Configure Hotkeys", command=self.open_hotkey_settings)
 
         # Create and pack widgets
         self.status_label = tk.Label(self.root, text="Status: Ready", pady=10)
@@ -458,6 +500,133 @@ class AudioRecorder:
         """Called when model choice changes - now only for logging purposes"""
         choice = self.model_choice.get()
         logging.info(f"Model changed to: {choice}")
+
+    def open_hotkey_settings(self):
+        """Open hotkey configuration dialog"""
+        dialog = tk.Toplevel(self.root)
+        dialog.title("Configure Hotkeys")
+        dialog.geometry("400x300")
+        dialog.resizable(False, False)
+        dialog.transient(self.root)
+        dialog.grab_set()
+        
+        # Center the dialog
+        dialog.geometry("+%d+%d" % (self.root.winfo_rootx() + 50, self.root.winfo_rooty() + 50))
+        
+        # Main frame
+        main_frame = tk.Frame(dialog, padx=20, pady=20)
+        main_frame.pack(fill=tk.BOTH, expand=True)
+        
+        # Title
+        title_label = tk.Label(main_frame, text="Hotkey Configuration", font=('TkDefaultFont', 12, 'bold'))
+        title_label.pack(pady=(0, 20))
+        
+        # Hotkey entries
+        self.hotkey_vars = {}
+        
+        # Record Toggle
+        record_frame = tk.Frame(main_frame)
+        record_frame.pack(fill=tk.X, pady=5)
+        tk.Label(record_frame, text="Record Toggle:", width=15, anchor='w').pack(side=tk.LEFT)
+        self.hotkey_vars['record_toggle'] = tk.StringVar(value=self.hotkeys['record_toggle'])
+        record_entry = tk.Entry(record_frame, textvariable=self.hotkey_vars['record_toggle'], width=20)
+        record_entry.pack(side=tk.LEFT, padx=(10, 0))
+        
+        # Cancel
+        cancel_frame = tk.Frame(main_frame)
+        cancel_frame.pack(fill=tk.X, pady=5)
+        tk.Label(cancel_frame, text="Cancel:", width=15, anchor='w').pack(side=tk.LEFT)
+        self.hotkey_vars['cancel'] = tk.StringVar(value=self.hotkeys['cancel'])
+        cancel_entry = tk.Entry(cancel_frame, textvariable=self.hotkey_vars['cancel'], width=20)
+        cancel_entry.pack(side=tk.LEFT, padx=(10, 0))
+        
+        # Enable/Disable
+        enable_frame = tk.Frame(main_frame)
+        enable_frame.pack(fill=tk.X, pady=5)
+        tk.Label(enable_frame, text="Enable/Disable:", width=15, anchor='w').pack(side=tk.LEFT)
+        self.hotkey_vars['enable_disable'] = tk.StringVar(value=self.hotkeys['enable_disable'])
+        enable_entry = tk.Entry(enable_frame, textvariable=self.hotkey_vars['enable_disable'], width=20)
+        enable_entry.pack(side=tk.LEFT, padx=(10, 0))
+        
+        # Instructions
+        instructions = tk.Label(main_frame, text=
+            "Instructions:\n"
+            "• Single keys: a, b, *, -, etc.\n"
+            "• Combinations: ctrl+alt+*, shift+f1, etc.\n"
+            "• Special keys: space, enter, esc, f1-f12\n"
+            "• Current defaults: * (record), - (cancel), ctrl+alt+* (enable/disable)",
+            justify=tk.LEFT, wraplength=360, font=('TkDefaultFont', 9))
+        instructions.pack(pady=20, fill=tk.X)
+        
+        # Buttons
+        button_frame = tk.Frame(main_frame)
+        button_frame.pack(fill=tk.X, pady=(20, 0))
+        
+        tk.Button(button_frame, text="Cancel", command=dialog.destroy).pack(side=tk.RIGHT, padx=(5, 0))
+        tk.Button(button_frame, text="Apply", command=lambda: self.apply_hotkey_settings(dialog)).pack(side=tk.RIGHT)
+        tk.Button(button_frame, text="Reset to Defaults", command=self.reset_hotkeys_to_defaults).pack(side=tk.LEFT)
+        
+    def reset_hotkeys_to_defaults(self):
+        """Reset hotkeys to default values"""
+        defaults = {
+            'record_toggle': '*',
+            'cancel': '-',
+            'enable_disable': 'ctrl+alt+*'
+        }
+        for key, default_value in defaults.items():
+            if key in self.hotkey_vars:
+                self.hotkey_vars[key].set(default_value)
+    
+    def apply_hotkey_settings(self, dialog):
+        """Apply the new hotkey settings"""
+        try:
+            # Update hotkeys dictionary
+            for key, var in self.hotkey_vars.items():
+                new_value = var.get().strip()
+                if new_value:
+                    self.hotkeys[key] = new_value
+            
+            # Save settings to file
+            self.save_hotkey_settings()
+            
+            # Restart keyboard hook with new hotkeys
+            keyboard.unhook_all()
+            keyboard.hook(self._handle_keyboard_event, suppress=True)
+            
+            messagebox.showinfo("Success", "Hotkeys updated successfully!")
+            dialog.destroy()
+            
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to update hotkeys: {str(e)}")
+
+    def load_hotkey_settings(self):
+        """Load hotkey settings from file, return defaults if file doesn't exist"""
+        defaults = {
+            'record_toggle': '*',
+            'cancel': '-',
+            'enable_disable': 'ctrl+alt+*'
+        }
+        
+        try:
+            if os.path.exists(self.settings_file):
+                with open(self.settings_file, 'r') as f:
+                    settings = json.load(f)
+                    return settings.get('hotkeys', defaults)
+        except Exception as e:
+            logging.warning(f"Failed to load settings: {e}")
+        
+        return defaults
+    
+    def save_hotkey_settings(self):
+        """Save hotkey settings to file"""
+        try:
+            settings = {'hotkeys': self.hotkeys}
+            with open(self.settings_file, 'w') as f:
+                json.dump(settings, f, indent=2)
+            logging.info("Hotkey settings saved successfully")
+        except Exception as e:
+            logging.error(f"Failed to save settings: {e}")
+            raise
 
 if __name__ == "__main__":
     app = AudioRecorder()

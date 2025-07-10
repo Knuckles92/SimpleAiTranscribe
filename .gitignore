@@ -5,3 +5,5 @@ recorded_audio.wav
 temp_audio.wav
 o3try.py
 *.wav
+.claude/settings.local.json
+.claude/settings.local.json
