@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import messagebox
+from tkinter import messagebox, ttk
 import pyaudio
 import wave
 import threading
@@ -15,8 +15,6 @@ import time
 import logging
 import dotenv
 from pathlib import Path
-import pydub
-import pygame
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s',
@@ -24,84 +22,6 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
                         logging.FileHandler("audio_recorder.log"),
                         logging.StreamHandler()
                     ])
-
-# Load speaking style from file
-try:
-    with open('style.txt', 'r', encoding='utf-8') as file:
-        speaking_style = file.read()
-except FileNotFoundError:
-    speaking_style = "You are a helpful assistant that speaks clearly and naturally."
-    # Create the style file with default content
-    with open('style.txt', 'w', encoding='utf-8') as file:
-        file.write(speaking_style)
-
-# Custom audio playback class that can always be stopped using pygame
-class StoppableAudio:
-    def __init__(self):
-        self.playing = False
-        self.initialized = False
-        self.temp_file = "temp_audio.wav"
-
-        # Initialize pygame mixer
-        self._init_pygame()
-
-    def _init_pygame(self):
-        """Initialize pygame mixer with retry logic"""
-        if not self.initialized:
-            try:
-                pygame.mixer.init()
-                self.initialized = True
-                logging.info("Using pygame for audio playback")
-            except Exception as e:
-                logging.error(f"Failed to initialize pygame mixer: {e}")
-                # Try again with different parameters
-                try:
-                    pygame.mixer.init(frequency=44100, size=-16, channels=2, buffer=4096)
-                    self.initialized = True
-                    logging.info("Using pygame for audio playback (with fallback parameters)")
-                except Exception as e2:
-                    logging.error(f"Failed to initialize pygame mixer with fallback parameters: {e2}")
-
-    def play(self, audio_segment):
-        """Play audio with the ability to stop it"""
-        # Always try to initialize pygame if not already initialized
-        if not self.initialized:
-            self._init_pygame()
-
-        # If still not initialized after trying, log error and return
-        if not self.initialized:
-            logging.error("Cannot play audio: pygame mixer could not be initialized")
-            return False
-
-        try:
-            # Export audio to a temporary file that pygame can read
-            audio_segment.export(self.temp_file, format="wav")
-
-            # Stop any currently playing sound
-            pygame.mixer.music.stop()
-
-            # Load and play the audio
-            pygame.mixer.music.load(self.temp_file)
-            pygame.mixer.music.play()
-
-            self.playing = True
-            return True
-        except Exception as e:
-            logging.error(f"Error playing audio with pygame: {e}")
-            return False
-
-    def stop(self):
-        """Stop audio playback"""
-        self.playing = False
-
-        if self.initialized:
-            try:
-                pygame.mixer.music.stop()
-                return True
-            except Exception as e:
-                logging.error(f"Error stopping pygame playback: {e}")
-
-        return False  # Couldn't stop playback
 
 class AudioRecorder:
     def __init__(self):
@@ -112,22 +32,16 @@ class AudioRecorder:
         # Initialize recording variables
         self.is_recording = False
         self.is_transcribing = False
-        self.is_playing_audio = False
         self.should_cancel = False
         self.frames = []
         self.audio = pyaudio.PyAudio()
 
-        # Initialize audio player
-        self.audio_player = StoppableAudio()
-
         # Program enabled state
         self.program_enabled = True
-        self.tts_enabled = True  # TTS feature enabled state
 
         # Settings variables
-        self.use_api = tk.BooleanVar(value=False)
         self.model_choice = tk.StringVar(value="local_whisper")  # Default to local whisper
-        self.model_choice.trace_add("write", self.on_model_changed)  # Add trace to update use_api
+        self.model_choice.trace_add("write", self.on_model_changed)  # Add trace for model changes
 
         # Try system environment variables first
         self.api_key = os.getenv('OPENAI_API_KEY')
@@ -189,9 +103,6 @@ class AudioRecorder:
         # Setup keyboard suppression for specific keys
         keyboard.hook(self._handle_keyboard_event, suppress=True)
 
-        # Add a dedicated hotkey for F9 to ensure it's captured
-        keyboard.add_hotkey('f9', lambda: self._f9_pressed(), suppress=True)
-
     def _handle_keyboard_event(self, event):
         """Global keyboard event handler with suppression"""
         if event.event_type == keyboard.KEY_DOWN:
@@ -226,21 +137,6 @@ class AudioRecorder:
                        keyboard.is_pressed('ctrl') and
                        keyboard.is_pressed('alt')):
                     return True
-
-            # TTS feature shortcut (F9)
-            # F9 scan code is typically 67 on most keyboards
-            if (event.name == 'f9' or event.scan_code == 67) and self.tts_enabled:
-                logging.info(f"F9 key detected (name: {event.name}, scan_code: {event.scan_code}) - starting text-to-speech")
-                # Use the same method as the dedicated hotkey handler
-                self.root.after(10, self._run_tts_in_main_thread)
-                return False  # Suppress F9 key
-
-            # Add alternative key for TTS (Ctrl+Shift+T) since F9 might be problematic on some systems
-            elif event.name == 't' and keyboard.is_pressed('ctrl') and keyboard.is_pressed('shift') and self.tts_enabled:
-                logging.info("Ctrl+Shift+T detected - starting text-to-speech")
-                # Use the same method as the dedicated hotkey handler
-                self.root.after(10, self._run_tts_in_main_thread)
-                return False  # Suppress the key combination
 
             elif event.name == '*' and not self.is_transcribing:
                 if not hasattr(self, '_last_trigger_time'):
@@ -278,39 +174,38 @@ class AudioRecorder:
         menubar.add_cascade(label="File", menu=file_menu)
         file_menu.add_command(label="Exit", command=self.quit_app)
 
-        # Create Settings menu
-        settings_menu = tk.Menu(menubar, tearoff=0)
-        menubar.add_cascade(label="Settings", menu=settings_menu)
-        settings_menu.add_checkbutton(label="Use API", variable=self.use_api, command=self.on_api_checkbox_changed)
-
-        # Create model selection submenu
-        model_menu = tk.Menu(settings_menu, tearoff=0)
-        settings_menu.add_cascade(label="Transcription Model", menu=model_menu)
-
-        # Add model options
-        model_menu.add_radiobutton(label="Local Whisper", variable=self.model_choice, value="local_whisper")
-        model_menu.add_radiobutton(label="API: Whisper", variable=self.model_choice, value="api_whisper")
-        model_menu.add_radiobutton(label="API: GPT-4o Transcribe", variable=self.model_choice, value="api_gpt4o")
-        model_menu.add_radiobutton(label="API: GPT-4o Mini Transcribe", variable=self.model_choice, value="api_gpt4o_mini")
-
-        # Create Features menu
-        features_menu = tk.Menu(menubar, tearoff=0)
-        menubar.add_cascade(label="Features", menu=features_menu)
-        features_menu.add_command(label="Text to Speech (F9 or Ctrl+Shift+T)", command=self._run_tts_in_main_thread)
-
-        # Create a BooleanVar and set it to True initially
-        self.tts_enabled_var = tk.BooleanVar(value=True)
-        # Link the variable to the tts_enabled property
-        self.tts_enabled_var.trace_add("write", lambda *_: setattr(self, 'tts_enabled', self.tts_enabled_var.get()))
-        features_menu.add_checkbutton(label="Enable TTS", variable=self.tts_enabled_var)
+        # Note: Settings menu removed - model selection now in main GUI
 
         # Create and pack widgets
         self.status_label = tk.Label(self.root, text="Status: Ready", pady=10)
         self.status_label.pack()
 
-        # Add model status label
-        self.model_status_label = tk.Label(self.root, text="Model: Local Whisper", pady=5, font=('TkDefaultFont', 8))
-        self.model_status_label.pack()
+        # Add model selection dropdown
+        model_frame = tk.Frame(self.root)
+        model_frame.pack(pady=5)
+        
+        tk.Label(model_frame, text="Model:", font=('TkDefaultFont', 9)).pack(side=tk.LEFT, padx=(0, 5))
+        
+        self.model_combobox = ttk.Combobox(model_frame, textvariable=self.model_choice, width=25, state="readonly")
+        self.model_combobox['values'] = (
+            'Local Whisper',
+            'API: Whisper', 
+            'API: GPT-4o Transcribe',
+            'API: GPT-4o Mini Transcribe'
+        )
+        # Map display names to internal values
+        self.model_value_map = {
+            'Local Whisper': 'local_whisper',
+            'API: Whisper': 'api_whisper',
+            'API: GPT-4o Transcribe': 'api_gpt4o',
+            'API: GPT-4o Mini Transcribe': 'api_gpt4o_mini'
+        }
+        self.model_display_map = {v: k for k, v in self.model_value_map.items()}
+        
+        # Set initial display value
+        self.model_combobox.set(self.model_display_map[self.model_choice.get()])
+        self.model_combobox.bind('<<ComboboxSelected>>', self.on_model_combobox_changed)
+        self.model_combobox.pack(side=tk.LEFT)
 
         self.start_button = tk.Button(self.root, text="Start Recording",
                                     command=self.start_recording)
@@ -379,23 +274,8 @@ class AudioRecorder:
             wf.writeframes(b''.join(self.frames))
 
     def cancel_transcription(self):
-        """Universal stop button that cancels transcription and stops audio playback"""
+        """Universal stop button that cancels transcription"""
         self.should_cancel = True
-
-        # Stop audio playback regardless of current state
-        if self.is_playing_audio:
-            self.is_playing_audio = False
-            stopped = self.audio_player.stop()
-
-            if stopped:
-                logging.info("Audio playback stopped successfully")
-            else:
-                logging.error("Failed to stop audio playback")
-
-            self.status_label.config(text="Status: Audio Stopped")
-            self.show_status_overlay("Audio Stopped")
-            # Schedule overlay to hide after 1.5 seconds
-            self.root.after(1500, self.show_status_overlay, "")
 
         # Handle recording state
         if self.is_recording:
@@ -545,18 +425,8 @@ class AudioRecorder:
         # Clean up keyboard hooks before exiting
         try:
             keyboard.unhook_all()
-            # Remove specific hotkeys
-            keyboard.remove_hotkey('f9')
         except Exception as e:
             logging.error(f"Error cleaning up keyboard hooks: {e}")
-
-        # Clean up pygame if initialized
-        if self.audio_player.initialized:
-            try:
-                pygame.mixer.quit()
-                pygame.quit()
-            except Exception as e:
-                logging.error(f"Error cleaning up pygame: {e}")
 
         self.audio.terminate()
         self.root.quit()
@@ -572,169 +442,22 @@ class AudioRecorder:
             # Clean up keyboard hooks before exiting
             try:
                 keyboard.unhook_all()
-                # Remove specific hotkeys
-                keyboard.remove_hotkey('f9')
             except Exception as e:
                 logging.error(f"Error cleaning up keyboard hooks: {e}")
 
-            # Clean up pygame if initialized
-            if self.audio_player.initialized:
-                try:
-                    pygame.mixer.quit()
-                    pygame.quit()
-                except Exception as e:
-                    logging.error(f"Error cleaning up pygame: {e}")
-
             self.audio.terminate()
 
+    def on_model_combobox_changed(self, event=None):
+        """Handle combobox selection change"""
+        display_value = self.model_combobox.get()
+        internal_value = self.model_value_map.get(display_value)
+        if internal_value:
+            self.model_choice.set(internal_value)
+
     def on_model_changed(self, *_):
-        """Update the use_api variable when model choice changes"""
-        # If model starts with "api_", it's an API model
-        self.use_api.set(self.model_choice.get().startswith("api_"))
-
-        # Update model status label
-        model_text = "Model: "
+        """Called when model choice changes - now only for logging purposes"""
         choice = self.model_choice.get()
-
-        if choice == "local_whisper":
-            model_text += "Local Whisper"
-        elif choice == "api_whisper":
-            model_text += "API: Whisper"
-        elif choice == "api_gpt4o":
-            model_text += "API: GPT-4o Transcribe"
-        elif choice == "api_gpt4o_mini":
-            model_text += "API: GPT-4o Mini Transcribe"
-
-        self.model_status_label.config(text=model_text)
-
-    def on_api_checkbox_changed(self):
-        """Update model choice when the API checkbox is toggled"""
-        if self.use_api.get():
-            # If API is checked and current model is local, set to default API model
-            if self.model_choice.get() == "local_whisper":
-                self.model_choice.set("api_whisper")
-        else:
-            # If API is unchecked, set to local model
-            self.model_choice.set("local_whisper")
-
-    def _f9_pressed(self):
-        """Dedicated handler for F9 key press"""
-        logging.info("F9 hotkey triggered directly")
-        if self.tts_enabled:
-            # Use root.after to ensure this runs in the main thread
-            self.root.after(10, self._run_tts_in_main_thread)
-
-    def _run_tts_in_main_thread(self):
-        """Run TTS in the main thread first to ensure UI updates, then spawn thread for API call"""
-        logging.info("Running TTS from main thread")
-        # Update UI immediately
-        self.status_label.config(text="Status: Processing TTS...")
-        self.show_status_overlay("Processing TTS...")
-        self.root.update()  # Force UI update
-
-        # Now spawn thread for the actual TTS processing
-        threading.Thread(target=self.text_to_speech, daemon=True).start()
-
-    # TTS methods from clip.py
-    def text_to_speech(self):
-        """Convert clipboard text to speech and play it"""
-        try:
-            self.status_label.config(text="Status: Processing TTS...")
-            self.show_status_overlay("Processing TTS...")
-
-            # Get clipboard content
-            clipboard_text = pyperclip.paste()
-            logging.info(f"TTS clipboard content: '{clipboard_text[:50]}...' (length: {len(clipboard_text)})")
-
-            if not clipboard_text:
-                self.status_label.config(text="Status: Clipboard is empty")
-                self.show_status_overlay("Clipboard is empty")
-                self.root.after(1500, self.show_status_overlay, "")
-                return
-
-            # Check if API key is available
-            if not self.api_key:
-                logging.error("No API key available for TTS")
-                self.status_label.config(text="Status: No API key for TTS")
-                self.show_status_overlay("No API key for TTS")
-                self.root.after(1500, self.show_status_overlay, "")
-                return
-
-            # Initialize OpenAI client if needed
-            if not self.client:
-                logging.info("Initializing OpenAI client for TTS")
-                self.client = OpenAI(api_key=self.api_key)
-
-            # Create TTS
-            speech_file_path = Path(os.path.dirname(os.path.abspath(__file__))) / "speech.mp3"
-
-            self.show_status_overlay("Generating speech...")
-            logging.info(f"Generating TTS with model: gpt-4o-mini-tts, voice: ash")
-
-            try:
-                with self.client.audio.speech.with_streaming_response.create(
-                    model="gpt-4o-mini-tts",
-                    voice="ash",
-                    input=clipboard_text,
-                    instructions=speaking_style,
-                ) as response:
-                    response.stream_to_file(speech_file_path)
-
-                logging.info(f"TTS audio saved to {speech_file_path}")
-                self.show_status_overlay("Playing audio...")
-
-                # Set the flag that audio is playing
-                self.is_playing_audio = True
-                self.cancel_button.config(state=tk.NORMAL)  # Enable the cancel button
-
-                try:
-                    # Load the audio
-                    audio = pydub.AudioSegment.from_file(speech_file_path)
-
-                    # Play the audio with our stoppable player
-                    if not self.audio_player.play(audio):
-                        # If playback failed, show error
-                        logging.error("Failed to play audio with pygame")
-                        self.is_playing_audio = False
-                        self.cancel_button.config(state=tk.DISABLED)
-                        self.status_label.config(text="Status: Audio playback failed")
-                        self.show_status_overlay("Audio playback failed")
-                        self.root.after(1500, self.show_status_overlay, "")
-                        return
-
-                    # Start a thread to monitor when playback finishes naturally
-                    def check_playback_finished():
-                        # Check if music is playing using pygame
-                        while self.is_playing_audio and pygame.mixer.music.get_busy():
-                            time.sleep(0.1)
-
-                        # Only update UI if playback wasn't cancelled but finished naturally
-                        if self.is_playing_audio:  # If we didn't cancel it
-                            self.is_playing_audio = False
-                            self.root.after(0, lambda: self.cancel_button.config(state=tk.DISABLED))
-                            self.root.after(0, lambda: self.status_label.config(text="Status: TTS completed"))
-                            self.root.after(0, lambda: self.show_status_overlay(""))
-
-                    # Start monitoring thread
-                    threading.Thread(target=check_playback_finished, daemon=True).start()
-
-                except Exception as e:
-                    logging.error(f"Error setting up audio playback: {e}")
-                    self.is_playing_audio = False
-                    self.cancel_button.config(state=tk.DISABLED)
-                    self.status_label.config(text="Status: TTS Error")
-                    self.show_status_overlay("")
-            except Exception as api_error:
-                logging.error(f"OpenAI API error: {api_error}")
-                self.status_label.config(text=f"Status: OpenAI API Error")
-                self.show_status_overlay(f"API Error: {str(api_error)[:30]}...")
-                self.root.after(3000, self.show_status_overlay, "")
-
-        except Exception as e:
-            logging.error(f"Error in TTS: {e}")
-            self.status_label.config(text=f"Status: TTS Error")
-            self.show_status_overlay(f"TTS Error: {str(e)[:30]}...")
-            self.root.after(3000, self.show_status_overlay, "")
+        logging.info(f"Model changed to: {choice}")
 
 if __name__ == "__main__":
     app = AudioRecorder()
