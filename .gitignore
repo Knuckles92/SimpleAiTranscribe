@@ -3,3 +3,5 @@ recorded_audio.wav
 *.env
 *.spec
 temp_audio.wav
+o3try.py
+*.wav
