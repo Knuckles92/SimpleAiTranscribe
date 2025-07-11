@@ -26,9 +26,17 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 
 class AudioRecorder:
     def __init__(self):
+        """Initialize the AudioRecorder with GUI, audio settings, and hotkey configuration."""
+        # Create and show loading screen immediately
+        self.loading_screen = self.create_loading_screen()
+        self.loading_screen.update()
+        
         self.root = tk.Tk()
         self.root.title("Audio Recorder")
         self.root.geometry("300x200")
+        self.root.withdraw()  # Hide main window initially
+
+        self.update_loading_status("Initializing components...")
 
         # Initialize recording variables
         self.is_recording = False
@@ -67,6 +75,8 @@ class AudioRecorder:
         # Initialize OpenAI client
         self.client = OpenAI(api_key=self.api_key) if self.api_key else None
 
+        self.update_loading_status("Setting up interface...")
+
         # Create status overlay window
         self.overlay = tk.Toplevel(self.root)
         self.overlay.title("")
@@ -94,19 +104,65 @@ class AudioRecorder:
         # Create GUI elements
         self.setup_gui()
 
-        # Create transcription display
-        self.transcription_text = tk.Text(self.root, height=3, wrap=tk.WORD, relief=tk.FLAT,
-                                        font=('TkDefaultFont', 9), bg=self.root.cget('bg'))
-        self.transcription_text.pack(padx=10, pady=(0, 10), fill=tk.X)
-        self.transcription_text.config(state=tk.DISABLED)  # Make it read-only
 
         # Initialize local Whisper model
+        self.update_loading_status("Loading Whisper model...")
         logging.info("Loading Whisper model...")
         self.model = whisper.load_model("base")
         logging.info("Model loaded!")
+        
+        # Hide loading screen and show main window
+        self.loading_screen.destroy()
+        self.root.deiconify()
 
         # Setup keyboard suppression for specific keys
         keyboard.hook(self._handle_keyboard_event, suppress=True)
+
+    def create_loading_screen(self):
+        """Create and display a loading screen"""
+        loading_root = tk.Tk()
+        loading_root.title("Audio Recorder")
+        loading_root.geometry("300x150")
+        loading_root.resizable(False, False)
+        
+        # Center the loading screen
+        loading_root.eval('tk::PlaceWindow . center')
+        
+        # Create main frame
+        main_frame = tk.Frame(loading_root, bg='#f0f0f0')
+        main_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
+        
+        # App title
+        title_label = tk.Label(main_frame, text="Audio Recorder", 
+                              font=('TkDefaultFont', 16, 'bold'), 
+                              bg='#f0f0f0', fg='#333333')
+        title_label.pack(pady=(0, 20))
+        
+        # Loading status label
+        self.loading_status_label = tk.Label(main_frame, text="Initializing application...", 
+                                           font=('TkDefaultFont', 10), 
+                                           bg='#f0f0f0', fg='#666666')
+        self.loading_status_label.pack(pady=(0, 10))
+        
+        # Progress bar (indeterminate)
+        self.progress_bar = ttk.Progressbar(main_frame, mode='indeterminate', length=200)
+        self.progress_bar.pack(pady=(0, 10))
+        self.progress_bar.start(10)  # Start animation
+        
+        # Version or additional info
+        info_label = tk.Label(main_frame, text="Please wait while components load...", 
+                             font=('TkDefaultFont', 8), 
+                             bg='#f0f0f0', fg='#888888')
+        info_label.pack()
+        
+        loading_root.update()
+        return loading_root
+    
+    def update_loading_status(self, status_text):
+        """Update the loading screen status text"""
+        if hasattr(self, 'loading_status_label'):
+            self.loading_status_label.config(text=status_text)
+            self.loading_screen.update()
 
     def _handle_keyboard_event(self, event):
         """Global keyboard event handler with suppression"""
@@ -198,40 +254,46 @@ class AudioRecorder:
         return True
 
     def toggle_recording(self):
+        """Toggle between starting and stopping audio recording."""
         if not self.is_recording:
             self.start_recording()
         else:
             self.stop_recording()
 
     def setup_gui(self):
+        """Create and configure the main GUI interface with controls and menus."""
         # Create menu bar
         menubar = tk.Menu(self.root)
         self.root.config(menu=menubar)
-
+    
         # Create File menu
         file_menu = tk.Menu(menubar, tearoff=0)
         menubar.add_cascade(label="File", menu=file_menu)
         file_menu.add_command(label="Exit", command=self.quit_app)
-
+    
         # Create Settings menu
         settings_menu = tk.Menu(menubar, tearoff=0)
         menubar.add_cascade(label="Settings", menu=settings_menu)
         settings_menu.add_command(label="Configure Hotkeys", command=self.open_hotkey_settings)
-
-        # Create and pack widgets
-        self.status_label = tk.Label(self.root, text="Status: Ready", pady=10)
-        self.status_label.pack()
-
-        # Add model selection dropdown
-        model_frame = tk.Frame(self.root)
-        model_frame.pack(pady=5)
-        
-        tk.Label(model_frame, text="Model:", font=('TkDefaultFont', 9)).pack(side=tk.LEFT, padx=(0, 5))
-        
+    
+        # Main frame with padding
+        main_frame = ttk.Frame(self.root, padding=10)
+        main_frame.pack(fill=tk.BOTH, expand=True)
+    
+        # Status label
+        self.status_label = ttk.Label(main_frame, text="Status: Ready")
+        self.status_label.pack(pady=10)
+    
+        # Model selection
+        model_frame = ttk.Frame(main_frame)
+        model_frame.pack(pady=5, fill=tk.X)
+    
+        ttk.Label(model_frame, text="Model:").pack(side=tk.LEFT, padx=(0, 5))
+    
         self.model_combobox = ttk.Combobox(model_frame, textvariable=self.model_choice, width=25, state="readonly")
         self.model_combobox['values'] = (
             'Local Whisper',
-            'API: Whisper', 
+            'API: Whisper',
             'API: GPT-4o Transcribe',
             'API: GPT-4o Mini Transcribe'
         )
@@ -243,25 +305,33 @@ class AudioRecorder:
             'API: GPT-4o Mini Transcribe': 'api_gpt4o_mini'
         }
         self.model_display_map = {v: k for k, v in self.model_value_map.items()}
-        
+    
         # Set initial display value
         self.model_combobox.set(self.model_display_map[self.model_choice.get()])
         self.model_combobox.bind('<<ComboboxSelected>>', self.on_model_combobox_changed)
         self.model_combobox.pack(side=tk.LEFT)
-
-        self.start_button = tk.Button(self.root, text="Start Recording",
-                                    command=self.start_recording)
-        self.start_button.pack(pady=5)
-
-        self.stop_button = tk.Button(self.root, text="Stop Recording",
-                                   command=self.stop_recording, state=tk.DISABLED)
-        self.stop_button.pack(pady=5)
-
-        self.cancel_button = tk.Button(self.root, text="Stop",
-                                     command=self.cancel_transcription, state=tk.DISABLED)
-        self.cancel_button.pack(pady=5)
+    
+        # Buttons frame
+        buttons_frame = ttk.Frame(main_frame)
+        buttons_frame.pack(pady=10, fill=tk.X)
+    
+        self.start_button = ttk.Button(buttons_frame, text="Start Recording", command=self.start_recording)
+        self.start_button.pack(side=tk.LEFT, expand=True, fill=tk.X, padx=5)
+    
+        self.stop_button = ttk.Button(buttons_frame, text="Stop Recording", command=self.stop_recording, state=tk.DISABLED)
+        self.stop_button.pack(side=tk.LEFT, expand=True, fill=tk.X, padx=5)
+    
+        self.cancel_button = ttk.Button(main_frame, text="Stop", command=self.cancel_transcription, state=tk.DISABLED)
+        self.cancel_button.pack(pady=5, fill=tk.X)
+    
+        # Transcription display
+        self.transcription_text = tk.Text(main_frame, height=3, wrap=tk.WORD, relief=tk.FLAT,
+                                          font=('TkDefaultFont', 9), bg=self.root.cget('bg'))
+        self.transcription_text.pack(padx=0, pady=(10, 0), fill=tk.X)
+        self.transcription_text.config(state=tk.DISABLED)
 
     def start_recording(self):
+        """Begin audio recording and update GUI state."""
         self.frames = []  # Initialize empty list to store audio frames
         self.is_recording = True
         self.start_button.config(state=tk.DISABLED)  # Disable the start button while recording
@@ -276,6 +346,7 @@ class AudioRecorder:
         threading.Thread(target=self._record).start()
 
     def _record(self):
+        """Record audio data in a separate thread until recording is stopped."""
         stream = self.audio.open(format=self.format, channels=self.channels,
                                rate=self.rate, input=True,
                                frames_per_buffer=self.chunk)
@@ -292,6 +363,7 @@ class AudioRecorder:
         stream.close()
 
     def stop_recording(self):
+        """Stop audio recording and begin transcription process."""
         self.is_recording = False
         self.start_button.config(state=tk.DISABLED)
         self.stop_button.config(state=tk.DISABLED)
@@ -308,6 +380,7 @@ class AudioRecorder:
         transcription_thread.start()
 
     def save_recording(self):
+        """Save the recorded audio frames to a WAV file."""
         # Save recorded audio to WAV file
         with wave.open("recorded_audio.wav", 'wb') as wf:
             wf.setnchannels(self.channels)
@@ -342,6 +415,7 @@ class AudioRecorder:
         keyboard.send('ctrl+v')  # Paste new text
 
     def transcribe_audio(self):
+        """Transcribe recorded audio using either local Whisper or OpenAI API."""
         try:
             self.is_transcribing = True
             self.should_cancel = False
@@ -474,6 +548,7 @@ class AudioRecorder:
         self.root.quit()
 
     def run(self):
+        """Start the main application loop and handle cleanup on exit."""
         # Make window stay on top
         self.root.attributes('-topmost', True)
         # Remove the self.root.withdraw() line to show window on startup
