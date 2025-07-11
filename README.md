@@ -1,6 +1,41 @@
 # Audio Recorder with Speech-to-Text
 
-A desktop application for recording audio and transcribing it to text using either local Whisper models or OpenAI API. Features a minimal Tkinter GUI, system tray integration, global keyboard shortcuts, and real-time status overlay with automatic text pasting.
+A modular desktop application for recording audio and transcribing it to text using either local Whisper models or OpenAI API. Features a clean Tkinter GUI, system tray integration, global keyboard shortcuts, and real-time status overlay with automatic text pasting.
+
+## Architecture
+
+The application has been refactored into a modular architecture for better maintainability and extensibility:
+
+### Core Modules
+- **`app.py`**: Main application bootstrap and initialization
+- **`config.py`**: Centralized configuration and constants
+- **`settings.py`**: Settings persistence and management
+- **`recorder.py`**: Audio recording functionality
+- **`hotkey_manager.py`**: Global keyboard hook management
+
+### Transcription Backends
+- **`transcriber/`**: Pluggable transcription backend system
+  - `base.py`: Abstract base class for all backends
+  - `local_backend.py`: Local Whisper model implementation
+  - `openai_backend.py`: OpenAI API implementation
+
+### User Interface
+- **`ui/`**: Modular UI components
+  - `loading_screen.py`: Application startup screen
+  - `main_window.py`: Primary application window
+  - `hotkey_dialog.py`: Hotkey configuration dialog
+  - `tray.py`: System tray integration
+
+### Testing
+- **`tests/`**: Unit tests for core functionality
+  - `test_settings.py`: Settings management tests
+  - `test_recorder.py`: Audio recording tests
+
+### Extensibility Points
+- **Add New Transcription Backends**: Implement `TranscriptionBackend` interface
+- **Custom UI Components**: Extend the `ui/` package
+- **Configuration Options**: Add settings to `config.py`
+- **New Hotkey Actions**: Extend `HotkeyManager` callbacks
 
 ## Features
 
@@ -88,10 +123,13 @@ python-dotenv (optional, for .env file support)
 
 ### Starting the Application
 ```bash
-python audio.py
+python app.py
 ```
 
-The application window will appear and stay on top. You can minimize it to system tray by closing the window.
+The application will show a loading screen while initializing components, then display the main window. You can minimize it to system tray by closing the window.
+
+### Legacy Support
+The original `audio.py` file is still available but deprecated. Use `app.py` for the new modular architecture.
 
 ### Basic Workflow
 1. **Select Model**: Choose your preferred transcription method from the dropdown
@@ -160,6 +198,9 @@ The application uses these fixed audio settings:
 - **Audio Processing**: PyAudio for capture, Wave for file handling
 - **Speech Recognition**: OpenAI Whisper (local) or OpenAI API (cloud)
 - **System Integration**: Keyboard hooks, clipboard operations, system tray
+- **Concurrency**: ThreadPoolExecutor for background tasks
+- **Configuration**: Centralized config management with dataclasses
+- **Testing**: Unit tests with mocking for hardware dependencies
 
 ### Security & Privacy
 - **Local Mode**: Audio never leaves your computer
