@@ -8,4 +8,3 @@ o3try.py
 .claude/settings.local.json
 .claude/settings.local.json
 **/__pycache__/
-__pycache__/config.cpython-312.pyc
