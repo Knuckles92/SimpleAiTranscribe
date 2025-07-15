@@ -7,15 +7,5 @@ o3try.py
 *.wav
 .claude/settings.local.json
 .claude/settings.local.json
+**/__pycache__/
 __pycache__/config.cpython-312.pyc
-__pycache__/hotkey_manager.cpython-312.pyc
-__pycache__/recorder.cpython-312.pyc
-__pycache__/settings.cpython-312.pyc
-ui/__pycache__/__init__.cpython-312.pyc
-ui/__pycache__/loading_screen.cpython-312.pyc
-ui/__pycache__/main_window.cpython-312.pyc
-ui/__pycache__/tray.cpython-312.pyc
-transcriber/__pycache__/__init__.cpython-312.pyc
-transcriber/__pycache__/base.cpython-312.pyc
-transcriber/__pycache__/local_backend.cpython-312.pyc
-transcriber/__pycache__/openai_backend.cpython-312.pyc
