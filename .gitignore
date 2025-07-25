@@ -19,3 +19,5 @@ transcriber/__pycache__/__init__.cpython-312.pyc
 transcriber/__pycache__/base.cpython-312.pyc
 transcriber/__pycache__/local_backend.cpython-312.pyc
 transcriber/__pycache__/openai_backend.cpython-312.pyc
+*__pycache__*
+venv/*

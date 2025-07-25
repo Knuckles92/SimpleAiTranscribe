@@ -26,6 +26,7 @@ class HotkeyManager:
         self.on_cancel: Optional[Callable] = None
         self.on_enable_toggle: Optional[Callable] = None
         self.on_status_update: Optional[Callable] = None
+        self.on_status_update_auto_hide: Optional[Callable] = None
         
         # Setup keyboard hook
         self._setup_keyboard_hook()
@@ -66,7 +67,13 @@ class HotkeyManager:
     def _toggle_program_enabled(self):
         """Toggle the program enabled state."""
         self.program_enabled = not self.program_enabled
-        if self.on_status_update:
+        if self.on_status_update_auto_hide:
+            if not self.program_enabled:
+                self.on_status_update_auto_hide("STT Disabled")
+            else:
+                self.on_status_update_auto_hide("STT Enabled")
+        elif self.on_status_update:
+            # Fallback to regular status update if auto-hide not available
             if not self.program_enabled:
                 self.on_status_update("STT Disabled")
             else:
@@ -148,7 +155,8 @@ class HotkeyManager:
                      on_record_toggle: Callable = None,
                      on_cancel: Callable = None,
                      on_enable_toggle: Callable = None,
-                     on_status_update: Callable = None):
+                     on_status_update: Callable = None,
+                     on_status_update_auto_hide: Callable = None):
         """Set callback functions for hotkey events.
         
         Args:
@@ -156,8 +164,10 @@ class HotkeyManager:
             on_cancel: Called when cancel hotkey is pressed.
             on_enable_toggle: Called when enable/disable hotkey is pressed.
             on_status_update: Called to update status display.
+            on_status_update_auto_hide: Called to update status with auto-hide.
         """
         self.on_record_toggle = on_record_toggle
         self.on_cancel = on_cancel
         self.on_enable_toggle = on_enable_toggle
-        self.on_status_update = on_status_update 
+        self.on_status_update = on_status_update
+        self.on_status_update_auto_hide = on_status_update_auto_hide 

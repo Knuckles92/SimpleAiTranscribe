@@ -43,10 +43,27 @@ class UIStatusController:
         # Update overlay if requested
         if show_overlay:
             self.main_window.show_status_overlay(status)
+        else:
+            # Hide overlay when show_overlay is False
+            self.main_window.show_status_overlay("")
     
     def clear_status(self):
         """Clear the status overlay."""
         self.main_window.show_status_overlay("")
+    
+    def update_status_with_auto_hide(self, status: str):
+        """Update status with overlay that automatically hides after delay.
+        
+        Args:
+            status: Status message to display.
+        """
+        # Update main window status
+        if self.main_window.status_label:
+            self.main_window.status_label.config(text=f"Status: {status}")
+        
+        # Show overlay and schedule auto-hide
+        self.main_window.show_status_overlay(status)
+        self.main_window.root.after(config.OVERLAY_HIDE_DELAY_MS, self.clear_status)
 
 
 class MainWindow:
@@ -184,7 +201,8 @@ class MainWindow:
         self.hotkey_manager.set_callbacks(
             on_record_toggle=self.toggle_recording,
             on_cancel=self.cancel_transcription,
-            on_status_update=self.status_controller.update_status
+            on_status_update=self.status_controller.update_status,
+            on_status_update_auto_hide=self.status_controller.update_status_with_auto_hide
         )
     
     def _setup_tray(self):
@@ -292,7 +310,7 @@ class MainWindow:
     def _on_transcription_error(self, error_message: str):
         """Handle transcription error on main thread."""
         messagebox.showerror("Error", f"Transcription failed: {error_message}")
-        self.status_controller.update_status("Ready")
+        self.status_controller.update_status("Ready", show_overlay=False)
         self.cancel_button.config(state=tk.DISABLED)
         self.start_button.config(state=tk.NORMAL)
     
@@ -339,6 +357,9 @@ class MainWindow:
     def cleanup(self):
         """Clean up resources."""
         try:
+            # Clear any remaining overlay
+            self.status_controller.clear_status()
+            
             if self.hotkey_manager:
                 self.hotkey_manager.cleanup()
             
