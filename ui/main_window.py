@@ -205,7 +205,8 @@ class MainWindow:
         self.hotkey_manager.set_callbacks(
             on_record_toggle=self.toggle_recording,
             on_cancel=self.cancel_transcription,
-            on_status_update=self.status_controller.update_status_with_auto_clear
+            on_status_update=self.status_controller.update_status_with_auto_clear,
+            is_transcribing_fn=lambda: self.current_backend and self.current_backend.is_transcribing
         )
     
     def _setup_tray(self):
@@ -331,8 +332,11 @@ class MainWindow:
     
     def _paste_text(self, text: str):
         """Paste text at current cursor position."""
+        # Copy to clipboard
         pyperclip.copy(text)
-        keyboard.send('ctrl+v')
+        
+        # Small delay to ensure hotkey is fully processed and keyboard events are cleared
+        self.root.after(100, lambda: keyboard.send('ctrl+v'))
     
     def on_model_changed(self, event=None):
         """Handle model selection change."""
