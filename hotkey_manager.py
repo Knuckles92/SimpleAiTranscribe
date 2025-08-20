@@ -26,7 +26,11 @@ class HotkeyManager:
         self.on_cancel: Optional[Callable] = None
         self.on_enable_toggle: Optional[Callable] = None
         self.on_status_update: Optional[Callable] = None
+<<<<<<< HEAD
         self.on_status_update_auto_hide: Optional[Callable] = None
+=======
+        self.is_transcribing_fn: Optional[Callable[[], bool]] = None
+>>>>>>> fdb25244e84f9f4e1aaa140158068193bdcd757e
         
         # Setup keyboard hook
         self._setup_keyboard_hook()
@@ -38,25 +42,32 @@ class HotkeyManager:
     def _handle_keyboard_event(self, event):
         """Global keyboard event handler with suppression."""
         if event.event_type == keyboard.KEY_DOWN:
-            # Check enable/disable hotkey
+            # Check enable/disable hotkey first
             if self._matches_hotkey(event, self.hotkeys['enable_disable']):
                 self._toggle_program_enabled()
                 return False  # Suppress the key combination
 
-            # If program is disabled, only allow enable/disable hotkey
+            # If program is disabled, only process enable/disable hotkey
             if not self.program_enabled:
-                if not self._matches_hotkey(event, self.hotkeys['enable_disable']):
-                    return True
+                # Suppress all other hotkeys when disabled
+                if self._matches_hotkey(event, self.hotkeys['record_toggle']) or \
+                   self._matches_hotkey(event, self.hotkeys['cancel']):
+                    return False  # Suppress but don't process
+                return True  # Let non-hotkey keys pass through
 
             # Check record toggle hotkey
-            elif self._matches_hotkey(event, self.hotkeys['record_toggle']):
+            if self._matches_hotkey(event, self.hotkeys['record_toggle']):
+                # Don't process if currently transcribing
+                if self.is_transcribing_fn and self.is_transcribing_fn():
+                    return False  # Suppress but don't process
+                    
                 if self._should_trigger_record_toggle():
                     if self.on_record_toggle:
                         self.on_record_toggle()
                 return False  # Always suppress record toggle key
 
             # Check cancel hotkey
-            elif self._matches_hotkey(event, self.hotkeys['cancel']):
+            if self._matches_hotkey(event, self.hotkeys['cancel']):
                 if self.on_cancel:
                     self.on_cancel()
                 return False  # Suppress cancel key when handling
@@ -67,6 +78,7 @@ class HotkeyManager:
     def _toggle_program_enabled(self):
         """Toggle the program enabled state."""
         self.program_enabled = not self.program_enabled
+<<<<<<< HEAD
         if self.on_status_update_auto_hide:
             if not self.program_enabled:
                 self.on_status_update_auto_hide("STT Disabled")
@@ -74,6 +86,13 @@ class HotkeyManager:
                 self.on_status_update_auto_hide("STT Enabled")
         elif self.on_status_update:
             # Fallback to regular status update if auto-hide not available
+=======
+        
+        # Reset debounce timing when toggling to avoid stale state
+        self._last_trigger_time = 0
+        
+        if self.on_status_update:
+>>>>>>> fdb25244e84f9f4e1aaa140158068193bdcd757e
             if not self.program_enabled:
                 self.on_status_update("STT Disabled")
             else:
@@ -156,7 +175,11 @@ class HotkeyManager:
                      on_cancel: Callable = None,
                      on_enable_toggle: Callable = None,
                      on_status_update: Callable = None,
+<<<<<<< HEAD
                      on_status_update_auto_hide: Callable = None):
+=======
+                     is_transcribing_fn: Callable[[], bool] = None):
+>>>>>>> fdb25244e84f9f4e1aaa140158068193bdcd757e
         """Set callback functions for hotkey events.
         
         Args:
@@ -164,10 +187,18 @@ class HotkeyManager:
             on_cancel: Called when cancel hotkey is pressed.
             on_enable_toggle: Called when enable/disable hotkey is pressed.
             on_status_update: Called to update status display.
+<<<<<<< HEAD
             on_status_update_auto_hide: Called to update status with auto-hide.
+=======
+            is_transcribing_fn: Function to check if transcription is in progress.
+>>>>>>> fdb25244e84f9f4e1aaa140158068193bdcd757e
         """
         self.on_record_toggle = on_record_toggle
         self.on_cancel = on_cancel
         self.on_enable_toggle = on_enable_toggle
         self.on_status_update = on_status_update
+<<<<<<< HEAD
         self.on_status_update_auto_hide = on_status_update_auto_hide 
+=======
+        self.is_transcribing_fn = is_transcribing_fn 
+>>>>>>> fdb25244e84f9f4e1aaa140158068193bdcd757e

@@ -51,19 +51,21 @@ class UIStatusController:
         """Clear the status overlay."""
         self.main_window.show_status_overlay("")
     
-    def update_status_with_auto_hide(self, status: str):
-        """Update status with overlay that automatically hides after delay.
+    def update_status_with_auto_clear(self, status: str, delay_ms: int = None):
+        """Update status with automatic clearing after a delay.
         
         Args:
             status: Status message to display.
+            delay_ms: Delay in milliseconds before clearing. Uses config default if None.
         """
-        # Update main window status
-        if self.main_window.status_label:
-            self.main_window.status_label.config(text=f"Status: {status}")
+        from config import config
+        delay = delay_ms or config.OVERLAY_HIDE_DELAY_MS
         
-        # Show overlay and schedule auto-hide
-        self.main_window.show_status_overlay(status)
-        self.main_window.root.after(config.OVERLAY_HIDE_DELAY_MS, self.clear_status)
+        # Update status and show overlay
+        self.update_status(status, show_overlay=True)
+        
+        # Schedule clearing after delay
+        self.main_window.root.after(delay, self.clear_status)
 
 
 class MainWindow:
@@ -147,6 +149,11 @@ class MainWindow:
         menubar.add_cascade(label="Settings", menu=settings_menu)
         settings_menu.add_command(label="Configure Hotkeys", command=self.open_hotkey_settings)
         
+        # Create Tools menu
+        tools_menu = tk.Menu(menubar, tearoff=0)
+        menubar.add_cascade(label="Tools", menu=tools_menu)
+        tools_menu.add_command(label="Configure FFmpeg...", command=self.configure_ffmpeg)
+        
         # Main frame with padding
         main_frame = ttk.Frame(self.root, padding=10)
         main_frame.pack(fill=tk.BOTH, expand=True)
@@ -201,8 +208,8 @@ class MainWindow:
         self.hotkey_manager.set_callbacks(
             on_record_toggle=self.toggle_recording,
             on_cancel=self.cancel_transcription,
-            on_status_update=self.status_controller.update_status,
-            on_status_update_auto_hide=self.status_controller.update_status_with_auto_hide
+            on_status_update=self.status_controller.update_status_with_auto_clear,
+            is_transcribing_fn=lambda: self.current_backend and self.current_backend.is_transcribing
         )
     
     def _setup_tray(self):
@@ -260,17 +267,25 @@ class MainWindow:
     
     def cancel_transcription(self):
         """Cancel recording or transcription."""
+        overlay_cleared = False
+        
         if self.recorder.is_recording:
             self.recorder.stop_recording()
             self.start_button.config(state=tk.NORMAL)
             self.stop_button.config(state=tk.DISABLED)
             self.status_controller.update_status("Cancelled")
             self.root.after(config.OVERLAY_HIDE_DELAY_MS, self.status_controller.clear_status)
+            overlay_cleared = True
         
         if self.current_backend and self.current_backend.is_transcribing:
             self.current_backend.cancel_transcription()
             self.status_controller.update_status("Canceling...")
             self.root.after(config.OVERLAY_HIDE_DELAY_MS, self.status_controller.clear_status)
+            overlay_cleared = True
+        
+        # If neither recording nor transcribing, ensure overlay is still cleared
+        if not overlay_cleared:
+            self.status_controller.clear_status()
         
         self.cancel_button.config(state=tk.DISABLED)
     
@@ -300,7 +315,8 @@ class MainWindow:
         # Auto-paste the transcription
         self._paste_text(transcribed_text)
         
-        # Update status
+        # Clear the overlay and update status
+        self.status_controller.clear_status()
         self.status_controller.update_status("Ready (Pasted)", show_overlay=False)
         self.cancel_button.config(state=tk.DISABLED)
         self.start_button.config(state=tk.NORMAL)
@@ -309,6 +325,9 @@ class MainWindow:
     
     def _on_transcription_error(self, error_message: str):
         """Handle transcription error on main thread."""
+        # Clear the overlay first
+        self.status_controller.clear_status()
+        
         messagebox.showerror("Error", f"Transcription failed: {error_message}")
         self.status_controller.update_status("Ready", show_overlay=False)
         self.cancel_button.config(state=tk.DISABLED)
@@ -316,8 +335,11 @@ class MainWindow:
     
     def _paste_text(self, text: str):
         """Paste text at current cursor position."""
+        # Copy to clipboard
         pyperclip.copy(text)
-        keyboard.send('ctrl+v')
+        
+        # Small delay to ensure hotkey is fully processed and keyboard events are cleared
+        self.root.after(100, lambda: keyboard.send('ctrl+v'))
     
     def on_model_changed(self, event=None):
         """Handle model selection change."""
@@ -347,6 +369,21 @@ class MainWindow:
         from .hotkey_dialog import HotkeyDialog
         dialog = HotkeyDialog(self.root, self.hotkey_manager)
         dialog.show()
+    
+    def configure_ffmpeg(self):
+        """Show FFmpeg configuration dialog."""
+        from .ffmpeg_dialog import FFmpegConfigDialog
+        from tkinter import messagebox
+        
+        dialog = FFmpegConfigDialog(self.root)
+        if dialog.show_config_dialog():
+            # Reset the local whisper backend to use new ffmpeg config
+            if 'local_whisper' in self.transcription_backends:
+                backend = self.transcription_backends['local_whisper']
+                if hasattr(backend, 'reset_ffmpeg_config'):
+                    backend.reset_ffmpeg_config()
+                    messagebox.showinfo("FFmpeg Configured", 
+                                      "FFmpeg has been reconfigured. Local Whisper should now work.")
     
     def quit_app(self):
         """Quit the application."""
