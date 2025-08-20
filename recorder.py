@@ -39,14 +39,26 @@ class AudioRecorder:
             return False
         
         try:
+            # Clear any old recording data
             self.frames = []
+            logging.info(f"Cleared recording frames. Old frame count: {len(self.frames)}")
+            
+            # Delete old audio file if it exists
+            import os
+            if os.path.exists(config.RECORDED_AUDIO_FILE):
+                try:
+                    os.remove(config.RECORDED_AUDIO_FILE)
+                    logging.info(f"Deleted old audio file: {config.RECORDED_AUDIO_FILE}")
+                except Exception as e:
+                    logging.warning(f"Could not delete old audio file: {e}")
+            
             self.is_recording = True
             
             # Start recording in a separate thread
             self.recording_thread = threading.Thread(target=self._record_audio, daemon=True)
             self.recording_thread.start()
             
-            logging.info("Recording started")
+            logging.info("Recording started - frames cleared, old file removed")
             return True
             
         except Exception as e:
@@ -122,16 +134,37 @@ class AudioRecorder:
             return False
         
         filename = filename or config.RECORDED_AUDIO_FILE
+        frame_count = len(self.frames)
+        total_bytes = sum(len(frame) for frame in self.frames)
         
         try:
-            with wave.open(filename, 'wb') as wf:
-                wf.setnchannels(self.channels)
-                wf.setsampwidth(self.audio.get_sample_size(self.format))
-                wf.setframerate(self.rate)
-                wf.writeframes(b''.join(self.frames))
+            # Create a temporary file first, then rename for atomic operation
+            import tempfile
+            import os
+            temp_fd, temp_path = tempfile.mkstemp(suffix='.wav', dir=os.path.dirname(filename))
             
-            logging.info(f"Audio saved to {filename}")
-            return True
+            try:
+                with os.fdopen(temp_fd, 'wb') as temp_file:
+                    with wave.open(temp_file, 'wb') as wf:
+                        wf.setnchannels(self.channels)
+                        wf.setsampwidth(self.audio.get_sample_size(self.format))
+                        wf.setframerate(self.rate)
+                        wf.writeframes(b''.join(self.frames))
+                
+                # Atomically replace the old file
+                if os.path.exists(filename):
+                    os.remove(filename)
+                os.rename(temp_path, filename)
+                
+                import time
+                logging.info(f"Audio saved to {filename} at {time.strftime('%Y-%m-%d %H:%M:%S')} - {frame_count} frames, {total_bytes} bytes, {self.get_recording_duration():.2f}s")
+                return True
+                
+            except Exception as e:
+                # Clean up temp file on error
+                if os.path.exists(temp_path):
+                    os.remove(temp_path)
+                raise
             
         except Exception as e:
             logging.error(f"Failed to save audio to {filename}: {e}")
