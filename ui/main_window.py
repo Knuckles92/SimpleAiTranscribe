@@ -208,8 +208,7 @@ class MainWindow:
         self.hotkey_manager.set_callbacks(
             on_record_toggle=self.toggle_recording,
             on_cancel=self.cancel_transcription,
-            on_status_update=self.status_controller.update_status_with_auto_clear,
-            is_transcribing_fn=lambda: self.current_backend and self.current_backend.is_transcribing
+            on_status_update=self.status_controller.update_status_with_auto_clear
         )
     
     def _setup_tray(self):
@@ -251,15 +250,39 @@ class MainWindow:
             self.stop_button.config(state=tk.DISABLED)
             self.status_controller.update_status("Processing...")
             
+            # Check if we have actual recording data
+            if not self.recorder.has_recording_data():
+                logging.error("No recording data available after stopping")
+                self._on_transcription_error("No audio data recorded")
+                return
+            
             # Save recording
-            self.recorder.save_recording()
+            if not self.recorder.save_recording():
+                logging.error("Failed to save recording")
+                self._on_transcription_error("Failed to save audio file")
+                return
+            
+            # Verify the audio file exists and has content
+            import os
+            if not os.path.exists(config.RECORDED_AUDIO_FILE):
+                logging.error(f"Audio file not found: {config.RECORDED_AUDIO_FILE}")
+                self._on_transcription_error("Audio file not created")
+                return
+            
+            file_size = os.path.getsize(config.RECORDED_AUDIO_FILE)
+            logging.info(f"Audio file size: {file_size} bytes")
+            if file_size < 100:  # WAV header is about 44 bytes, so anything less than 100 is suspect
+                logging.error(f"Audio file too small: {file_size} bytes")
+                self._on_transcription_error("Audio file is empty or corrupted")
+                return
             
             # Start transcription in thread pool
             future = self.executor.submit(self._transcribe_audio)
-            logging.info("Recording stopped, transcription started")
+            logging.info(f"Recording stopped, transcription started. Audio duration: {self.recorder.get_recording_duration():.2f}s")
     
     def toggle_recording(self):
         """Toggle between starting and stopping recording."""
+        logging.info(f"Toggle recording called. Current state: is_recording={self.recorder.is_recording}")
         if not self.recorder.is_recording:
             self.start_recording()
         else:
@@ -267,21 +290,26 @@ class MainWindow:
     
     def cancel_transcription(self):
         """Cancel recording or transcription."""
+        logging.info(f"Cancel called. Recording: {self.recorder.is_recording}, Transcribing: {self.current_backend and self.current_backend.is_transcribing}")
         overlay_cleared = False
         
         if self.recorder.is_recording:
             self.recorder.stop_recording()
+            # Clear the recording data since it was cancelled
+            self.recorder.clear_recording_data()
             self.start_button.config(state=tk.NORMAL)
             self.stop_button.config(state=tk.DISABLED)
             self.status_controller.update_status("Cancelled")
             self.root.after(config.OVERLAY_HIDE_DELAY_MS, self.status_controller.clear_status)
             overlay_cleared = True
+            logging.info("Recording cancelled and data cleared")
         
         if self.current_backend and self.current_backend.is_transcribing:
             self.current_backend.cancel_transcription()
             self.status_controller.update_status("Canceling...")
             self.root.after(config.OVERLAY_HIDE_DELAY_MS, self.status_controller.clear_status)
             overlay_cleared = True
+            logging.info("Transcription cancelled")
         
         # If neither recording nor transcribing, ensure overlay is still cleared
         if not overlay_cleared:
@@ -335,11 +363,8 @@ class MainWindow:
     
     def _paste_text(self, text: str):
         """Paste text at current cursor position."""
-        # Copy to clipboard
         pyperclip.copy(text)
-        
-        # Small delay to ensure hotkey is fully processed and keyboard events are cleared
-        self.root.after(100, lambda: keyboard.send('ctrl+v'))
+        keyboard.send('ctrl+v')
     
     def on_model_changed(self, event=None):
         """Handle model selection change."""

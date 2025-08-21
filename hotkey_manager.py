@@ -39,34 +39,33 @@ class HotkeyManager:
     def _handle_keyboard_event(self, event):
         """Global keyboard event handler with suppression."""
         if event.event_type == keyboard.KEY_DOWN:
-            # Check enable/disable hotkey first
+            # Check enable/disable hotkey
             if self._matches_hotkey(event, self.hotkeys['enable_disable']):
                 self._toggle_program_enabled()
                 return False  # Suppress the key combination
 
-            # If program is disabled, only process enable/disable hotkey
+            # If program is disabled, only allow enable/disable hotkey
             if not self.program_enabled:
-                # Suppress all other hotkeys when disabled
-                if self._matches_hotkey(event, self.hotkeys['record_toggle']) or \
-                   self._matches_hotkey(event, self.hotkeys['cancel']):
-                    return False  # Suppress but don't process
-                return True  # Let non-hotkey keys pass through
+                if not self._matches_hotkey(event, self.hotkeys['enable_disable']):
+                    return True
 
             # Check record toggle hotkey
-            if self._matches_hotkey(event, self.hotkeys['record_toggle']):
-                # Don't process if currently transcribing
-                if self.is_transcribing_fn and self.is_transcribing_fn():
-                    return False  # Suppress but don't process
-                    
+            elif self._matches_hotkey(event, self.hotkeys['record_toggle']):
+                # Always suppress record toggle key first
+                suppress = False
                 if self._should_trigger_record_toggle():
                     if self.on_record_toggle:
-                        self.on_record_toggle()
+                        # Run callback in a separate thread to avoid blocking
+                        import threading
+                        threading.Thread(target=self.on_record_toggle, daemon=True).start()
                 return False  # Always suppress record toggle key
 
             # Check cancel hotkey
-            if self._matches_hotkey(event, self.hotkeys['cancel']):
+            elif self._matches_hotkey(event, self.hotkeys['cancel']):
                 if self.on_cancel:
-                    self.on_cancel()
+                    # Run callback in a separate thread to avoid blocking
+                    import threading
+                    threading.Thread(target=self.on_cancel, daemon=True).start()
                 return False  # Suppress cancel key when handling
 
         # Let all other keys pass through
@@ -74,6 +73,7 @@ class HotkeyManager:
     
     def _toggle_program_enabled(self):
         """Toggle the program enabled state."""
+        old_state = self.program_enabled
         self.program_enabled = not self.program_enabled
         
         # Reset debounce timing when toggling to avoid stale state
@@ -88,8 +88,10 @@ class HotkeyManager:
             # Fallback to regular status update if auto-hide not available
             if not self.program_enabled:
                 self.on_status_update("STT Disabled")
+                logging.info("STT has been disabled")
             else:
                 self.on_status_update("STT Enabled")
+                logging.info("STT has been enabled")
     
     def _should_trigger_record_toggle(self) -> bool:
         """Check if record toggle should trigger (with debounce)."""
