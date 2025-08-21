@@ -11,3 +11,4 @@ o3try.py
 *__pycache__*
 venv/*
 CLAUDE.md
+.claude/settings.local.json
