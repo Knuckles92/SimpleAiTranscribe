@@ -96,7 +96,8 @@ class LoadingScreen:
         
         # Final update to make everything visible
         self.root.update()
-        self._start_animation()
+        # Ensure animation starts after UI is fully ready
+        self.root.after(10, self._start_animation)
     
     def update_status(self, status_text: str):
         """Update the loading screen status text.
@@ -118,6 +119,9 @@ class LoadingScreen:
             self.root.lift()
             self.root.attributes('-topmost', True)
             self.root.update()
+            # Ensure animation is running
+            if self._anim_job is None:
+                self.root.after(50, self._start_animation)
     
     def hide(self):
         """Hide the loading screen."""
@@ -159,7 +163,8 @@ class LoadingScreen:
         return self._rgb_to_hex((r, g, b))
 
     def _start_animation(self):
-        if self._anim_job is None and self.canvas is not None:
+        if self._anim_job is None and self.canvas is not None and self.root is not None:
+            # Start animation immediately
             self._anim_job = self.root.after(0, self._animate)
 
     def _stop_animation(self):
@@ -229,10 +234,18 @@ class LoadingScreen:
 
     def _animate(self):
         if not self.root or not self.canvas:
+            self._anim_job = None
             return
+        
         t = time.time() - self._start_time
         try:
             self._draw_orbit_loader(t)
-        finally:
-            # Aim for ~60 FPS
+        except Exception as e:
+            # Log animation errors but continue
+            logging.debug(f"Loading animation error: {e}")
+        
+        # Schedule next frame if still alive - aim for ~60 FPS
+        if self.root and self.canvas:
             self._anim_job = self.root.after(16, self._animate)
+        else:
+            self._anim_job = None

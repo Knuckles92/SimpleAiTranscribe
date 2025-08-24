@@ -293,12 +293,13 @@ class MainWindow:
     
     def stop_recording(self):
         """Stop audio recording and start transcription."""
+        # Update UI immediately for instant response
+        self.start_button.config(state=tk.DISABLED)
+        self.stop_button.config(state=tk.DISABLED)
+        # Show transcribing status immediately for better UX
+        self.status_controller.update_status("Transcribing...")
+        
         if self.recorder.stop_recording():
-            self.start_button.config(state=tk.DISABLED)
-            self.stop_button.config(state=tk.DISABLED)
-            # Show transcribing status immediately for better UX
-            self.status_controller.update_status("Transcribing...")
-            
             # Check if we have actual recording data
             if not self.recorder.has_recording_data():
                 logging.error("No recording data available after stopping")

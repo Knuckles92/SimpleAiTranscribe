@@ -103,11 +103,9 @@ class AudioRecorder:
             self._stop_requested = True
             self._post_roll_until = time.time() + (config.POST_ROLL_MS / 1000.0)
 
-            # Wait for recording thread to finish
-            if self.recording_thread and self.recording_thread.is_alive():
-                self.recording_thread.join(timeout=2.0)
-            
-            logging.info("Recording stopped")
+            # Don't wait for recording thread to finish - let post-roll happen in background
+            # The thread will naturally finish after the post-roll period
+            logging.info("Recording stop requested, post-roll continuing in background")
             return True
             
         except Exception as e:
