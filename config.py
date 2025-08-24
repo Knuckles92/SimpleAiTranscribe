@@ -36,17 +36,38 @@ class AppConfig:
     
     # UI settings
     MAIN_WINDOW_SIZE: str = "300x200"
-    LOADING_WINDOW_SIZE: str = "300x150"
+    LOADING_WINDOW_SIZE: str = "300x300"
     HOTKEY_DIALOG_SIZE: str = "400x300"
     OVERLAY_SIZE: str = "200x30"
+    
+    # Waveform overlay settings
+    WAVEFORM_OVERLAY_WIDTH: int = 300
+    WAVEFORM_OVERLAY_HEIGHT: int = 80
+    WAVEFORM_BAR_COUNT: int = 20
+    WAVEFORM_BAR_WIDTH: int = 8
+    WAVEFORM_BAR_SPACING: int = 2
+    WAVEFORM_FRAME_RATE: int = 30
+    WAVEFORM_LEVEL_SMOOTHING: float = 0.7
+    
+    # Waveform colors (hex format)
+    WAVEFORM_BG_COLOR: str = "#1a1a1a"
+    WAVEFORM_ACCENT_COLOR: str = "#00d4ff"
+    WAVEFORM_SECONDARY_COLOR: str = "#0099cc"
+    WAVEFORM_TEXT_COLOR: str = "#ffffff"
     
     # Timing settings
     HOTKEY_DEBOUNCE_MS: int = 300
     OVERLAY_HIDE_DELAY_MS: int = 1500
     PROGRESS_BAR_INTERVAL_MS: int = 10
+    # Continue capturing this many ms after stop to avoid end cut-offs
+    POST_ROLL_MS: int = 1000
     
     # Whisper model
     DEFAULT_WHISPER_MODEL: str = "base"
+    
+    # Waveform style settings
+    CURRENT_WAVEFORM_STYLE: str = "modern"
+    WAVEFORM_STYLE_CONFIGS: Dict[str, Dict] = None
     
     def __post_init__(self):
         """Initialize computed fields after dataclass creation."""
@@ -63,6 +84,87 @@ class AppConfig:
                 'API: Whisper': 'api_whisper',
                 'API: GPT-4o Transcribe': 'api_gpt4o',
                 'API: GPT-4o Mini Transcribe': 'api_gpt4o_mini'
+            }
+        
+        if self.WAVEFORM_STYLE_CONFIGS is None:
+            self.WAVEFORM_STYLE_CONFIGS = {
+                'modern': {
+                    'bar_count': 20,
+                    'bar_width': 8,
+                    'bar_spacing': 2,
+                    'bg_color': '#1a1a1a',
+                    'accent_color': '#00d4ff',
+                    'secondary_color': '#0099cc',
+                    'text_color': '#ffffff',
+                    'danger_color': '#ff4444',
+                    'pulse_speed': 2.0,
+                    'pulse_amplitude': 0.3,
+                    'wave_speed': 3.0,
+                    'smoothing_factor': 0.1
+                },
+                'retro': {
+                    'bar_count': 16,
+                    'bar_width': 10,
+                    'bar_spacing': 3,
+                    'bg_color': '#0a0a0a',
+                    'neon_pink': '#ff00ff',
+                    'neon_cyan': '#00ffff',
+                    'neon_purple': '#8000ff',
+                    'neon_green': '#00ff00',
+                    'text_color': '#ffffff',
+                    'grid_speed': 1.5,
+                    'scanline_speed': 8.0,
+                    'glitch_intensity': 0.05,
+                    'glow_intensity': 1.5,
+                    'chromatic_aberration': True,
+                    'scanlines_enabled': True,
+                    'vhs_noise': True
+                },
+                'minimalist': {
+                    'line_count': 18,
+                    'line_width': 2,
+                    'line_spacing': 8,
+                    'bg_color': '#f8f8f8',
+                    'primary_color': '#4a4a4a',
+                    'accent_color': '#6b9bd2',
+                    'subtle_color': '#c0c0c0',
+                    'text_color': '#333333',
+                    'breathing_speed': 0.8,
+                    'ripple_speed': 1.2,
+                    'fade_speed': 0.6,
+                    'smoothing': 0.05
+                },
+                'spectrum': {
+                    'spectrum_bars': 24,
+                    'inner_radius': 25,
+                    'outer_radius': 45,
+                    'bar_width': 4,
+                    'bg_color': '#000000',
+                    'center_color': '#ffffff',
+                    'text_color': '#ffffff',
+                    'use_rainbow': True,
+                    'rainbow_saturation': 0.9,
+                    'rainbow_brightness': 1.0,
+                    'rotation_speed': 1.0,
+                    'spiral_speed': 2.0,
+                    'pulse_speed': 1.5,
+                    'decay_rate': 0.95
+                },
+                'particle': {
+                    'max_particles': 150,
+                    'emission_rate': 30,
+                    'particle_life': 2.0,
+                    'gravity': 20,
+                    'damping': 0.98,
+                    'wind_strength': 5,
+                    'audio_response': 1.5,
+                    'bg_color': '#0a0a0a',
+                    'text_color': '#ffffff',
+                    'particle_trail': True,
+                    'glow_effect': True,
+                    'turbulence_strength': 10,
+                    'color_shift_speed': 50
+                }
             }
 
 

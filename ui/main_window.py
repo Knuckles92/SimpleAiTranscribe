@@ -16,6 +16,8 @@ from transcriber import TranscriptionBackend, LocalWhisperBackend, OpenAIBackend
 from hotkey_manager import HotkeyManager
 from settings import settings_manager
 from .tray import TrayManager
+from .waveform_overlay import WaveformOverlay
+from .waveform_style_dialog import WaveformStyleDialog
 
 
 class UIStatusController:
@@ -28,6 +30,17 @@ class UIStatusController:
             main_window: Reference to the main window instance.
         """
         self.main_window = main_window
+        # Initialize overlay with saved style if available
+        try:
+            from settings import settings_manager
+            current_style, all_configs = settings_manager.load_waveform_style_settings()
+            self.waveform_overlay = WaveformOverlay(main_window.root, initial_style=current_style)
+            # Apply config explicitly in case style has non-defaults
+            if current_style in all_configs:
+                self.waveform_overlay.set_style(current_style, all_configs[current_style])
+        except Exception:
+            # Fallback to default overlay
+            self.waveform_overlay = WaveformOverlay(main_window.root)
     
     def update_status(self, status: str, show_overlay: bool = True):
         """Update status in both main window and overlay.
@@ -40,16 +53,25 @@ class UIStatusController:
         if self.main_window.status_label:
             self.main_window.status_label.config(text=f"Status: {status}")
         
-        # Update overlay if requested
+        # Update waveform overlay if requested
         if show_overlay:
-            self.main_window.show_status_overlay(status)
+            # Map status messages to overlay states
+            if "Recording" in status:
+                self.waveform_overlay.show("recording", status)
+            elif "Processing" in status:
+                self.waveform_overlay.show("processing", status)
+            elif "Transcribing" in status:
+                self.waveform_overlay.show("transcribing", status)
+            else:
+                # For other statuses, hide the overlay
+                self.waveform_overlay.hide()
         else:
             # Hide overlay when show_overlay is False
-            self.main_window.show_status_overlay("")
+            self.waveform_overlay.hide()
     
     def clear_status(self):
         """Clear the status overlay."""
-        self.main_window.show_status_overlay("")
+        self.waveform_overlay.hide()
     
     def update_status_with_auto_clear(self, status: str, delay_ms: int = None):
         """Update status with automatic clearing after a delay.
@@ -114,6 +136,7 @@ class MainWindow:
         self._setup_gui()
         self._setup_hotkeys()
         self._setup_tray()
+        self._setup_audio_level_callback()
         
         # Handle window close event
         self.root.protocol('WM_DELETE_WINDOW', self.on_closing)
@@ -130,8 +153,9 @@ class MainWindow:
         self.transcription_backends['api_gpt4o'] = OpenAIBackend('api_gpt4o')
         self.transcription_backends['api_gpt4o_mini'] = OpenAIBackend('api_gpt4o_mini')
         
-        # Set default backend
-        self.current_backend = self.transcription_backends['local_whisper']
+        # Load saved model selection and set backend
+        saved_model = settings_manager.load_model_selection()
+        self.current_backend = self.transcription_backends.get(saved_model, self.transcription_backends['local_whisper'])
     
     def _setup_gui(self):
         """Create and configure the main GUI interface."""
@@ -148,11 +172,9 @@ class MainWindow:
         settings_menu = tk.Menu(menubar, tearoff=0)
         menubar.add_cascade(label="Settings", menu=settings_menu)
         settings_menu.add_command(label="Configure Hotkeys", command=self.open_hotkey_settings)
+        settings_menu.add_command(label="Waveform Style...", command=self.open_waveform_style_settings)
+        settings_menu.add_command(label="Configure FFmpeg...", command=self.configure_ffmpeg)
         
-        # Create Tools menu
-        tools_menu = tk.Menu(menubar, tearoff=0)
-        menubar.add_cascade(label="Tools", menu=tools_menu)
-        tools_menu.add_command(label="Configure FFmpeg...", command=self.configure_ffmpeg)
         
         # Main frame with padding
         main_frame = ttk.Frame(self.root, padding=10)
@@ -175,7 +197,23 @@ class MainWindow:
         self.model_combobox = ttk.Combobox(center_frame, textvariable=self.model_choice, 
                                           width=25, state="readonly")
         self.model_combobox['values'] = config.MODEL_CHOICES
-        self.model_combobox.set(config.MODEL_CHOICES[0])  # Default to first choice
+        
+        # Load saved model selection and set in combobox
+        saved_model = settings_manager.load_model_selection()
+        self.model_choice.set(saved_model)
+        
+        # Find display value for saved model and set it in combobox
+        display_value = None
+        for display, internal in config.MODEL_VALUE_MAP.items():
+            if internal == saved_model:
+                display_value = display
+                break
+        
+        if display_value:
+            self.model_combobox.set(display_value)
+        else:
+            self.model_combobox.set(config.MODEL_CHOICES[0])  # Fallback to first choice
+        
         self.model_combobox.bind('<<ComboboxSelected>>', self.on_model_changed)
         self.model_combobox.pack(side=tk.LEFT)
         
@@ -218,6 +256,16 @@ class MainWindow:
             on_quit=self.quit_app
         )
     
+    def _setup_audio_level_callback(self):
+        """Setup audio level callback for waveform overlay."""
+        def audio_level_callback(level: float):
+            # Update waveform overlay with audio level
+            if self.status_controller.waveform_overlay:
+                self.status_controller.waveform_overlay.update_audio_level(level)
+        
+        # Set the callback on the audio recorder
+        self.recorder.set_audio_level_callback(audio_level_callback)
+    
     def show_window(self):
         """Show the main window."""
         self.root.deiconify()
@@ -248,7 +296,8 @@ class MainWindow:
         if self.recorder.stop_recording():
             self.start_button.config(state=tk.DISABLED)
             self.stop_button.config(state=tk.DISABLED)
-            self.status_controller.update_status("Processing...")
+            # Show transcribing status immediately for better UX
+            self.status_controller.update_status("Transcribing...")
             
             # Check if we have actual recording data
             if not self.recorder.has_recording_data():
@@ -374,7 +423,14 @@ class MainWindow:
         if internal_value and internal_value in self.transcription_backends:
             self.current_backend = self.transcription_backends[internal_value]
             self.model_choice.set(internal_value)
-            logging.info(f"Model changed to: {internal_value}")
+            
+            # Save the model selection
+            try:
+                settings_manager.save_model_selection(internal_value)
+                logging.info(f"Model changed and saved: {internal_value}")
+            except Exception as e:
+                logging.error(f"Failed to save model selection: {e}")
+                # Continue execution even if save fails
     
     def show_status_overlay(self, message: str):
         """Show status overlay with message."""
@@ -394,6 +450,33 @@ class MainWindow:
         from .hotkey_dialog import HotkeyDialog
         dialog = HotkeyDialog(self.root, self.hotkey_manager)
         dialog.show()
+    
+    def open_waveform_style_settings(self):
+        """Open waveform style configuration dialog."""
+        try:
+            # Load current style via SettingsManager
+            current_style, all_configs = settings_manager.load_waveform_style_settings()
+            current_config = all_configs.get(current_style, {})
+
+            # Create and show dialog (modal)
+            dialog = WaveformStyleDialog(self.root, current_style, current_config)
+            dialog.show()
+            if getattr(dialog, 'dialog', None) is not None:
+                # Wait for dialog to close to ensure settings are saved
+                try:
+                    dialog.dialog.wait_window(dialog.dialog)
+                except Exception:
+                    pass
+
+            # After dialog closes, reload settings and apply to overlay immediately
+            new_style, new_configs = settings_manager.load_waveform_style_settings()
+            new_config = new_configs.get(new_style, {})
+            if self.status_controller.waveform_overlay:
+                self.status_controller.waveform_overlay.set_style(new_style, new_config)
+            
+        except Exception as e:
+            logging.error(f"Failed to open waveform style settings: {e}")
+            messagebox.showerror("Error", f"Failed to open waveform style settings: {e}")
     
     def configure_ffmpeg(self):
         """Show FFmpeg configuration dialog."""
@@ -421,6 +504,10 @@ class MainWindow:
         try:
             # Clear any remaining overlay
             self.status_controller.clear_status()
+            
+            # Cleanup waveform overlay
+            if self.status_controller.waveform_overlay:
+                self.status_controller.waveform_overlay.cleanup()
             
             if self.hotkey_manager:
                 self.hotkey_manager.cleanup()

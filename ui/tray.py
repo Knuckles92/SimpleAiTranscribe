@@ -21,8 +21,15 @@ class TrayManager:
     
     def _setup_tray_icon(self):
         """Setup the system tray icon and menu."""
-        # Create a simple icon (you might want to replace this with a proper icon file)
-        icon_data = Image.new('RGB', (64, 64), color='red')
+        # Load icon from ui/icon.png
+        try:
+            import os
+            icon_path = os.path.join(os.path.dirname(__file__), 'icon.png')
+            icon_data = Image.open(icon_path)
+        except Exception as e:
+            logging.error(f"Failed to load icon from ui/icon.png: {e}")
+            # Fallback to simple icon
+            icon_data = Image.new('RGB', (64, 64), color='red')
         
         menu = (
             pystray.MenuItem('Show', self._on_show_clicked),

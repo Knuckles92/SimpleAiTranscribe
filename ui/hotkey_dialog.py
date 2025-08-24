@@ -3,6 +3,7 @@ Hotkey configuration dialog for the Audio Recorder application.
 """
 import tkinter as tk
 from tkinter import messagebox
+import logging
 from typing import Dict, Optional
 from config import config
 from settings import settings_manager
@@ -32,47 +33,120 @@ class HotkeyDialog:
     
     def show(self):
         """Show the hotkey configuration dialog."""
-        self._create_dialog()
-        self._setup_dialog_content()
-        self.dialog.grab_set()
-        self.dialog.transient(self.parent)
-        self.dialog.focus_set()
+        try:
+            logging.info("Creating hotkey configuration dialog")
+            self._create_dialog()
+            self._setup_dialog_content()
+            
+            # Make dialog modal and ensure it's visible
+            self.dialog.transient(self.parent)
+            self.dialog.grab_set()
+            self.dialog.focus_set()
+            
+            # Ensure dialog is visible
+            self.dialog.deiconify()
+            self.dialog.lift()
+            
+            logging.info("Hotkey dialog created and shown successfully")
+            
+        except Exception as e:
+            logging.error(f"Failed to show hotkey dialog: {e}")
+            if self.dialog:
+                try:
+                    self.dialog.destroy()
+                except:
+                    pass
+            messagebox.showerror("Error", f"Failed to open hotkey settings: {str(e)}")
     
     def _create_dialog(self):
         """Create the dialog window."""
-        self.dialog = tk.Toplevel(self.parent)
-        self.dialog.title("Configure Hotkeys")
-        self.dialog.geometry(config.HOTKEY_DIALOG_SIZE)
-        self.dialog.resizable(False, False)
-        
-        # Center the dialog
-        self._center_dialog()
+        try:
+            self.dialog = tk.Toplevel(self.parent)
+            self.dialog.title("Configure Hotkeys")
+            self.dialog.geometry(config.HOTKEY_DIALOG_SIZE)
+            self.dialog.resizable(False, False)
+            
+            # Center the dialog
+            self._center_dialog()
+            
+            logging.info(f"Dialog window created with size {config.HOTKEY_DIALOG_SIZE}")
+            
+        except Exception as e:
+            logging.error(f"Failed to create dialog window: {e}")
+            raise
     
     def _center_dialog(self):
         """Center the dialog relative to parent."""
-        x = self.parent.winfo_rootx() + 50
-        y = self.parent.winfo_rooty() + 50
-        self.dialog.geometry(f"+{x}+{y}")
+        try:
+            # Get parent position, handling case where parent might be withdrawn
+            try:
+                parent_x = self.parent.winfo_rootx()
+                parent_y = self.parent.winfo_rooty()
+            except tk.TclError:
+                # Parent might be withdrawn or not mapped, use screen center
+                screen_width = self.parent.winfo_screenwidth()
+                screen_height = self.parent.winfo_screenheight()
+                parent_x = screen_width // 2 - 200  # Approximate half of dialog width
+                parent_y = screen_height // 2 - 150  # Approximate half of dialog height
+                logging.info("Parent window not mapped, centering on screen")
+            
+            x = parent_x + 50
+            y = parent_y + 50
+            
+            # Ensure dialog stays within screen bounds
+            screen_width = self.parent.winfo_screenwidth()
+            screen_height = self.parent.winfo_screenheight()
+            
+            if x < 0:
+                x = 50
+            elif x > screen_width - 400:  # Dialog width
+                x = screen_width - 450
+                
+            if y < 0:
+                y = 50
+            elif y > screen_height - 300:  # Dialog height
+                y = screen_height - 350
+            
+            self.dialog.geometry(f"+{x}+{y}")
+            logging.info(f"Dialog positioned at ({x}, {y})")
+            
+        except Exception as e:
+            logging.error(f"Failed to center dialog: {e}")
+            # Fallback to default positioning
+            self.dialog.geometry("+100+100")
     
     def _setup_dialog_content(self):
         """Setup the dialog content."""
-        # Main frame
-        main_frame = tk.Frame(self.dialog, padx=20, pady=20)
-        main_frame.pack(fill=tk.BOTH, expand=True)
-        
-        # Title
-        title_label = tk.Label(main_frame, text="Hotkey Configuration", 
-                              font=('TkDefaultFont', 12, 'bold'))
-        title_label.pack(pady=(0, 20))
-        
-        # Create hotkey entry fields dynamically
-        self._create_hotkey_fields(main_frame)
-        
-        # Instructions
-        self._create_instructions(main_frame)
-        
-        # Buttons
-        self._create_buttons(main_frame)
+        try:
+            logging.info("Setting up dialog content")
+            
+            # Validate hotkey manager
+            if not self.hotkey_manager or not hasattr(self.hotkey_manager, 'hotkeys'):
+                raise ValueError("Invalid hotkey manager provided")
+            
+            # Main frame
+            main_frame = tk.Frame(self.dialog, padx=20, pady=20)
+            main_frame.pack(fill=tk.BOTH, expand=True)
+            
+            # Title
+            title_label = tk.Label(main_frame, text="Hotkey Configuration", 
+                                  font=('TkDefaultFont', 12, 'bold'))
+            title_label.pack(pady=(0, 20))
+            
+            # Create hotkey entry fields dynamically
+            self._create_hotkey_fields(main_frame)
+            
+            # Instructions
+            self._create_instructions(main_frame)
+            
+            # Buttons
+            self._create_buttons(main_frame)
+            
+            logging.info("Dialog content setup completed")
+            
+        except Exception as e:
+            logging.error(f"Failed to setup dialog content: {e}")
+            raise
     
     def _create_hotkey_fields(self, parent):
         """Create hotkey entry fields dynamically.
@@ -80,22 +154,48 @@ class HotkeyDialog:
         Args:
             parent: Parent widget for the fields.
         """
-        for key, label_text, tooltip in self.hotkey_fields:
-            frame = tk.Frame(parent)
-            frame.pack(fill=tk.X, pady=5)
+        try:
+            logging.info(f"Creating hotkey fields for keys: {[key for key, _, _ in self.hotkey_fields]}")
             
-            # Label
-            label = tk.Label(frame, text=label_text, width=15, anchor='w')
-            label.pack(side=tk.LEFT)
+            for key, label_text, tooltip in self.hotkey_fields:
+                # Create field frame
+                frame = tk.Frame(parent)
+                frame.pack(fill=tk.X, pady=5)
+                
+                # Label
+                label = tk.Label(frame, text=label_text, width=15, anchor='w')
+                label.pack(side=tk.LEFT)
+                
+                # Get current hotkey value with fallback
+                current_value = ''
+                if self.hotkey_manager and hasattr(self.hotkey_manager, 'hotkeys'):
+                    current_value = self.hotkey_manager.hotkeys.get(key, '')
+                
+                if not current_value:
+                    # Fallback to config defaults
+                    current_value = config.DEFAULT_HOTKEYS.get(key, '')
+                
+                logging.info(f"Setting hotkey field '{key}' to value: '{current_value}'")
+                
+                # Entry field with StringVar
+                self.hotkey_vars[key] = tk.StringVar(value=current_value)
+                entry = tk.Entry(frame, textvariable=self.hotkey_vars[key], width=20)
+                entry.pack(side=tk.LEFT, padx=(10, 0))
+                
+                # Verify the value was set correctly
+                actual_value = self.hotkey_vars[key].get()
+                if actual_value != current_value:
+                    logging.warning(f"StringVar value mismatch for '{key}': expected '{current_value}', got '{actual_value}'")
+                
+                # Add tooltip if available
+                if tooltip:
+                    self._add_tooltip(entry, tooltip)
+                    
+            logging.info(f"Created {len(self.hotkey_fields)} hotkey fields successfully")
             
-            # Entry field
-            self.hotkey_vars[key] = tk.StringVar(value=self.hotkey_manager.hotkeys.get(key, ''))
-            entry = tk.Entry(frame, textvariable=self.hotkey_vars[key], width=20)
-            entry.pack(side=tk.LEFT, padx=(10, 0))
-            
-            # Add tooltip if available
-            if tooltip:
-                self._add_tooltip(entry, tooltip)
+        except Exception as e:
+            logging.error(f"Failed to create hotkey fields: {e}")
+            raise
     
     def _add_tooltip(self, widget, text):
         """Add a simple tooltip to a widget.
@@ -190,8 +290,14 @@ class HotkeyDialog:
     
     def _on_cancel(self):
         """Cancel and close the dialog."""
-        if self.dialog:
-            self.dialog.destroy()
+        try:
+            if self.dialog:
+                self.dialog.grab_release()  # Release modal grab
+                self.dialog.destroy()
+                self.dialog = None
+                logging.info("Hotkey dialog closed")
+        except Exception as e:
+            logging.error(f"Error closing dialog: {e}")
             self.dialog = None
     
     def _validate_hotkey(self, hotkey_string: str) -> bool:

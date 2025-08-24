@@ -5,7 +5,10 @@ import pyaudio
 import wave
 import threading
 import logging
-from typing import List, Optional
+import numpy as np
+import time
+
+from typing import List, Optional, Callable
 from config import config
 
 
@@ -19,6 +22,8 @@ class AudioRecorder:
         self.frames: List[bytes] = []
         self.stream: Optional[pyaudio.Stream] = None
         self.recording_thread: Optional[threading.Thread] = None
+        self._stop_requested: bool = False
+        self._post_roll_until: float = 0.0
         
         # Audio settings from config
         self.chunk = config.CHUNK_SIZE
@@ -26,7 +31,22 @@ class AudioRecorder:
         self.channels = config.CHANNELS
         self.rate = config.SAMPLE_RATE
         
+        # Audio level callback
+        self.audio_level_callback: Optional[Callable[[float], None]] = None
+        
+        # Audio level calculation
+        self.current_level = 0.0
+        self.level_smoothing = config.WAVEFORM_LEVEL_SMOOTHING  # Smoothing factor for level changes
+        
         logging.info("Audio recorder initialized")
+    
+    def set_audio_level_callback(self, callback: Callable[[float], None]):
+        """Set callback function for real-time audio level updates.
+        
+        Args:
+            callback: Function that will be called with audio level (0.0 to 1.0)
+        """
+        self.audio_level_callback = callback
     
     def start_recording(self) -> bool:
         """Start audio recording.
@@ -53,6 +73,8 @@ class AudioRecorder:
                     logging.warning(f"Could not delete old audio file: {e}")
             
             self.is_recording = True
+            self._stop_requested = False
+            self._post_roll_until = 0.0
             
             # Start recording in a separate thread
             self.recording_thread = threading.Thread(target=self._record_audio, daemon=True)
@@ -77,8 +99,10 @@ class AudioRecorder:
             return False
         
         try:
-            self.is_recording = False
-            
+            # Request stop and allow a short post-roll to capture trailing speech
+            self._stop_requested = True
+            self._post_roll_until = time.time() + (config.POST_ROLL_MS / 1000.0)
+
             # Wait for recording thread to finish
             if self.recording_thread and self.recording_thread.is_alive():
                 self.recording_thread.join(timeout=2.0)
@@ -102,14 +126,24 @@ class AudioRecorder:
                 frames_per_buffer=self.chunk
             )
             
-            while self.is_recording:
+            # Continue reading until stop is requested and post-roll window has elapsed
+            while True:
                 try:
-                    data = stream.read(self.chunk)
+                    data = stream.read(self.chunk, exception_on_overflow=False)
                     self.frames.append(data)
+                    
+                    # Calculate audio level for waveform display
+                    if self.audio_level_callback:
+                        self._calculate_and_report_level(data)
+                        
                 except Exception as e:
                     logging.error(f"Error reading audio data: {e}")
                     break
-                    
+                
+                # Evaluate exit condition after capturing this chunk
+                if self._stop_requested and time.time() >= self._post_roll_until:
+                    break
+            
         except Exception as e:
             logging.error(f"Error opening audio stream: {e}")
         finally:
@@ -119,6 +153,51 @@ class AudioRecorder:
                     stream.close()
                 except Exception as e:
                     logging.error(f"Error closing audio stream: {e}")
+            # Mark not recording and clear internal flags
+            self.is_recording = False
+            self._stop_requested = False
+            self._post_roll_until = 0.0
+    
+    def _calculate_and_report_level(self, audio_data: bytes):
+        """Calculate audio level from raw audio data and report it via callback.
+        
+        Args:
+            audio_data: Raw audio data bytes
+        """
+        try:
+            # Convert bytes to numpy array
+            if self.format == pyaudio.paInt16:
+                audio_array = np.frombuffer(audio_data, dtype=np.int16)
+            elif self.format == pyaudio.paFloat32:
+                audio_array = np.frombuffer(audio_data, dtype=np.float32)
+            else:
+                return  # Unsupported format
+            
+            # Calculate RMS level
+            if len(audio_array) > 0:
+                # Normalize to 0.0-1.0 range
+                if self.format == pyaudio.paInt16:
+                    # For 16-bit audio, max value is 32767
+                    rms_level = np.sqrt(np.mean(audio_array.astype(np.float64) ** 2)) / 32767.0
+                else:
+                    # For float32, assume range is -1.0 to 1.0
+                    rms_level = np.sqrt(np.mean(audio_array ** 2))
+                
+                # Apply smoothing
+                self.current_level = (
+                    self.level_smoothing * self.current_level + 
+                    (1.0 - self.level_smoothing) * rms_level
+                )
+                
+                # Clamp to valid range
+                self.current_level = max(0.0, min(1.0, self.current_level))
+                
+                # Call the callback with the calculated level
+                if self.audio_level_callback:
+                    self.audio_level_callback(self.current_level)
+                    
+        except Exception as e:
+            logging.debug(f"Error calculating audio level: {e}")
     
     def save_recording(self, filename: str = None) -> bool:
         """Save the recorded audio frames to a WAV file.
