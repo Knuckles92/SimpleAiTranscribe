@@ -60,7 +60,7 @@ class AppConfig:
     OVERLAY_HIDE_DELAY_MS: int = 1500
     PROGRESS_BAR_INTERVAL_MS: int = 10
     # Continue capturing this many ms after stop to avoid end cut-offs
-    POST_ROLL_MS: int = 1000
+    POST_ROLL_MS: int = 1200
     
     # Whisper model
     DEFAULT_WHISPER_MODEL: str = "base"

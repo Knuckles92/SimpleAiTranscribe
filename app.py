@@ -39,7 +39,7 @@ def main():
         # Create main window (this will load Whisper model)
         loading_screen.update_status("Loading Whisper model...")
         main_window = MainWindow()
-        
+
         # Hide loading screen and show main window
         loading_screen.destroy()
         
