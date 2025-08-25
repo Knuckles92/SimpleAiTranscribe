@@ -3,7 +3,7 @@ OpenAI API transcription backend.
 """
 import os
 import logging
-from typing import Optional
+from typing import Optional, List
 from openai import OpenAI
 from .base import TranscriptionBackend
 from config import config
@@ -128,6 +128,63 @@ class OpenAIBackend(TranscriptionBackend):
         self.api_key = api_key
         self._initialize_client()
     
+    def transcribe_chunks(self, chunk_files: List[str]) -> str:
+        """Transcribe multiple audio chunk files efficiently with OpenAI API.
+        
+        Args:
+            chunk_files: List of paths to audio chunk files.
+            
+        Returns:
+            Combined transcribed text from all chunks.
+            
+        Raises:
+            Exception: If transcription fails or API is not available.
+        """
+        if not self.is_available():
+            raise Exception("OpenAI API is not available (no API key or client initialization failed)")
+        
+        try:
+            self.is_transcribing = True
+            self.reset_cancel_flag()
+            
+            api_model = self._get_api_model_name()
+            transcriptions = []
+            
+            logging.info(f"Starting chunked transcription with OpenAI API model: {api_model}")
+            
+            for i, chunk_file in enumerate(chunk_files):
+                if self.should_cancel:
+                    logging.info("Chunked transcription cancelled by user")
+                    raise Exception("Transcription cancelled")
+                
+                logging.info(f"Processing chunk {i+1}/{len(chunk_files)} with OpenAI API: {chunk_file}")
+                
+                # Transcribe individual chunk
+                with open(chunk_file, "rb") as audio_file:
+                    response = self.client.audio.transcriptions.create(
+                        model=api_model,
+                        file=audio_file,
+                        response_format="text"
+                    )
+                
+                chunk_text = response.strip()
+                transcriptions.append(chunk_text)
+                
+                logging.info(f"Chunk {i+1}/{len(chunk_files)} completed. Length: {len(chunk_text)} characters")
+            
+            # Combine transcriptions
+            from audio_processor import audio_processor
+            combined_text = audio_processor.combine_transcriptions(transcriptions)
+            
+            logging.info(f"OpenAI chunked transcription complete. Total length: {len(combined_text)} characters")
+            return combined_text
+            
+        except Exception as e:
+            logging.error(f"OpenAI chunked transcription failed: {e}")
+            raise
+        finally:
+            self.is_transcribing = False
+
     def change_model_type(self, model_type: str):
         """Change the model type.
         

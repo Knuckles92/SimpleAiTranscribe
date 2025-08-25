@@ -62,6 +62,13 @@ class AppConfig:
     # Continue capturing this many ms after stop to avoid end cut-offs
     POST_ROLL_MS: int = 1200
     
+    # Audio splitting settings
+    MAX_FILE_SIZE_MB: int = 23  # Maximum file size before splitting
+    SILENCE_THRESHOLD: float = 0.01  # Volume threshold to detect silence
+    MIN_CHUNK_DURATION_SEC: int = 30  # Minimum duration for each chunk in seconds
+    SILENCE_DURATION_SEC: float = 0.5  # Duration of silence needed for split point
+    OVERLAP_DURATION_SEC: float = 2.0  # Overlap between chunks to avoid word cutoffs
+    
     # Whisper model
     DEFAULT_WHISPER_MODEL: str = "base"
     

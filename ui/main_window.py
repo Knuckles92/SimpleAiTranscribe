@@ -15,6 +15,7 @@ from recorder import AudioRecorder
 from transcriber import TranscriptionBackend, LocalWhisperBackend, OpenAIBackend
 from hotkey_manager import HotkeyManager
 from settings import settings_manager
+from audio_processor import audio_processor
 from .tray import TrayManager
 from .waveform_overlay import WaveformOverlay
 from .waveform_style_dialog import WaveformStyleDialog
@@ -326,9 +327,24 @@ class MainWindow:
                 self._on_transcription_error("Audio file is empty or corrupted")
                 return
             
-            # Start transcription in thread pool
-            future = self.executor.submit(self._transcribe_audio)
-            logging.info(f"Recording stopped, transcription started. Audio duration: {self.recorder.get_recording_duration():.2f}s")
+            # Check if file needs splitting due to size limit
+            try:
+                needs_splitting, file_size_mb = audio_processor.check_file_size(config.RECORDED_AUDIO_FILE)
+                
+                if needs_splitting:
+                    logging.info(f"Large file detected ({file_size_mb:.2f} MB), starting split workflow")
+                    # Start split and transcribe workflow
+                    future = self.executor.submit(self._transcribe_large_audio)
+                else:
+                    # Normal transcription workflow
+                    future = self.executor.submit(self._transcribe_audio)
+                    
+                logging.info(f"Recording stopped, transcription started. Audio duration: {self.recorder.get_recording_duration():.2f}s")
+                
+            except Exception as e:
+                logging.error(f"Failed to check file size: {e}")
+                self._on_transcription_error(f"Failed to process audio file: {e}")
+                return
     
     def toggle_recording(self):
         """Toggle between starting and stopping recording."""
@@ -381,6 +397,56 @@ class MainWindow:
         except Exception as e:
             logging.error(f"Transcription failed: {e}")
             self.root.after(0, self._on_transcription_error, str(e))
+    
+    def _transcribe_large_audio(self):
+        """Transcribe large audio file by splitting it into chunks."""
+        chunk_files = []
+        try:
+            # Step 1: Split the audio file
+            def progress_callback(message):
+                """Update status with splitting progress."""
+                self.root.after(0, lambda: self.status_controller.update_status(message))
+            
+            chunk_files = audio_processor.split_audio_file(config.RECORDED_AUDIO_FILE, progress_callback)
+            
+            if not chunk_files:
+                raise Exception("Failed to split audio file into chunks")
+            
+            # Step 2: Check if backend supports chunked transcription
+            if hasattr(self.current_backend, 'transcribe_chunks'):
+                # Use backend's chunked transcription if available
+                self.root.after(0, lambda: self.status_controller.update_status(f"Transcribing {len(chunk_files)} chunks..."))
+                transcribed_text = self.current_backend.transcribe_chunks(chunk_files)
+            else:
+                # Fallback: transcribe chunks individually and combine
+                transcriptions = []
+                for i, chunk_file in enumerate(chunk_files):
+                    # Create a proper closure for the lambda
+                    current_chunk = i + 1
+                    total_chunks = len(chunk_files)
+                    self.root.after(0, lambda: self.status_controller.update_status(f"Transcribing chunk {current_chunk}/{total_chunks}..."))
+                    
+                    chunk_transcription = self.current_backend.transcribe(chunk_file)
+                    transcriptions.append(chunk_transcription)
+                    
+                    logging.info(f"Completed chunk {current_chunk}/{total_chunks}")
+                
+                # Combine transcriptions
+                self.root.after(0, lambda: self.status_controller.update_status("Combining transcriptions..."))
+                transcribed_text = audio_processor.combine_transcriptions(transcriptions)
+            
+            # Update UI on main thread
+            self.root.after(0, self._on_transcription_complete, transcribed_text)
+            
+        except Exception as e:
+            logging.error(f"Large audio transcription failed: {e}")
+            self.root.after(0, self._on_transcription_error, str(e))
+        finally:
+            # Cleanup temporary chunk files
+            try:
+                audio_processor.cleanup_temp_files()
+            except Exception as cleanup_error:
+                logging.warning(f"Failed to cleanup temp files: {cleanup_error}")
     
     def _on_transcription_complete(self, transcribed_text: str):
         """Handle transcription completion on main thread."""

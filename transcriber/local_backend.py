@@ -6,7 +6,7 @@ import logging
 import os
 import subprocess
 import platform
-from typing import Optional
+from typing import Optional, List
 from pathlib import Path
 import tkinter as tk
 from tkinter import filedialog, messagebox
@@ -273,6 +273,54 @@ class LocalWhisperBackend(TranscriptionBackend):
             self.model_name = model_name
         self._load_model()
     
+    def transcribe_chunks(self, chunk_files: List[str]) -> str:
+        """Transcribe multiple audio chunk files efficiently with local Whisper.
+        
+        Args:
+            chunk_files: List of paths to audio chunk files.
+            
+        Returns:
+            Combined transcribed text from all chunks.
+            
+        Raises:
+            Exception: If transcription fails or model is not available.
+        """
+        if not self.is_available():
+            raise Exception("Local Whisper model is not available. Please check ffmpeg installation.")
+        
+        try:
+            self.is_transcribing = True
+            self.reset_cancel_flag()
+            
+            transcriptions = []
+            
+            for i, chunk_file in enumerate(chunk_files):
+                if self.should_cancel:
+                    logging.info("Chunked transcription cancelled by user")
+                    raise Exception("Transcription cancelled")
+                
+                logging.info(f"Processing chunk {i+1}/{len(chunk_files)} with local Whisper: {chunk_file}")
+                
+                # Transcribe individual chunk
+                result = self.model.transcribe(chunk_file)
+                chunk_text = result['text'].strip()
+                transcriptions.append(chunk_text)
+                
+                logging.info(f"Chunk {i+1}/{len(chunk_files)} completed. Length: {len(chunk_text)} characters")
+            
+            # Combine transcriptions
+            from audio_processor import audio_processor
+            combined_text = audio_processor.combine_transcriptions(transcriptions)
+            
+            logging.info(f"Local chunked transcription complete. Total length: {len(combined_text)} characters")
+            return combined_text
+            
+        except Exception as e:
+            logging.error(f"Local chunked transcription failed: {e}")
+            raise
+        finally:
+            self.is_transcribing = False
+
     def reset_ffmpeg_config(self):
         """Reset ffmpeg configuration and prompt user again."""
         # Remove saved ffmpeg path

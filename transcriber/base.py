@@ -2,7 +2,7 @@
 Base transcription backend interface.
 """
 from abc import ABC, abstractmethod
-from typing import Optional
+from typing import Optional, List
 
 
 class TranscriptionBackend(ABC):
@@ -44,6 +44,35 @@ class TranscriptionBackend(ABC):
     def reset_cancel_flag(self):
         """Reset the cancellation flag."""
         self.should_cancel = False
+    
+    def transcribe_chunks(self, chunk_files: List[str]) -> str:
+        """Transcribe multiple audio chunk files and combine results.
+        
+        This is an optional method that backends can implement for optimized
+        handling of chunked audio. If not implemented, the main UI will
+        fall back to calling transcribe() for each chunk individually.
+        
+        Args:
+            chunk_files: List of paths to audio chunk files.
+            
+        Returns:
+            Combined transcribed text from all chunks.
+            
+        Raises:
+            Exception: If transcription fails.
+        """
+        # Default implementation: transcribe each chunk and combine
+        from audio_processor import audio_processor
+        
+        transcriptions = []
+        for chunk_file in chunk_files:
+            if self.should_cancel:
+                raise Exception("Transcription cancelled")
+            
+            chunk_text = self.transcribe(chunk_file)
+            transcriptions.append(chunk_text)
+        
+        return audio_processor.combine_transcriptions(transcriptions)
     
     @property
     def name(self) -> str:
