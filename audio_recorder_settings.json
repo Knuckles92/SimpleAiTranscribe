@@ -4,7 +4,7 @@
     "cancel": "-",
     "enable_disable": "ctrl+alt+*"
   },
-  "current_waveform_style": "minimalist",
+  "current_waveform_style": "particle",
   "waveform_style_configs": {
     "modern": {
       "bar_count": 20,
@@ -39,18 +39,23 @@
       "vhs_noise": true
     },
     "minimalist": {
-      "bar_count": 7,
-      "bar_width": 3,
-      "bar_spacing": 12,
+      "line_count": 18,
+      "line_width": 2,
+      "line_spacing": 8,
       "bg_color": "#ffffff",
       "primary_color": "#2c3e50",
       "accent_color": "#3498db",
-      "muted_color": "#bdc3c7",
+      "subtle_color": "#c0c0c0",
       "text_color": "#2c3e50",
       "breathing_speed": 1.5,
-      "pulse_speed": 2.0,
+      "ripple_speed": 1.2,
       "fade_speed": 1.0,
-      "smoothing": 0.15
+      "smoothing": 0.15,
+      "bar_count": 7,
+      "bar_width": 3,
+      "bar_spacing": 12,
+      "muted_color": "#bdc3c7",
+      "pulse_speed": 2.0
     },
     "spectrum": {
       "spectrum_bars": 24,
