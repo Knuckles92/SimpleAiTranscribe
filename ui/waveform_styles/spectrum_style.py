@@ -329,6 +329,142 @@ class SpectrumStyle(BaseWaveformStyle):
         
         return avg_spectrum
     
+    def draw_idle_state(self, message: str = ""):
+        """Draw minimal static spectrum for idle state."""
+        if not self.canvas:
+            return
+            
+        self.clear_canvas()
+        
+        # Only draw if we have a message
+        if message:
+            self._draw_spectrum_background()
+            
+            center_x = self.width // 2
+            center_y = self.height // 2 - 5
+            
+            # Draw static spectrum bars with very low levels
+            static_spectrum_count = 12  # Fewer bars for idle state
+            
+            for i in range(static_spectrum_count):
+                angle = (i / static_spectrum_count) * 2 * math.pi
+                
+                # Static low level pattern
+                level = 0.15 + 0.1 * math.sin(i * 0.8)  # Static pattern, no animation
+                level = max(0.05, min(0.25, level))  # Keep levels very low
+                
+                # Calculate bar position
+                inner_x = center_x + self.inner_radius * math.cos(angle)
+                inner_y = center_y + self.inner_radius * math.sin(angle)
+                
+                # Bar length is much shorter for idle state
+                bar_length = level * (self.outer_radius - self.inner_radius) * 0.6
+                outer_x = inner_x + bar_length * math.cos(angle)
+                outer_y = inner_y + bar_length * math.sin(angle)
+                
+                # Use very muted colors for idle
+                if self.use_rainbow:
+                    hue = (i / static_spectrum_count) * 360
+                    r, g, b = self.hsv_to_rgb(hue % 360, 
+                                            self.rainbow_saturation * 0.3,  # Much lower saturation
+                                            self.rainbow_brightness * 0.4)  # Much lower brightness
+                    color = self.rgb_to_hex(r, g, b)
+                else:
+                    # Very muted single color
+                    intensity = 0.2
+                    color = self.interpolate_color("#333333", "#666666", intensity)
+                
+                # Draw thin spectrum bar
+                self.canvas.create_line(
+                    inner_x, inner_y, outer_x, outer_y,
+                    fill=color, width=self.bar_width // 2, capstyle="round"
+                )
+            
+            # Draw center dot
+            self.canvas.create_oval(
+                center_x - 2, center_y - 2, center_x + 2, center_y + 2,
+                fill=self.interpolate_color(self.center_color, self.bg_color, 0.5), 
+                outline=""
+            )
+            
+            # Draw status text
+            self.draw_text(message, self.width // 2, self.height - 15, self.text_color)
+    
+    def draw_canceling_state(self, message: str = "Cancelled"):
+        """Draw spectrum collapse animation for canceling state."""
+        if not self.canvas:
+            return
+            
+        self.clear_canvas()
+        self._draw_background()
+        
+        # Get cancellation progress (0.0 to 1.0)
+        progress = self.get_cancellation_progress()
+        
+        # Calculate center position
+        center_x = self.width // 2
+        center_y = (self.height // 2) - 5
+        
+        # Collapsing effect - spectrum bars shrink toward center
+        collapse_factor = 1.0 - progress
+        
+        # Draw collapsing spectrum
+        for i in range(self.spectrum_bars):
+            # Use last known audio levels or create a pattern
+            if i < len(self.audio_levels) and len(self.audio_levels) > 0:
+                level = self.audio_levels[i]
+            else:
+                level = max(0.0, 0.5 - (abs(i - self.spectrum_bars//2) * 0.05))
+            
+            # Calculate angle for this bar
+            angle = (i / self.spectrum_bars) * 2 * math.pi
+            
+            # Apply collapse effect to radius
+            inner_radius = self.inner_radius * collapse_factor
+            bar_length = level * (self.outer_radius - self.inner_radius) * collapse_factor
+            outer_radius = inner_radius + bar_length
+            
+            if outer_radius <= inner_radius:
+                continue
+            
+            # Calculate positions
+            inner_x = center_x + math.cos(angle) * inner_radius
+            inner_y = center_y + math.sin(angle) * inner_radius
+            outer_x = center_x + math.cos(angle) * outer_radius
+            outer_y = center_y + math.sin(angle) * outer_radius
+            
+            # Color that fades to dark red
+            if self.use_rainbow:
+                hue = (i / self.spectrum_bars) * 360
+                r, g, b = self.hsv_to_rgb(hue, self.rainbow_saturation, self.rainbow_brightness)
+                base_color = f"#{r:02x}{g:02x}{b:02x}"
+            else:
+                base_color = self.center_color
+            
+            # Fade toward dark red/black
+            color = self.interpolate_color(base_color, "#330000", progress * 0.8)
+            
+            # Draw collapsing bar
+            bar_thickness = max(1, int(self.bar_width * collapse_factor))
+            self.canvas.create_line(
+                inner_x, inner_y, outer_x, outer_y,
+                fill=color, width=bar_thickness
+            )
+        
+        # Draw central collapsing dot
+        dot_radius = int(self.inner_radius * collapse_factor * 0.3)
+        if dot_radius > 0:
+            dot_color = self.interpolate_color(self.center_color, "#000000", progress)
+            self.canvas.create_oval(
+                center_x - dot_radius, center_y - dot_radius,
+                center_x + dot_radius, center_y + dot_radius,
+                fill=dot_color, outline=""
+            )
+        
+        # Draw fading text
+        text_color = self.interpolate_color(self.text_color, "#000000", progress * 0.7)
+        self.draw_text(message, center_x, self.height - 12, text_color)
+    
     @classmethod
     def get_default_config(cls) -> Dict[str, Any]:
         """Get default configuration for spectrum style."""

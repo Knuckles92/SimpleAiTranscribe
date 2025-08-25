@@ -150,6 +150,155 @@ class NeonMatrixStyle(BaseWaveformStyle):
                 self.canvas.create_line(path, fill=color, width=2+i, smooth=True)
         self.draw_text(message, self.width // 2, self.height - 12, self.text_color)
 
+    def draw_canceling_state(self, message: str = "Cancelled"):
+        """Draw matrix effect dissolving for canceling state."""
+        if not self.canvas:
+            return
+            
+        self.clear_canvas()
+        self._draw_matrix_grid()
+        
+        # Get cancellation progress (0.0 to 1.0)
+        progress = self.get_cancellation_progress()
+        
+        # Matrix effect dissolution - characters randomly disappear
+        import random
+        char_count = 12
+        char_spacing = self.width // (char_count + 1)
+        
+        for i in range(char_count):
+            # Characters disappear based on progress
+            if random.random() < progress:
+                continue
+                
+            x = (i + 1) * char_spacing
+            
+            # Use audio level or create pattern
+            if i < len(self.audio_levels) and len(self.audio_levels) > 0:
+                level = self.audio_levels[i]
+            else:
+                level = max(0.0, 0.6 - (i * 0.04))
+            
+            # Column height diminishes with progress
+            column_height = int((self.height - 30) * level * (1.0 - progress * 0.8))
+            if column_height <= 0:
+                continue
+            
+            # Draw dissolving matrix characters
+            char_size = 8
+            chars_in_column = column_height // char_size
+            
+            for j in range(chars_in_column):
+                # Some characters randomly disappear
+                if random.random() < progress * 0.4:
+                    continue
+                    
+                y = self.height - 20 - (j * char_size)
+                
+                # Character fades and shifts to red
+                base_color = self.primary if j == 0 else self.secondary
+                fade_color = self.interpolate_color(base_color, self.alert, progress * 0.6)
+                final_color = self.interpolate_color(fade_color, self.bg_color, progress * 0.4)
+                
+                # Draw matrix character (simplified as rectangle)
+                char_alpha = 1.0 - progress * 0.7
+                if char_alpha > 0.1:
+                    self.canvas.create_rectangle(
+                        x - 2, y - 3, x + 2, y + 3,
+                        fill=final_color, outline=""
+                    )
+        
+        # Draw glitch scanlines
+        for _ in range(int(progress * 8)):
+            scan_y = random.randint(0, self.height)
+            scan_color = random.choice([self.primary, self.alert, "#ffffff"])
+            opacity_color = self.interpolate_color(scan_color, self.bg_color, 0.7)
+            self.canvas.create_line(
+                0, scan_y, self.width, scan_y,
+                fill=opacity_color, width=1
+            )
+        
+        # Draw fading text
+        text_color = self.interpolate_color(self.text_color, "#000000", progress * 0.7)
+        self.draw_text(message, self.width // 2, self.height - 12, text_color)
+    
+    def draw_idle_state(self, message: str = ""):
+        """Draw matrix idle state with minimal rain and static elements."""
+        if not self.canvas:
+            return
+            
+        self.clear_canvas()
+        
+        # Only draw if we have a message
+        if message:
+            self._draw_bg_glow()
+            
+            # Draw very minimal code rain for atmosphere
+            self._draw_code_rain(0.15)  # Very low intensity
+            
+            # Draw static matrix-style indicator in center
+            center_x = self.width // 2
+            center_y = self.height // 2 - 5
+            
+            # Create a small matrix-style "terminal" cursor
+            cursor_width = 6
+            cursor_height = 8
+            
+            # Use muted primary color
+            idle_color = self.interpolate_color(self.primary, self.bg_color, 0.5)
+            
+            # Draw simple cursor rectangle
+            self.canvas.create_rectangle(
+                center_x - cursor_width // 2, center_y - cursor_height // 2,
+                center_x + cursor_width // 2, center_y + cursor_height // 2,
+                fill=idle_color, outline=""
+            )
+            
+            # Add subtle glow effect
+            glow_color = self.interpolate_color(idle_color, self.bg_color, 0.6)
+            self.canvas.create_rectangle(
+                center_x - cursor_width // 2 - 1, center_y - cursor_height // 2 - 1,
+                center_x + cursor_width // 2 + 1, center_y + cursor_height // 2 + 1,
+                fill="", outline=glow_color, width=1
+            )
+            
+            # Draw a few static "matrix characters" as small rectangles
+            char_count = 6
+            char_spacing = self.width // (char_count + 1)
+            
+            for i in range(char_count):
+                x = (i + 1) * char_spacing
+                y = self.height - 25 - (i % 3) * 5  # Vary heights slightly
+                
+                # Use very muted secondary color
+                char_color = self.interpolate_color(self.secondary, self.bg_color, 0.7)
+                
+                # Draw small matrix character
+                self.canvas.create_rectangle(
+                    x - 1, y - 2, x + 1, y + 2,
+                    fill=char_color, outline=""
+                )
+            
+            # Draw status text with matrix styling
+            self.draw_text(message, self.width // 2, self.height - 12, self.text_color)
+    
+    def _draw_matrix_grid(self):
+        """Draw minimal matrix grid background (if needed by other methods)."""
+        if not self.canvas:
+            return
+        
+        # Very subtle grid pattern
+        grid_spacing = 20
+        grid_color = self.interpolate_color(self.primary, self.bg_color, 0.9)
+        
+        # Vertical lines
+        for x in range(grid_spacing, self.width, grid_spacing):
+            self.canvas.create_line(x, 0, x, self.height, fill=grid_color, width=1)
+        
+        # Horizontal lines  
+        for y in range(grid_spacing, self.height, grid_spacing):
+            self.canvas.create_line(0, y, self.width, y, fill=grid_color, width=1)
+
     @classmethod
     def get_default_config(cls) -> Dict[str, Any]:
         return {

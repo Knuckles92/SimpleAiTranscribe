@@ -247,6 +247,175 @@ class RetroStyle(BaseWaveformStyle):
         # Draw retro text
         self._draw_retro_text(message, self.width // 2, self.height - 12)
     
+    def draw_canceling_state(self, message: str = "CANCELLED"):
+        """Draw glitch-out effect for canceling state."""
+        if not self.canvas:
+            return
+            
+        self.clear_canvas()
+        self._draw_retro_background()
+        
+        # Get cancellation progress (0.0 to 1.0)
+        progress = self.get_cancellation_progress()
+        
+        # Glitch effect that intensifies over time
+        glitch_intensity = progress * 0.5
+        
+        # Calculate bar positions
+        total_bar_width = self.bar_count * (self.bar_width + self.bar_spacing) - self.bar_spacing
+        start_x = (self.width - total_bar_width) // 2
+        
+        # Draw glitching bars that progressively disappear
+        for i in range(self.bar_count):
+            x = start_x + i * (self.bar_width + self.bar_spacing)
+            
+            # Bars randomly disappear based on progress
+            if random.random() < progress:
+                continue
+                
+            # Use last known audio levels or create a decaying pattern
+            if i < len(self.audio_levels) and len(self.audio_levels) > 0:
+                level = self.audio_levels[i]
+            else:
+                level = max(0.0, 0.6 - (i * 0.03))
+            
+            # Add glitch displacement
+            glitch_x_offset = int((random.random() - 0.5) * glitch_intensity * 20)
+            glitch_y_offset = int((random.random() - 0.5) * glitch_intensity * 10)
+            
+            # Calculate bar height with decay
+            decay_factor = 1.0 - (progress * 0.8)
+            min_height = 8
+            max_bar_height = self.height - 35
+            bar_height = (min_height + level * max_bar_height) * decay_factor
+            
+            if bar_height <= 0:
+                continue
+            
+            # Create stacked bar effect with glitching
+            segments = int(bar_height / 6) + 1
+            segment_height = 4
+            segment_spacing = 2
+            
+            for seg in range(segments):
+                # Some segments randomly disappear
+                if random.random() < progress * 0.3:
+                    continue
+                    
+                seg_y = self.height - 25 - (seg * (segment_height + segment_spacing)) + glitch_y_offset
+                seg_x1 = x + glitch_x_offset
+                seg_x2 = x + self.bar_width + glitch_x_offset
+                seg_y1 = seg_y - segment_height
+                seg_y2 = seg_y
+                
+                # Color shifts to red/pink as canceling progresses
+                if seg < segments * 0.3:
+                    base_color = self.neon_green
+                elif seg < segments * 0.7:
+                    base_color = self.neon_cyan
+                else:
+                    base_color = self.neon_pink
+                
+                # Fade toward red to indicate cancellation
+                color = self.interpolate_color(base_color, "#ff0000", progress * 0.7)
+                
+                # Draw segment with flickering
+                if random.random() > progress * 0.2:
+                    self._draw_neon_rect(seg_x1, seg_y1, seg_x2, seg_y2, color)
+        
+        # Draw heavily scanlined overlay
+        if self.scanlines_enabled:
+            self._draw_scanlines()
+            
+            # Additional glitch scanlines
+            for _ in range(int(progress * 10)):
+                glitch_y = random.randint(0, self.height)
+                glitch_color = random.choice([self.neon_pink, "#ff0000", "#ffffff"])
+                self.canvas.create_line(
+                    0, glitch_y, self.width, glitch_y,
+                    fill=glitch_color, width=2
+                )
+        
+        # Draw glitching text
+        text_y = self.height - 12
+        if random.random() > progress * 0.3:
+            # Main text with increasing red tint
+            text_color = self.interpolate_color(self.text_color, "#ff0000", progress)
+            self._draw_retro_text(message, self.width // 2, text_y)
+            
+            # Additional glitch text copies
+            if progress > 0.3:
+                for _ in range(int(progress * 3)):
+                    glitch_x = self.width // 2 + random.randint(-10, 10)
+                    glitch_y = text_y + random.randint(-3, 3)
+                    self.draw_text(message, glitch_x, glitch_y, "#ff0000", ("Courier", 8, "bold"))
+    
+    def draw_idle_state(self, message: str = ""):
+        """Draw idle state with muted retro aesthetics."""
+        if not self.canvas:
+            return
+            
+        self.clear_canvas()
+        
+        # Only draw if we have a message
+        if message:
+            self._draw_retro_background()
+            
+            # Draw a subtle static neon indicator
+            center_x = self.width // 2
+            center_y = self.height // 2 - 5
+            
+            # Create a small static "terminal cursor" style indicator
+            cursor_width = 8
+            cursor_height = 12
+            
+            # Use muted neon color (darker version of neon_cyan)
+            idle_color = self.interpolate_color(self.neon_cyan, self.bg_color, 0.6)
+            
+            # Draw static cursor rectangle
+            self.canvas.create_rectangle(
+                center_x - cursor_width // 2, center_y - cursor_height // 2,
+                center_x + cursor_width // 2, center_y + cursor_height // 2,
+                fill=idle_color, outline=""
+            )
+            
+            # Add very subtle glow effect
+            glow_color = self.interpolate_color(idle_color, self.bg_color, 0.5)
+            self.canvas.create_rectangle(
+                center_x - cursor_width // 2 - 1, center_y - cursor_height // 2 - 1,
+                center_x + cursor_width // 2 + 1, center_y + cursor_height // 2 + 1,
+                fill="", outline=glow_color, width=1
+            )
+            
+            # Draw a few minimal static equalizer bars to maintain theme
+            bar_count = 5
+            bar_width = 4
+            bar_spacing = 6
+            bar_start_x = center_x - ((bar_count * (bar_width + bar_spacing)) // 2)
+            
+            for i in range(bar_count):
+                x = bar_start_x + i * (bar_width + bar_spacing)
+                # Static heights, no animation
+                bar_height = 8 + (i % 3) * 4  # Vary heights slightly
+                
+                y1 = center_y + 15
+                y2 = y1 + bar_height
+                
+                # Use even more muted colors
+                muted_color = self.interpolate_color(self.neon_green, self.bg_color, 0.7)
+                
+                self.canvas.create_rectangle(
+                    x, y1, x + bar_width, y2,
+                    fill=muted_color, outline=""
+                )
+            
+            # Draw subtle scanlines for retro feel
+            if self.scanlines_enabled:
+                self._draw_scanlines()
+            
+            # Draw retro text with muted styling
+            self._draw_retro_text(message, self.width // 2, self.height - 12)
+    
     def _draw_retro_background(self):
         """Draw retro-style background with gradient."""
         # Dark gradient background

@@ -4,7 +4,7 @@
     "cancel": "-",
     "enable_disable": "ctrl+alt+*"
   },
-  "current_waveform_style": "particle",
+  "current_waveform_style": "minimalist",
   "waveform_style_configs": {
     "modern": {
       "bar_count": 20,
@@ -39,18 +39,18 @@
       "vhs_noise": true
     },
     "minimalist": {
-      "line_count": 18,
-      "line_width": 2,
-      "line_spacing": 8,
-      "bg_color": "#f8f8f8",
-      "primary_color": "#4a4a4a",
-      "accent_color": "#6b9bd2",
-      "subtle_color": "#c0c0c0",
-      "text_color": "#333333",
-      "breathing_speed": 0.8,
-      "ripple_speed": 1.2,
-      "fade_speed": 0.6,
-      "smoothing": 0.05
+      "bar_count": 7,
+      "bar_width": 3,
+      "bar_spacing": 12,
+      "bg_color": "#ffffff",
+      "primary_color": "#2c3e50",
+      "accent_color": "#3498db",
+      "muted_color": "#bdc3c7",
+      "text_color": "#2c3e50",
+      "breathing_speed": 1.5,
+      "pulse_speed": 2.0,
+      "fade_speed": 1.0,
+      "smoothing": 0.15
     },
     "spectrum": {
       "spectrum_bars": 24,
@@ -82,7 +82,34 @@
       "glow_effect": true,
       "turbulence_strength": 10,
       "color_shift_speed": 50
+    },
+    "neonmatrix": {
+      "bg_color": "#0a0f14",
+      "primary": "#39ff14",
+      "secondary": "#00e5ff",
+      "alert": "#ff2a6d",
+      "text_color": "#d0f5ff",
+      "bar_count": 18,
+      "bar_width": 7,
+      "bar_spacing": 3,
+      "rain_columns": 24,
+      "rain_speed": 110.0,
+      "glow_intensity": 0.4
+    },
+    "galaxywarp": {
+      "bg_color": "#050510",
+      "star_color": "#b0d8ff",
+      "accent": "#7a5cff",
+      "accent2": "#ff9d00",
+      "text_color": "#e8f0ff",
+      "star_count": 120,
+      "star_speed": 1.6,
+      "star_depth": 0.995,
+      "ring_count": 4,
+      "ring_thickness": 3,
+      "ripple_speed": 1.8,
+      "ripple_gain": 22.0
     }
   },
-  "selected_model": "api_gpt4o"
+  "selected_model": "local_whisper"
 }

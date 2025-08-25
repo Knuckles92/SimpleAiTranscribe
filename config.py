@@ -58,6 +58,7 @@ class AppConfig:
     # Timing settings
     HOTKEY_DEBOUNCE_MS: int = 300
     OVERLAY_HIDE_DELAY_MS: int = 1500
+    CANCELLATION_ANIMATION_DURATION_MS: int = 800
     PROGRESS_BAR_INTERVAL_MS: int = 10
     # Continue capturing this many ms after stop to avoid end cut-offs
     POST_ROLL_MS: int = 1200
@@ -171,6 +172,33 @@ class AppConfig:
                     'glow_effect': True,
                     'turbulence_strength': 10,
                     'color_shift_speed': 50
+                },
+                'neonmatrix': {
+                    'bg_color': '#0a0f14',
+                    'primary': '#39ff14',
+                    'secondary': '#00e5ff',
+                    'alert': '#ff2a6d',
+                    'text_color': '#d0f5ff',
+                    'bar_count': 18,
+                    'bar_width': 7,
+                    'bar_spacing': 3,
+                    'rain_columns': 24,
+                    'rain_speed': 110.0,
+                    'glow_intensity': 0.4,
+                },
+                'galaxywarp': {
+                    'bg_color': '#050510',
+                    'star_color': '#b0d8ff',
+                    'accent': '#7a5cff',
+                    'accent2': '#ff9d00',
+                    'text_color': '#e8f0ff',
+                    'star_count': 120,
+                    'star_speed': 1.6,
+                    'star_depth': 0.995,
+                    'ring_count': 4,
+                    'ring_thickness': 3,
+                    'ripple_speed': 1.8,
+                    'ripple_gain': 22.0,
                 }
             }
 

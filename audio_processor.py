@@ -56,6 +56,9 @@ class AudioProcessor:
             Exception: If splitting fails.
         """
         try:
+            if progress_callback:
+                progress_callback("Loading audio file...")
+            
             # Load audio data
             audio_data, sample_rate = self._load_audio_data(input_file)
             
@@ -68,10 +71,12 @@ class AudioProcessor:
             if not split_points:
                 # Fallback to time-based splitting if no silence found
                 logging.warning("No suitable silence points found, using time-based splitting")
+                if progress_callback:
+                    progress_callback("Generating time-based splits...")
                 split_points = self._generate_time_based_splits(len(audio_data), sample_rate)
             
             if progress_callback:
-                progress_callback(f"Splitting audio into {len(split_points)} chunks...")
+                progress_callback(f"Creating {len(split_points)} audio chunks...")
             
             # Create chunks
             chunk_files = self._create_chunks(audio_data, sample_rate, split_points, input_file)

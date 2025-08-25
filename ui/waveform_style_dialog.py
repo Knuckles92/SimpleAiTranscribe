@@ -220,7 +220,7 @@ class WaveformStyleDialog:
         canvas.pack(pady=(0, 10))
         self.preview_canvases[style_name] = canvas
         
-        # Select button (select = apply & close)
+        # Select button (select = apply immediately, keep dialog open)
         is_current = style_name == self.current_style
         button_text = "Current" if is_current else "Select"
         button_state = tk.DISABLED if is_current else tk.NORMAL
@@ -300,8 +300,26 @@ class WaveformStyleDialog:
                     if isinstance(child, tk.Label):
                         child.configure(bg='SystemButtonFace' if not is_current else '#f0f0f0')
         
-        # Apply the changes immediately but keep dialog open
+        # Apply the changes immediately then refresh button states so only the
+        # true current style is disabled and others remain selectable.
         self._apply_style_change()
+
+        # Refresh button states using updated current_style
+        for name, button in self.select_buttons.items():
+            frame = self.preview_frames[name]
+            is_current = name == self.current_style
+            if is_current:
+                button.configure(text="Current", state=tk.DISABLED, bg='#4CAF50', fg='white')
+                frame.configure(bg='#d4edda', relief=tk.RAISED, borderwidth=3)
+                for child in frame.winfo_children():
+                    if isinstance(child, tk.Label):
+                        child.configure(bg='#d4edda')
+            else:
+                button.configure(text="Select", state=tk.NORMAL, bg='SystemButtonFace', fg='black')
+                frame.configure(bg='SystemButtonFace', relief=tk.RAISED, borderwidth=2)
+                for child in frame.winfo_children():
+                    if isinstance(child, tk.Label):
+                        child.configure(bg='SystemButtonFace')
     
     def _apply_style_change(self):
         """Apply the selected style without closing the dialog."""
@@ -445,7 +463,7 @@ class WaveformStyleDialog:
         """
         instructions_text = (
             "Each style shows a live preview of how it will look during recording.\n"
-            "Click 'Select' under a style to instantly apply it and close this window."
+            "Click 'Select' to apply immediately (the dialog stays open). Press Enter to apply and close, or click 'Close' when done."
         )
         
         instructions = tk.Label(parent, text=instructions_text,
@@ -467,8 +485,8 @@ class WaveformStyleDialog:
                                 command=self._reset_to_default)
         reset_button.pack(side=tk.LEFT)
         
-        # Cancel button
-        cancel_button = tk.Button(button_frame, text="Cancel", 
+        # Close button
+        cancel_button = tk.Button(button_frame, text="Close", 
                                  command=self._on_cancel)
         cancel_button.pack(side=tk.RIGHT, padx=(5, 0))
         

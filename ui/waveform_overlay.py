@@ -33,10 +33,11 @@ class WaveformOverlay:
         
         # Animation state
         self.is_visible = False
-        self.current_state = "idle"  # idle, recording, processing, transcribing
+        self.current_state = "idle"  # idle, recording, processing, transcribing, canceling
         self.animation_thread: Optional[threading.Thread] = None
         self.should_animate = False
         self.current_message = ""
+        self.canceling_start_time = 0.0
         
         # Audio data
         self.audio_levels: List[float] = [0.0] * config.WAVEFORM_BAR_COUNT  # Rolling buffer of audio levels
@@ -194,6 +195,34 @@ class WaveformOverlay:
         # Start animation
         self._start_animation()
         
+    def show_canceling(self, message: str = "Cancelled"):
+        """Show the overlay with canceling state and animation.
+        
+        Args:
+            message: Optional message to display during cancellation
+        """
+        if not self.overlay or not self.current_style:
+            return
+            
+        self.current_state = "canceling"
+        self.current_message = message
+        self.is_visible = True
+        self.canceling_start_time = time.time()
+        
+        # Pass canceling start time to the current style
+        if self.current_style:
+            self.current_style.set_canceling_start_time(self.canceling_start_time)
+        
+        # Position near mouse cursor
+        x = self.parent.winfo_pointerx() + 10
+        y = self.parent.winfo_pointery() + 10
+        self.overlay.geometry(f"{self.width}x{self.height}+{x}+{y}")
+        
+        self.overlay.deiconify()
+        
+        # Start animation
+        self._start_animation()
+        
     def hide(self):
         """Hide the overlay."""
         self.is_visible = False
@@ -287,6 +316,19 @@ class WaveformOverlay:
                 if not message:
                     message = "Transcribing..."
                 self.current_style.draw_transcribing_state(message)
+            elif self.current_state == "canceling":
+                if not message:
+                    message = "Cancelled"
+                # Check if cancellation animation should end
+                cancellation_duration = config.CANCELLATION_ANIMATION_DURATION_MS / 1000.0
+                if (time.time() - self.canceling_start_time) > cancellation_duration:
+                    self.hide()
+                    return
+                self.current_style.draw_canceling_state(message)
+            elif self.current_state == "stt_disable":
+                if not message:
+                    message = "STT Disabled"
+                self.current_style.draw_stt_disable_state(message)
             else:
                 # Idle or unknown state
                 self.current_style.draw_idle_state(message)

@@ -84,11 +84,37 @@ class UIStatusController:
         from config import config
         delay = delay_ms or config.OVERLAY_HIDE_DELAY_MS
         
-        # Update status and show overlay
-        self.update_status(status, show_overlay=True)
+        # Special handling for STT enable/disable messages
+        if "STT Enabled" in status:
+            self._show_stt_status(status, "enabled")
+        elif "STT Disabled" in status:
+            self._show_stt_status(status, "disabled")
+        else:
+            # Update status and show overlay for other messages
+            self.update_status(status, show_overlay=True)
         
         # Schedule clearing after delay
         self.main_window.root.after(delay, self.clear_status)
+    
+    def _show_stt_status(self, message: str, state: str):
+        """Show STT status with specialized overlay state.
+
+        Args:
+            message: Status message to display.
+            state: STT state ('enabled' or 'disabled').
+        """
+        # Update main window status
+        if self.main_window.status_label:
+            self.main_window.status_label.config(text=f"Status: {message}")
+
+        # Show waveform overlay with appropriate state
+        if self.waveform_overlay:
+            if state == "enabled":
+                # Show as a processing-like state with green-ish theme
+                self.waveform_overlay.show("processing", message)
+            else:
+                # Show as specialized STT disable state with animation
+                self.waveform_overlay.show("stt_disable", message)
 
 
 class MainWindow:
@@ -247,7 +273,8 @@ class MainWindow:
         self.hotkey_manager.set_callbacks(
             on_record_toggle=self.toggle_recording,
             on_cancel=self.cancel_transcription,
-            on_status_update=self.status_controller.update_status_with_auto_clear
+            on_status_update=self.status_controller.update_status_with_auto_clear,
+            on_status_update_auto_hide=self.status_controller.update_status_with_auto_clear
         )
     
     def _setup_tray(self):
@@ -333,6 +360,8 @@ class MainWindow:
                 
                 if needs_splitting:
                     logging.info(f"Large file detected ({file_size_mb:.2f} MB), starting split workflow")
+                    # Update status to indicate large file processing
+                    self.status_controller.update_status(f"Processing large file ({file_size_mb:.1f} MB)...")
                     # Start split and transcribe workflow
                     future = self.executor.submit(self._transcribe_large_audio)
                 else:
@@ -357,7 +386,6 @@ class MainWindow:
     def cancel_transcription(self):
         """Cancel recording or transcription."""
         logging.info(f"Cancel called. Recording: {self.recorder.is_recording}, Transcribing: {self.current_backend and self.current_backend.is_transcribing}")
-        overlay_cleared = False
         
         if self.recorder.is_recording:
             self.recorder.stop_recording()
@@ -365,21 +393,19 @@ class MainWindow:
             self.recorder.clear_recording_data()
             self.start_button.config(state=tk.NORMAL)
             self.stop_button.config(state=tk.DISABLED)
-            self.status_controller.update_status("Cancelled")
-            self.root.after(config.OVERLAY_HIDE_DELAY_MS, self.status_controller.clear_status)
-            overlay_cleared = True
+            # Show cancelling animation
+            self.status_controller.waveform_overlay.show_canceling("Recording Cancelled")
             logging.info("Recording cancelled and data cleared")
         
-        if self.current_backend and self.current_backend.is_transcribing:
+        elif self.current_backend and self.current_backend.is_transcribing:
             self.current_backend.cancel_transcription()
-            self.status_controller.update_status("Canceling...")
-            self.root.after(config.OVERLAY_HIDE_DELAY_MS, self.status_controller.clear_status)
-            overlay_cleared = True
+            # Show cancelling animation
+            self.status_controller.waveform_overlay.show_canceling("Transcription Cancelled")
             logging.info("Transcription cancelled")
         
-        # If neither recording nor transcribing, ensure overlay is still cleared
-        if not overlay_cleared:
-            self.status_controller.clear_status()
+        else:
+            # If neither recording nor transcribing, still show a brief cancellation message
+            self.status_controller.waveform_overlay.show_canceling("Cancelled")
         
         self.cancel_button.config(state=tk.DISABLED)
     
@@ -402,6 +428,9 @@ class MainWindow:
         """Transcribe large audio file by splitting it into chunks."""
         chunk_files = []
         try:
+            # Add status update immediately when large audio processing starts
+            self.root.after(0, lambda: self.status_controller.update_status("Processing large audio file..."))
+            
             # Step 1: Split the audio file
             def progress_callback(message):
                 """Update status with splitting progress."""

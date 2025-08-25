@@ -79,6 +79,33 @@ class BaseWaveformStyle(ABC):
         if self.canvas:
             self.canvas.delete("all")
     
+    def get_cancellation_progress(self) -> float:
+        """Get cancellation animation progress (0.0 to 1.0).
+        
+        This can be used by styles to create fade-out or shrinking effects.
+        Should only be called during canceling state.
+        
+        Returns:
+            Progress from 0.0 (start) to 1.0 (end)
+        """
+        # Import here to avoid circular imports
+        from config import config
+        
+        # This will be set by the overlay when entering canceling state
+        if hasattr(self, '_canceling_start_time'):
+            cancellation_duration = config.CANCELLATION_ANIMATION_DURATION_MS / 1000.0
+            elapsed = time.time() - self._canceling_start_time
+            return min(1.0, max(0.0, elapsed / cancellation_duration))
+        return 0.0
+    
+    def set_canceling_start_time(self, start_time: float):
+        """Set the cancellation animation start time.
+        
+        Args:
+            start_time: Start time from time.time()
+        """
+        self._canceling_start_time = start_time
+    
     @abstractmethod
     def draw_recording_state(self, message: str = "Recording..."):
         """Draw the recording state visualization.
@@ -106,9 +133,26 @@ class BaseWaveformStyle(ABC):
         """
         pass
     
+    @abstractmethod
+    def draw_canceling_state(self, message: str = "Cancelled"):
+        """Draw the canceling state visualization.
+
+        Args:
+            message: Status message to display
+        """
+        pass
+
+    def draw_stt_disable_state(self, message: str = "STT Disabled"):
+        """Draw the STT disable state visualization (default: same as idle).
+
+        Args:
+            message: Status message to display
+        """
+        self.draw_idle_state(message)
+
     def draw_idle_state(self, message: str = ""):
         """Draw the idle state (default: clear canvas).
-        
+
         Args:
             message: Status message to display
         """

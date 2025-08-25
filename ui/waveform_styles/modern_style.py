@@ -155,6 +155,86 @@ class ModernStyle(BaseWaveformStyle):
         # Draw status text
         self.draw_text(message, self.width // 2, self.height - 12, self.text_color)
     
+    def draw_canceling_state(self, message: str = "Cancelled"):
+        """Draw shrinking bars animation for canceling state."""
+        if not self.canvas:
+            return
+            
+        self.clear_canvas()
+        self._draw_background()
+        
+        # Get cancellation progress (0.0 to 1.0)
+        progress = self.get_cancellation_progress()
+        
+        # Shrinking and fading animation
+        shrink_factor = 1.0 - progress  # Bars shrink as animation progresses
+        fade_factor = 1.0 - progress    # Bars fade as animation progresses
+        
+        # Calculate bar positions
+        total_bar_width = self.bar_count * (self.bar_width + self.bar_spacing) - self.bar_spacing
+        start_x = (self.width - total_bar_width) // 2
+        
+        # Draw shrinking bars
+        for i in range(self.bar_count):
+            x = start_x + i * (self.bar_width + self.bar_spacing)
+            
+            # Use last known audio levels or create a fake pattern
+            if i < len(self.audio_levels) and len(self.audio_levels) > 0:
+                level = self.audio_levels[i]
+            else:
+                # Create a fake decay pattern if no audio levels
+                level = max(0.0, 0.5 - (i * 0.02))
+            
+            # Apply shrink factor to bar height
+            min_height = 4
+            max_bar_height = self.height - 30
+            bar_height = (min_height + level * max_bar_height) * shrink_factor
+            
+            if bar_height <= 0:
+                continue
+                
+            # Center the bar vertically
+            y1 = (self.height - bar_height) // 2
+            y2 = y1 + bar_height
+            
+            # Fade color toward background
+            faded_color = self.interpolate_color(self.danger_color, self.bg_color, progress)
+                
+            # Draw shrinking bar
+            self._draw_rounded_bar(x, y1, x + self.bar_width, y2, faded_color)
+            
+        # Draw fading status text
+        text_color = self.interpolate_color(self.text_color, self.bg_color, progress * 0.7)
+        self.draw_text(message, self.width // 2, self.height - 12, text_color)
+    
+    def draw_idle_state(self, message: str = ""):
+        """Draw idle state with subtle background and message."""
+        if not self.canvas:
+            return
+            
+        self.clear_canvas()
+        
+        # Only draw if we have a message
+        if message:
+            self._draw_background()
+            
+            # Draw a subtle indicator - small static circle
+            center_x = self.width // 2
+            center_y = self.height // 2 - 5
+            radius = 8
+            
+            # Use a muted version of secondary color for idle state
+            idle_color = self.interpolate_color(self.secondary_color, self.bg_color, 0.7)
+            
+            self.canvas.create_oval(
+                center_x - radius, center_y - radius,
+                center_x + radius, center_y + radius,
+                fill=idle_color, outline=""
+            )
+            
+            # Draw status text
+            self.draw_text(message, self.width // 2, self.height - 12, self.text_color)
+    
     def _draw_background(self):
         """Draw the background with subtle border."""
         margin = 5

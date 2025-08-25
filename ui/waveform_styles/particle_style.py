@@ -391,6 +391,253 @@ class ParticleStyle(BaseWaveformStyle):
         
         self.draw_text(message, self.width // 2, self.height - 15, self.text_color)
     
+    def draw_canceling_state(self, message: str = "Cancelled"):
+        """Draw particles dispersing and fading for canceling state."""
+        if not self.canvas:
+            return
+            
+        self.clear_canvas()
+        
+        # Get cancellation progress (0.0 to 1.0)
+        progress = self.get_cancellation_progress()
+        
+        # Disperse particles with increasing velocity
+        dispersion_force = progress * 0.1
+        
+        # Update remaining particles
+        remaining_particles = []
+        for particle in self.particles:
+            # Increase dispersion velocity away from center
+            center_x, center_y = self.width / 2, self.height / 2
+            dx = particle.x - center_x
+            dy = particle.y - center_y
+            
+            particle.vx += dx * dispersion_force
+            particle.vy += dy * dispersion_force
+            
+            # Update position
+            particle.x += particle.vx
+            particle.y += particle.vy
+            
+            # Fade out faster during cancellation
+            particle.life *= (1.0 - progress * 0.02)
+            
+            # Keep particle if still visible and in bounds
+            if (particle.life > 0.01 and 
+                -50 < particle.x < self.width + 50 and 
+                -50 < particle.y < self.height + 50):
+                remaining_particles.append(particle)
+        
+        self.particles = remaining_particles
+        
+        # Draw remaining particles
+        for particle in self.particles:
+            # Fade alpha based on life and progress
+            alpha = particle.life * (1.0 - progress * 0.5)
+            if alpha <= 0:
+                continue
+            
+            # Get particle color with red shift for cancellation
+            r, g, b = particle.get_color()
+            
+            # Shift toward red as cancellation progresses
+            red_shift = progress * 0.8
+            r = min(255, int(r + (255 - r) * red_shift))
+            g = int(g * (1.0 - red_shift * 0.7))
+            b = int(b * (1.0 - red_shift * 0.7))
+            
+            cancel_color = self.rgb_to_hex(r, g, b)
+            
+            # Draw particle with fading
+            size = max(1, int(particle.size * alpha))
+            x, y = int(particle.x), int(particle.y)
+            
+            if self.glow_effect and alpha > 0.3:
+                # Glow effect
+                glow_size = size + 2
+                glow_r = min(255, r + 50)
+                glow_color = self.rgb_to_hex(glow_r, int(g * 0.5), int(b * 0.5))
+                self.canvas.create_oval(
+                    x - glow_size, y - glow_size, 
+                    x + glow_size, y + glow_size,
+                    fill=glow_color, outline=""
+                )
+            
+            # Main particle
+            self.canvas.create_oval(
+                x - size, y - size, x + size, y + size,
+                fill=cancel_color, outline=""
+            )
+        
+        # Draw fading text
+        text_color = self.interpolate_color(self.text_color, "#000000", progress * 0.7)
+        self.draw_text(message, self.width // 2, self.height - 15, text_color)
+    
+    def draw_stt_disable_state(self, message: str = "STT Disabled"):
+        """Draw STT disable state with particles slowly dispersing and fading."""
+        if not self.canvas:
+            return
+
+        current_time = self.animation_time
+        dt = current_time - self.last_frame_time if self.last_frame_time > 0 else 1/30
+        self.last_frame_time = current_time
+
+        self.clear_canvas()
+        self._draw_particle_background()
+
+        # Create dispersing particles that slowly fade away
+        center_x = self.width // 2
+        center_y = self.height // 2 - 5
+
+        # Emit fewer particles that disperse outward
+        if len(self.particles) < 30 and random.random() < 0.3:  # 30% chance per frame
+            for _ in range(2):  # Emit 2 particles at a time
+                # Random angle for dispersion
+                angle = random.uniform(0, 2 * math.pi)
+                speed = random.uniform(15, 35)
+                vx = math.cos(angle) * speed
+                vy = math.sin(angle) * speed
+
+                # Start near center with slight randomness
+                start_x = center_x + random.uniform(-10, 10)
+                start_y = center_y + random.uniform(-10, 10)
+
+                particle = Particle(start_x, start_y, vx, vy)
+                particle.life = random.uniform(1.5, 3.0)  # Longer life for disable effect
+                particle.color_hue = random.uniform(0, 60)  # Red-orange range for "disabled"
+                self.particles.append(particle)
+
+        # Update particles with gentle dispersion
+        alive_particles = []
+        for particle in self.particles:
+            # Apply gentle outward force from center
+            dx = particle.x - center_x
+            dy = particle.y - center_y
+            distance = math.sqrt(dx*dx + dy*dy)
+
+            if distance > 0:
+                # Gentle outward push
+                push_force = 10
+                particle.vx += (dx / distance) * push_force * dt
+                particle.vy += (dy / distance) * push_force * dt
+
+            # Apply damping to slow down over time
+            particle.vx *= 0.995
+            particle.vy *= 0.995
+
+            # Update particle
+            if particle.update(dt, self.gravity * 0.1, 0.99):  # Very light gravity and damping
+                alive_particles.append(particle)
+
+        self.particles = alive_particles
+
+        # Draw particles with fading effect
+        for particle in self.particles:
+            x, y = int(particle.x), int(particle.y)
+
+            # Skip if outside canvas
+            if x < 0 or x >= self.width or y < 0 or y >= self.height:
+                continue
+
+            # Calculate size and color based on life
+            life_factor = particle.life / 3.0  # Normalize to max life
+            size = max(1, int(4 * life_factor))
+
+            # Use red-orange colors for disable effect
+            hue = particle.color_hue
+            saturation = 0.6 * life_factor  # Fade saturation
+            brightness = 0.7 * life_factor  # Fade brightness
+
+            r, g, b = self.hsv_to_rgb(hue, saturation, brightness)
+            color = self.rgb_to_hex(r, g, b)
+
+            # Draw particle
+            self.canvas.create_oval(
+                x - size, y - size, x + size, y + size,
+                fill=color, outline=""
+            )
+
+            # Add subtle glow for larger particles
+            if self.glow_effect and size > 2:
+                glow_size = size + 1
+                glow_color = self.interpolate_color(color, self.bg_color, 0.8)
+                self.canvas.create_oval(
+                    x - glow_size, y - glow_size,
+                    x + glow_size, y + glow_size,
+                    fill="", outline=glow_color, width=1
+                )
+
+        # Draw central "disabled" indicator - a fading cross or X
+        cross_alpha = 0.6 + 0.2 * math.sin(self.animation_time * 2)
+        cross_size = 8
+        cross_color = self.interpolate_color("#ff4444", self.bg_color, 1.0 - cross_alpha)
+
+        # Draw X shape
+        self.canvas.create_line(
+            center_x - cross_size, center_y - cross_size,
+            center_x + cross_size, center_y + cross_size,
+            fill=cross_color, width=2, capstyle="round"
+        )
+        self.canvas.create_line(
+            center_x - cross_size, center_y + cross_size,
+            center_x + cross_size, center_y - cross_size,
+            fill=cross_color, width=2, capstyle="round"
+        )
+
+        # Draw status text with slight fade effect
+        text_alpha = 0.8 + 0.1 * math.sin(self.animation_time * 1.5)
+        text_color = self.interpolate_color(self.text_color, self.bg_color, 1.0 - text_alpha)
+        self.draw_text(message, self.width // 2, self.height - 15, text_color)
+
+    def draw_idle_state(self, message: str = ""):
+        """Draw idle state with minimal particles and muted colors."""
+        if not self.canvas:
+            return
+
+        self.clear_canvas()
+
+        # Only draw if we have a message
+        if message:
+            self._draw_particle_background()
+
+            # Create a few static particles for idle indication
+            center_x = self.width // 2
+            center_y = self.height // 2 - 5
+
+            # Draw 5-8 static particles in muted colors
+            particle_count = 6
+            for i in range(particle_count):
+                angle = (i / particle_count) * 2 * math.pi
+                radius = 25 + (i % 3) * 8  # Vary the radius slightly
+
+                x = center_x + radius * math.cos(angle)
+                y = center_y + radius * math.sin(angle)
+
+                # Use muted colors (reduced saturation and brightness)
+                idle_hue = (i * 60 + 180) % 360  # Cool colors (blue/cyan range)
+                r, g, b = self.hsv_to_rgb(idle_hue, 0.4, 0.6)  # Low saturation, medium brightness
+                idle_color = self.rgb_to_hex(r, g, b)
+
+                # Small static particle
+                size = 3 + (i % 2)  # Vary size slightly
+                self.canvas.create_oval(
+                    x - size, y - size, x + size, y + size,
+                    fill=idle_color, outline=""
+                )
+
+                # Very subtle glow if enabled
+                if self.glow_effect:
+                    glow_size = size + 1
+                    glow_color = self.interpolate_color(idle_color, self.bg_color, 0.7)
+                    self.canvas.create_oval(
+                        x - glow_size, y - glow_size,
+                        x + glow_size, y + glow_size,
+                        fill="", outline=glow_color, width=1
+                    )
+
+            # Draw status text
+            self.draw_text(message, self.width // 2, self.height - 15, self.text_color)
+    
     @classmethod
     def get_default_config(cls) -> Dict[str, Any]:
         """Get default configuration for particle style."""

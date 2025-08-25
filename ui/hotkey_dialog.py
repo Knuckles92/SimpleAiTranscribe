@@ -56,7 +56,7 @@ class HotkeyDialog:
                     self.dialog.destroy()
                 except:
                     pass
-            messagebox.showerror("Error", f"Failed to open hotkey settings: {str(e)}")
+            messagebox.showerror("Error", f"Failed to open hotkey settings: {str(e)}", parent=self.parent)
     
     def _create_dialog(self):
         """Create the dialog window."""
@@ -177,8 +177,8 @@ class HotkeyDialog:
                 
                 logging.info(f"Setting hotkey field '{key}' to value: '{current_value}'")
                 
-                # Entry field with StringVar
-                self.hotkey_vars[key] = tk.StringVar(value=current_value)
+                # Entry field with StringVar (bind to dialog to avoid default-root issues)
+                self.hotkey_vars[key] = tk.StringVar(master=self.dialog, value=current_value)
                 entry = tk.Entry(frame, textvariable=self.hotkey_vars[key], width=20)
                 entry.pack(side=tk.LEFT, padx=(10, 0))
                 
@@ -273,7 +273,7 @@ class HotkeyDialog:
                 if value:
                     new_hotkeys[key] = value
                 else:
-                    messagebox.showerror("Error", f"Hotkey for {key} cannot be empty")
+                    messagebox.showerror("Error", f"Hotkey for {key} cannot be empty", parent=self.dialog)
                     return
             
             # Update hotkey manager
@@ -282,11 +282,11 @@ class HotkeyDialog:
             # Save to settings
             settings_manager.save_hotkey_settings(new_hotkeys)
             
-            messagebox.showinfo("Success", "Hotkeys updated successfully!")
+            messagebox.showinfo("Success", "Hotkeys updated successfully!", parent=self.dialog)
             self._on_cancel()  # Close dialog
             
         except Exception as e:
-            messagebox.showerror("Error", f"Failed to update hotkeys: {str(e)}")
+            messagebox.showerror("Error", f"Failed to update hotkeys: {str(e)}", parent=self.dialog)
     
     def _on_cancel(self):
         """Cancel and close the dialog."""
