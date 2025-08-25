@@ -1,0 +1,45 @@
+{
+  "active_session_id": "1019957a-1193-4b19-8cdf-20a3dd57fabc",
+  "last_saved": "2025-08-25T00:37:26.054288",
+  "sessions": {
+    "1019957a-1193-4b19-8cdf-20a3dd57fabc": {
+      "session_id": "1019957a-1193-4b19-8cdf-20a3dd57fabc",
+      "name": "Meeting 2025-08-25 00:37",
+      "timestamp": "20250825_003726",
+      "status": "active",
+      "created_at": "2025-08-25T00:37:26.052369",
+      "started_at": "2025-08-25T00:37:26.054288",
+      "ended_at": null,
+      "last_activity_at": "2025-08-25T00:37:26.054288",
+      "audio_file_path": "meetings\\sessions\\session_20250825_003726_1019957a\\audio_20250825_003726.wav",
+      "transcript_file_path": "meetings\\sessions\\session_20250825_003726_1019957a\\transcript_20250825_003726.txt",
+      "metadata_file_path": "meetings\\sessions\\session_20250825_003726_1019957a\\metadata_20250825_003726.json",
+      "chunks_directory": "meetings\\sessions\\session_20250825_003726_1019957a\\chunks",
+      "session_directory": "meetings\\sessions\\session_20250825_003726_1019957a",
+      "description": "",
+      "tags": [],
+      "participants": [],
+      "total_duration_seconds": 0.0,
+      "recording_duration_seconds": 0.0,
+      "pause_duration_seconds": 0.0,
+      "pause_start_time": null,
+      "chunk_files": [],
+      "current_chunk_index": 0,
+      "statistics": {
+        "total_duration_seconds": 0.0,
+        "recording_duration_seconds": 0.0,
+        "pause_duration_seconds": 0.0,
+        "num_chunks": 0,
+        "total_file_size_bytes": 0,
+        "audio_file_size_bytes": 0,
+        "transcript_file_size_bytes": 0,
+        "num_pauses": 0,
+        "average_chunk_size_seconds": 0.0,
+        "largest_chunk_size_seconds": 0.0,
+        "smallest_chunk_size_seconds": 0.0
+      },
+      "last_saved_at": "2025-08-25T00:37:26.053789",
+      "recovery_data": {}
+    }
+  }
+}

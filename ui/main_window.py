@@ -193,6 +193,8 @@ class MainWindow:
         # Create File menu
         file_menu = tk.Menu(menubar, tearoff=0)
         menubar.add_cascade(label="File", menu=file_menu)
+        file_menu.add_command(label="Open Meeting Transcription", command=self.open_meeting_ui)
+        file_menu.add_separator()
         file_menu.add_command(label="Exit", command=self.quit_app)
         
         # Create Settings menu
@@ -575,19 +577,34 @@ class MainWindow:
             messagebox.showerror("Error", f"Failed to open waveform style settings: {e}")
     
     def configure_ffmpeg(self):
-        """Show FFmpeg configuration dialog."""
-        from .ffmpeg_dialog import FFmpegConfigDialog
-        from tkinter import messagebox
-        
-        dialog = FFmpegConfigDialog(self.root)
-        if dialog.show_config_dialog():
-            # Reset the local whisper backend to use new ffmpeg config
-            if 'local_whisper' in self.transcription_backends:
-                backend = self.transcription_backends['local_whisper']
-                if hasattr(backend, 'reset_ffmpeg_config'):
-                    backend.reset_ffmpeg_config()
-                    messagebox.showinfo("FFmpeg Configured", 
-                                      "FFmpeg has been reconfigured. Local Whisper should now work.")
+        """Open FFmpeg configuration dialog."""
+        try:
+            from .ffmpeg_dialog import FFmpegDialog
+            dialog = FFmpegDialog(self.root)
+            dialog.show()
+        except Exception as e:
+            logging.error(f"Failed to open FFmpeg dialog: {e}")
+            messagebox.showerror("Error", f"Failed to open FFmpeg configuration: {e}")
+    
+    def open_meeting_ui(self):
+        """Open the Meeting Transcription UI."""
+        try:
+            from prototype_meeting.meeting_ui import MeetingUI
+            
+            # Check if meeting UI is already open
+            if hasattr(self, '_meeting_ui') and self._meeting_ui:
+                self._meeting_ui.show_window()
+                return
+            
+            # Create new meeting UI instance
+            self._meeting_ui = MeetingUI()
+            self._meeting_ui.show_window()
+            
+            logging.info("Meeting UI opened")
+            
+        except Exception as e:
+            logging.error(f"Failed to open Meeting UI: {e}")
+            messagebox.showerror("Error", f"Failed to open Meeting Transcription: {e}")
     
     def quit_app(self):
         """Quit the application."""
