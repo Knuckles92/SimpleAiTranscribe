@@ -12,3 +12,8 @@ o3try.py
 venv/*
 CLAUDE.md
 .claude/settings.local.json
+meetings/*.json
+meetings/*.wav
+meetings/*.backup
+meetings/meeting_sessions.json.backup
+sessions/*

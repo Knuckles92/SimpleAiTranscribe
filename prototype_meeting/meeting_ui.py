@@ -24,8 +24,7 @@ from prototype_meeting.config_meeting import meeting_config
 from prototype_meeting.meeting_processor import MeetingProcessor
 from prototype_meeting.waveform_editor import WaveformEditor
 
-# Import base UI components for consistency
-from ui.waveform_overlay import WaveformOverlay
+# Import base UI components for consistency  
 from settings import settings_manager
 
 
@@ -39,44 +38,22 @@ class MeetingStatusController:
             meeting_ui: Reference to the MeetingUI instance.
         """
         self.meeting_ui = meeting_ui
-        
-        # Initialize overlay with saved style if available
-        try:
-            current_style, all_configs = settings_manager.load_waveform_style_settings()
-            self.waveform_overlay = WaveformOverlay(meeting_ui.root, initial_style=current_style)
-            if current_style in all_configs:
-                self.waveform_overlay.set_style(current_style, all_configs[current_style])
-        except Exception:
-            # Fallback to default overlay
-            self.waveform_overlay = WaveformOverlay(meeting_ui.root)
     
     def update_status(self, status: str, show_overlay: bool = True):
-        """Update status in both main window and overlay.
+        """Update status in main window.
         
         Args:
             status: Status message to display.
-            show_overlay: Whether to show the overlay.
+            show_overlay: Unused parameter (kept for compatibility).
         """
         # Update main window status
         if self.meeting_ui.status_label:
             self.meeting_ui.status_label.config(text=f"Status: {status}")
-        
-        # Update waveform overlay if requested
-        if show_overlay:
-            if "Recording" in status:
-                self.waveform_overlay.show("recording", status)
-            elif "Processing" in status:
-                self.waveform_overlay.show("processing", status)
-            elif "Paused" in status:
-                self.waveform_overlay.show("processing", status)  # Use processing style for pause
-            else:
-                self.waveform_overlay.hide()
-        else:
-            self.waveform_overlay.hide()
     
     def clear_status(self):
-        """Clear the status overlay."""
-        self.waveform_overlay.hide()
+        """Clear the status display."""
+        if self.meeting_ui.status_label:
+            self.meeting_ui.status_label.config(text="Status: Ready")
     
     def update_status_with_auto_clear(self, status: str, delay_ms: int = 3000):
         """Update status with automatic clearing after a delay.
@@ -85,7 +62,7 @@ class MeetingStatusController:
             status: Status message to display.
             delay_ms: Delay in milliseconds before clearing.
         """
-        self.update_status(status, show_overlay=True)
+        self.update_status(status, show_overlay=False)
         self.meeting_ui.root.after(delay_ms, self.clear_status)
 
 
@@ -121,6 +98,7 @@ class MeetingUI:
         self.recording_start_time: Optional[datetime] = None
         self.total_pause_time = 0.0
         self.last_pause_start: Optional[datetime] = None
+        self.progress_running = False  # Track if progress bar is running
         
         # UI components
         self.setup_ui_components()
@@ -131,7 +109,6 @@ class MeetingUI:
         # Setup components
         self._setup_gui()
         self._setup_hotkeys()
-        self._setup_audio_level_callback()
         
         # Real-time updates
         self._setup_real_time_updates()
@@ -438,13 +415,6 @@ class MeetingUI:
         except Exception as e:
             logging.warning(f"Failed to setup hotkeys: {e}")
     
-    def _setup_audio_level_callback(self):
-        """Setup audio level callback for waveform overlay."""
-        def audio_level_callback(level: float):
-            if self.status_controller.waveform_overlay:
-                self.status_controller.waveform_overlay.update_audio_level(level)
-        
-        self.meeting_recorder.set_audio_level_callback(audio_level_callback)
     
     def _setup_real_time_updates(self):
         """Setup real-time UI updates."""
@@ -488,10 +458,13 @@ class MeetingUI:
             
             # Update progress bars
             if self.meeting_recorder.is_recording and not self.meeting_recorder.is_paused:
-                if not self.recording_progress.inDeterminate:
+                if not self.progress_running:
                     self.recording_progress.start(10)
+                    self.progress_running = True
             else:
-                self.recording_progress.stop()
+                if self.progress_running:
+                    self.recording_progress.stop()
+                    self.progress_running = False
             
         except Exception as e:
             logging.error(f"Error updating session display: {e}")
@@ -564,6 +537,7 @@ class MeetingUI:
                 self.pause_resume_button.config(state=tk.NORMAL)
                 self.stop_meeting_button.config(state=tk.NORMAL)
                 self.save_meeting_button.config(state=tk.NORMAL)
+                self.progress_running = False  # Reset progress state
                 
                 self.session_id_label.config(text=session_id[-8:], foreground="black")  # Show last 8 chars
                 self.status_controller.update_status("Recording meeting...")
@@ -642,6 +616,11 @@ class MeetingUI:
                 self.stop_meeting_button.config(state=tk.DISABLED)
                 self.pause_resume_text.set("Pause Meeting")
                 
+                # Stop and reset progress bar
+                if self.progress_running:
+                    self.recording_progress.stop()
+                    self.progress_running = False
+                
                 self.status_controller.update_status("Meeting stopped - Processing...")
                 
                 # Process meeting in background
@@ -666,12 +645,20 @@ class MeetingUI:
             if not session or not session.audio_file_path:
                 return
             
-            # Update status on main thread
-            self.root.after(0, lambda: self.status_controller.update_status("Processing meeting audio..."))
+            # Update status on main thread using thread-safe method
+            def safe_update_status(msg):
+                try:
+                    if self.root and self.root.winfo_exists():
+                        self.root.after(0, lambda: self.status_controller.update_status(msg))
+                except tk.TclError:
+                    # Widget destroyed, ignore
+                    pass
+            
+            safe_update_status("Processing meeting audio...")
             
             # Process with meeting processor
             def progress_callback(message):
-                self.root.after(0, lambda: self.status_controller.update_status(message))
+                safe_update_status(message)
             
             processed_session_id = self.meeting_processor.process_meeting_audio(
                 session.audio_file_path,
@@ -682,12 +669,22 @@ class MeetingUI:
             # Mark session as completed
             self.session_manager.complete_session(self.current_session_id)
             
-            # Update UI on main thread
-            self.root.after(0, self._on_processing_complete)
+            # Update UI on main thread using thread-safe method
+            try:
+                if self.root and self.root.winfo_exists():
+                    self.root.after(0, self._on_processing_complete)
+            except tk.TclError:
+                # Widget destroyed, ignore
+                pass
             
         except Exception as e:
             logging.error(f"Meeting processing failed: {e}")
-            self.root.after(0, lambda: self._on_processing_error(str(e)))
+            try:
+                if self.root and self.root.winfo_exists():
+                    self.root.after(0, lambda: self._on_processing_error(str(e)))
+            except tk.TclError:
+                # Widget destroyed, ignore
+                pass
     
     def _on_processing_complete(self):
         """Handle processing completion on main thread."""

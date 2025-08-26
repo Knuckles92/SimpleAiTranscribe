@@ -286,8 +286,10 @@ class WaveformOverlay:
             if self.canvas and self.overlay:
                 try:
                     self.parent.after_idle(self._draw_frame)
-                except tk.TclError:
-                    break  # Window was destroyed
+                except (tk.TclError, RuntimeError):
+                    # Window was destroyed or main thread is not in main loop
+                    self.should_animate = False
+                    break
                     
             time.sleep(self.frame_delay)
             
