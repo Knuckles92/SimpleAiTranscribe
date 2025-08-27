@@ -594,11 +594,24 @@ class MainWindow:
             # Check if meeting UI is already open
             if hasattr(self, '_meeting_ui') and self._meeting_ui:
                 self._meeting_ui.show_window()
+                # Also minimize main window to give meeting window focus
+                self.root.state('iconic')
                 return
             
-            # Create new meeting UI instance
-            self._meeting_ui = MeetingUI()
+            # Create new meeting UI instance with parent reference
+            self._meeting_ui = MeetingUI(parent_window=self.root)
+            
+            # Set up proper window relationship
+            try:
+                self._meeting_ui.root.transient(self.root)  # Make meeting window modal-like
+            except tk.TclError:
+                pass  # Ignore if transient fails
+            
             self._meeting_ui.show_window()
+            
+            # Optionally minimize main window to give meeting window more space
+            # User can restore it if needed
+            self.root.state('iconic')  # Minimize main window
             
             logging.info("Meeting UI opened")
             

@@ -17,3 +17,5 @@ meetings/*.wav
 meetings/*.backup
 meetings/meeting_sessions.json.backup
 sessions/*
+meetings/meeting_sessions.json
+meetings/meeting_sessions.json.backup

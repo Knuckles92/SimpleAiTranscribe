@@ -77,19 +77,27 @@ class MeetingUI:
     - File management controls
     """
     
-    def __init__(self):
-        """Initialize the Meeting UI."""
+    def __init__(self, parent_window=None):
+        """Initialize the Meeting UI.
+        
+        Args:
+            parent_window: Optional reference to the main window
+        """
         # Create main window
         self.root = tk.Tk()
         self.root.title("Meeting Transcription")
         self.root.geometry(meeting_config.MEETING_WINDOW_SIZE)
         self.root.withdraw()  # Hide initially
         
+        # Store parent window reference
+        self.parent_window = parent_window
+        
         # Initialize components
         self.meeting_recorder = MeetingRecorder()
         self.session_manager = SessionManager()
         self.file_manager = create_file_manager()
-        self.meeting_processor = MeetingProcessor()
+        # Share session manager with the processor
+        self.meeting_processor = MeetingProcessor(session_manager=self.session_manager)
         self.executor = ThreadPoolExecutor(max_workers=2)
         
         # Meeting state
@@ -490,11 +498,24 @@ class MeetingUI:
         self.root.deiconify()
         self.root.state('normal')
         self.root.lift()  # Bring to front
+        self.root.focus_force()  # Force focus to this window
+        self.root.attributes('-topmost', True)  # Ensure it stays on top temporarily
+        # Remove topmost after a short delay to allow normal window behavior
+        self.root.after(500, lambda: self.root.attributes('-topmost', False))
         logging.info("Meeting window shown")
     
     def hide_window(self):
         """Hide the meeting window."""
         self.root.withdraw()
+        
+        # Restore parent window if it was minimized
+        if self.parent_window:
+            try:
+                self.parent_window.state('normal')
+                self.parent_window.lift()
+            except tk.TclError:
+                pass  # Ignore if parent window is no longer available
+        
         logging.info("Meeting window hidden")
     
     def on_closing(self):
@@ -603,6 +624,15 @@ class MeetingUI:
             if self.meeting_recorder.stop_meeting_recording():
                 self.session_manager.stop_session(self.current_session_id)
                 
+                # Update session with the actual audio file path used by the recorder
+                session_info = self.meeting_recorder.get_session_info()
+                if session_info and session_info.get('audio_file_path'):
+                    session = self.session_manager.get_session(self.current_session_id)
+                    if session:
+                        session.audio_file_path = session_info['audio_file_path']
+                        # Save the updated session state
+                        self.session_manager.save_session_state()
+                
                 # Update final pause time if needed
                 if self.last_pause_start:
                     self.total_pause_time += (datetime.now() - self.last_pause_start).total_seconds()
@@ -649,9 +679,9 @@ class MeetingUI:
             def safe_update_status(msg):
                 try:
                     if self.root and self.root.winfo_exists():
-                        self.root.after(0, lambda: self.status_controller.update_status(msg))
-                except tk.TclError:
-                    # Widget destroyed, ignore
+                        self.root.after(0, lambda: self._safe_status_update(msg))
+                except (tk.TclError, RuntimeError):
+                    # Widget destroyed or main thread not in main loop, ignore
                     pass
             
             safe_update_status("Processing meeting audio...")
@@ -673,18 +703,31 @@ class MeetingUI:
             try:
                 if self.root and self.root.winfo_exists():
                     self.root.after(0, self._on_processing_complete)
-            except tk.TclError:
-                # Widget destroyed, ignore
+            except (tk.TclError, RuntimeError):
+                # Widget destroyed or main thread not in main loop, ignore
                 pass
             
         except Exception as e:
-            logging.error(f"Meeting processing failed: {e}")
-            try:
-                if self.root and self.root.winfo_exists():
-                    self.root.after(0, lambda: self._on_processing_error(str(e)))
-            except tk.TclError:
-                # Widget destroyed, ignore
-                pass
+            # Check if this is a shutdown-related error vs actual processing error
+            if "main thread is not in main loop" in str(e) or isinstance(e, (tk.TclError, RuntimeError)):
+                logging.debug(f"Meeting processing stopped due to UI shutdown: {e}")
+            else:
+                logging.error(f"Meeting processing failed: {e}")
+                try:
+                    if self.root and self.root.winfo_exists():
+                        self.root.after(0, lambda: self._on_processing_error(str(e)))
+                except (tk.TclError, RuntimeError):
+                    # Widget destroyed or main thread not in main loop, ignore
+                    pass
+    
+    def _safe_status_update(self, msg):
+        """Safely update status with additional widget existence checks."""
+        try:
+            if self.status_controller and hasattr(self.status_controller, 'update_status'):
+                self.status_controller.update_status(msg)
+        except (tk.TclError, RuntimeError, AttributeError):
+            # Widget destroyed, controller not available, or other UI error
+            pass
     
     def _on_processing_complete(self):
         """Handle processing completion on main thread."""
@@ -884,7 +927,7 @@ class MeetingUI:
             # Reload settings and apply to overlay
             new_style, new_configs = settings_manager.load_waveform_style_settings()
             new_config = new_configs.get(new_style, {})
-            if self.status_controller.waveform_overlay:
+            if hasattr(self.status_controller, 'waveform_overlay') and self.status_controller.waveform_overlay:
                 self.status_controller.waveform_overlay.set_style(new_style, new_config)
                 
         except Exception as e:
@@ -921,7 +964,11 @@ class MeetingUI:
                 self.status_controller.update_status("Auto-chunking audio...")
                 
                 def progress_callback(message):
-                    self.root.after(0, lambda: self.status_controller.update_status(message))
+                    try:
+                        if self.root and self.root.winfo_exists():
+                            self.root.after(0, lambda: self._safe_status_update(message))
+                    except (tk.TclError, RuntimeError):
+                        pass
                 
                 # Run in background
                 self.executor.submit(self._auto_chunk_background, session.audio_file_path, progress_callback)
@@ -941,14 +988,25 @@ class MeetingUI:
             )
             
             # Update waveform editor with new chunks
-            if self.waveform_editor:
-                self.root.after(0, lambda: self.waveform_editor.load_audio_file(audio_file_path))
+            try:
+                if self.waveform_editor and self.root and self.root.winfo_exists():
+                    self.root.after(0, lambda: self.waveform_editor.load_audio_file(audio_file_path))
+            except (tk.TclError, RuntimeError):
+                pass
             
-            self.root.after(0, lambda: self.status_controller.update_status_with_auto_clear("Auto-chunking completed"))
+            try:
+                if self.root and self.root.winfo_exists():
+                    self.root.after(0, lambda: self._safe_status_update("Auto-chunking completed"))
+            except (tk.TclError, RuntimeError):
+                pass
             
         except Exception as e:
             logging.error(f"Auto-chunking failed: {e}")
-            self.root.after(0, lambda: messagebox.showerror("Error", f"Auto-chunking failed: {str(e)}"))
+            try:
+                if self.root and self.root.winfo_exists():
+                    self.root.after(0, lambda: messagebox.showerror("Error", f"Auto-chunking failed: {str(e)}"))
+            except (tk.TclError, RuntimeError):
+                pass
     
     def export_audio_chunks(self):
         """Export individual audio chunks."""
@@ -969,7 +1027,7 @@ class MeetingUI:
                 self.meeting_recorder.stop_meeting_recording()
             
             # Cleanup components
-            if self.status_controller.waveform_overlay:
+            if hasattr(self.status_controller, 'waveform_overlay') and self.status_controller.waveform_overlay:
                 self.status_controller.waveform_overlay.cleanup()
             
             if self.meeting_recorder:

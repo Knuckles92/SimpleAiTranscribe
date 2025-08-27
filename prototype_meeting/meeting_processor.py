@@ -168,10 +168,15 @@ class SessionManager:
 class MeetingProcessor(AudioProcessor):
     """Enhanced audio processor for meeting transcription with advanced chunking and metadata."""
     
-    def __init__(self):
-        """Initialize the meeting processor."""
+    def __init__(self, session_manager: SessionManager = None):
+        """Initialize the meeting processor.
+        
+        Args:
+            session_manager: Optional shared session manager instance. 
+                           If None, creates a new instance.
+        """
         super().__init__()
-        self.session_manager = SessionManager()
+        self.session_manager = session_manager or SessionManager()
         self.current_session_id: Optional[str] = None
         
     def process_meeting_audio(self, audio_file_path: str, session_id: str = None, 
