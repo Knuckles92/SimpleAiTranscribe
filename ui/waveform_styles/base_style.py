@@ -133,14 +133,69 @@ class BaseWaveformStyle(ABC):
         """
         pass
     
-    @abstractmethod
     def draw_canceling_state(self, message: str = "Cancelled"):
-        """Draw the canceling state visualization.
+        """Draw a universal canceling animation.
+
+        Displays a shrinking red cross with fading text so all styles share
+        a consistent cancellation experience.
 
         Args:
             message: Status message to display
         """
-        pass
+        if not self.canvas:
+            return
+
+        # Progress from 0.0 to 1.0 across the animation duration
+        progress = self.get_cancellation_progress()
+
+        # Determine colors based on progress
+        bg_color = self.config.get('bg_color', '#000000')
+        cross_color = self.interpolate_color('#ff4444', bg_color, progress)
+        text_color = self.interpolate_color('#ffffff', bg_color, progress)
+
+        # Size of the cross shrinks as animation progresses
+        max_size = int(min(self.width, self.height) * 0.4)
+        size = int(max_size * (1.0 - progress))
+        center_x = self.width // 2
+        center_y = self.height // 2
+
+        # Background rectangle for better visibility
+        margin = 5
+        self.canvas.create_rectangle(
+            margin,
+            margin,
+            self.width - margin,
+            self.height - margin,
+            fill=bg_color,
+            outline="",
+        )
+
+        # Draw the cancel cross
+        self.canvas.create_line(
+            center_x - size,
+            center_y - size,
+            center_x + size,
+            center_y + size,
+            fill=cross_color,
+            width=4,
+        )
+        self.canvas.create_line(
+            center_x - size,
+            center_y + size,
+            center_x + size,
+            center_y - size,
+            fill=cross_color,
+            width=4,
+        )
+
+        # Draw the status message at the bottom
+        self.canvas.create_text(
+            self.width // 2,
+            self.height - 12,
+            text=message,
+            fill=text_color,
+            font=("Arial", 12, "bold"),
+        )
 
     def draw_stt_disable_state(self, message: str = "STT Disabled"):
         """Draw the STT disable state visualization (default: same as idle).

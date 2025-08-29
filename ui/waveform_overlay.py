@@ -326,7 +326,8 @@ class WaveformOverlay:
                 if (time.time() - self.canceling_start_time) > cancellation_duration:
                     self.hide()
                     return
-                self.current_style.draw_canceling_state(message)
+                # Use the base style cancellation animation for consistency
+                BaseWaveformStyle.draw_canceling_state(self.current_style, message)
             elif self.current_state == "stt_disable":
                 if not message:
                     message = "STT Disabled"
