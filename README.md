@@ -1,8 +1,7 @@
 # Audio Recorder with Speech-to-Text
 
 A modular desktop application for recording audio and transcribing it to text using either local Whisper models or OpenAI API. Features a clean Tkinter GUI, system tray integration, global keyboard shortcuts, and real-time status overlay with automatic text pasting.
-
-![Cursor_ZOs1eUw501](https://github.com/user-attachments/assets/d09c6812-3df2-424d-9415-9bec1ab59abc)
+![Cursor_oltUG9lVTm](https://github.com/user-attachments/assets/ffe3f51e-3faf-4f31-a661-a1de6bcd0bc9)
 
 
 ## Architecture
