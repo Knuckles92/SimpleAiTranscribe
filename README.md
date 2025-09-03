@@ -2,7 +2,7 @@
 
 A modular desktop application for recording audio and transcribing it to text using either local Whisper models or OpenAI API. Features a clean Tkinter GUI, system tray integration, global keyboard shortcuts, and real-time status overlay with automatic text pasting.
 
-<img width="500" height="301" alt="image" src="https://github.com/user-attachments/assets/a0940c47-3380-49eb-a550-a3e7c003737a" />
+![Cursor_ZOs1eUw501](https://github.com/user-attachments/assets/d09c6812-3df2-424d-9415-9bec1ab59abc)
 
 
 ## Architecture
