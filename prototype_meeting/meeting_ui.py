@@ -6,23 +6,23 @@ with pause/resume functionality, real-time monitoring, and session management.
 """
 
 import tkinter as tk
-from tkinter import messagebox, ttk
-import threading
+from tkinter import ttk, messagebox
 import logging
-import time
 from typing import Optional, Dict, Any, Callable
-from datetime import datetime, timedelta
+import threading
 from concurrent.futures import ThreadPoolExecutor
-import keyboard
+from datetime import datetime, timedelta
+import json
+import shutil
 import os
 
 # Import meeting-specific modules
 from prototype_meeting.meeting_recorder import MeetingRecorder
-from prototype_meeting.session_manager import SessionManager, SessionStatus
-from prototype_meeting.file_manager import create_file_manager
-from prototype_meeting.config_meeting import meeting_config
+from prototype_meeting.session_manager import SessionManager
 from prototype_meeting.meeting_processor import MeetingProcessor
+from prototype_meeting.config_meeting import meeting_config
 from prototype_meeting.waveform_editor import WaveformEditor
+from prototype_meeting.file_manager import FileManager
 
 # Import base UI components for consistency  
 from settings import settings_manager
@@ -95,7 +95,7 @@ class MeetingUI:
         # Initialize components
         self.meeting_recorder = MeetingRecorder()
         self.session_manager = SessionManager()
-        self.file_manager = create_file_manager()
+        self.file_manager = FileManager()
         # Share session manager with the processor
         self.meeting_processor = MeetingProcessor(session_manager=self.session_manager)
         self.executor = ThreadPoolExecutor(max_workers=2)
@@ -620,43 +620,30 @@ class MeetingUI:
             return
         
         try:
-            # Stop recording
-            if self.meeting_recorder.stop_meeting_recording():
-                self.session_manager.stop_session(self.current_session_id)
-                
-                # Update session with the actual audio file path used by the recorder
-                session_info = self.meeting_recorder.get_session_info()
-                if session_info and session_info.get('audio_file_path'):
-                    session = self.session_manager.get_session(self.current_session_id)
-                    if session:
-                        session.audio_file_path = session_info['audio_file_path']
-                        # Save the updated session state
-                        self.session_manager.save_session_state()
-                
-                # Update final pause time if needed
-                if self.last_pause_start:
-                    self.total_pause_time += (datetime.now() - self.last_pause_start).total_seconds()
-                    self.last_pause_start = None
-                
+            # Define the completion callback that will be called after audio is saved
+            def on_recording_saved():
+                # Process meeting in background after file is saved
+                self.executor.submit(self._process_meeting)
+            
+            # Stop the recording with completion callback
+            if self.meeting_recorder.stop_meeting_recording(completion_callback=on_recording_saved):
                 self.is_meeting_active = False
                 
-                # Update UI
+                # Update UI state
                 self.start_meeting_button.config(state=tk.NORMAL)
-                self.pause_resume_button.config(state=tk.DISABLED)
+                self.pause_resume_button.config(state=tk.DISABLED, text="Pause")
                 self.stop_meeting_button.config(state=tk.DISABLED)
-                self.pause_resume_text.set("Pause Meeting")
+                self.save_meeting_button.config(state=tk.DISABLED)
+                self.cancel_button.config(state=tk.DISABLED)
                 
-                # Stop and reset progress bar
+                # Stop progress animation
                 if self.progress_running:
                     self.recording_progress.stop()
                     self.progress_running = False
                 
-                self.status_controller.update_status("Meeting stopped - Processing...")
+                self.status_controller.update_status("Meeting stopped - Saving audio...")
                 
-                # Process meeting in background
-                self.executor.submit(self._process_meeting)
-                
-                logging.info("Meeting stopped")
+                logging.info("Meeting stopped, waiting for audio to be saved before processing")
                 
             else:
                 messagebox.showerror("Error", "Failed to stop meeting recording")
@@ -673,6 +660,11 @@ class MeetingUI:
             
             session = self.session_manager.get_session(self.current_session_id)
             if not session or not session.audio_file_path:
+                return
+            
+            # Verify audio file exists before processing
+            if not os.path.exists(session.audio_file_path):
+                logging.error(f"Audio file not found after save: {session.audio_file_path}")
                 return
             
             # Update status on main thread using thread-safe method

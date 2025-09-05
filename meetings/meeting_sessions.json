@@ -1,6 +1,6 @@
 {
   "active_session_id": null,
-  "last_saved": "2025-08-27T01:30:32.180639",
+  "last_saved": "2025-09-04T22:30:30.933100",
   "sessions": {
     "1019957a-1193-4b19-8cdf-20a3dd57fabc": {
       "session_id": "1019957a-1193-4b19-8cdf-20a3dd57fabc",
@@ -38,7 +38,7 @@
         "largest_chunk_size_seconds": 0.0,
         "smallest_chunk_size_seconds": 0.0
       },
-      "last_saved_at": "2025-08-27T01:30:32.180141",
+      "last_saved_at": "2025-09-04T22:30:30.932727",
       "recovery_data": {}
     },
     "1f016e90-6200-44b0-a960-f234efbc51c4": {
@@ -77,7 +77,7 @@
         "largest_chunk_size_seconds": 0.0,
         "smallest_chunk_size_seconds": 0.0
       },
-      "last_saved_at": "2025-08-27T01:30:32.180141",
+      "last_saved_at": "2025-09-04T22:30:30.932727",
       "recovery_data": {}
     },
     "4b476c37-33b0-42ef-b939-50d31d64c0c3": {
@@ -116,7 +116,7 @@
         "largest_chunk_size_seconds": 0.0,
         "smallest_chunk_size_seconds": 0.0
       },
-      "last_saved_at": "2025-08-27T01:30:32.180141",
+      "last_saved_at": "2025-09-04T22:30:30.932727",
       "recovery_data": {}
     },
     "d6cc27e1-96c3-48db-8a02-972e9a839160": {
@@ -155,7 +155,7 @@
         "largest_chunk_size_seconds": 0.0,
         "smallest_chunk_size_seconds": 0.0
       },
-      "last_saved_at": "2025-08-27T01:30:32.180141",
+      "last_saved_at": "2025-09-04T22:30:30.932727",
       "recovery_data": {}
     },
     "0ebd67f0-0a36-41f3-b665-b58b7e0423e7": {
@@ -194,7 +194,7 @@
         "largest_chunk_size_seconds": 0.0,
         "smallest_chunk_size_seconds": 0.0
       },
-      "last_saved_at": "2025-08-27T01:30:32.180141",
+      "last_saved_at": "2025-09-04T22:30:30.932727",
       "recovery_data": {}
     },
     "22f19a80-d5b7-4780-b4d6-97bc07b73735": {
@@ -233,7 +233,7 @@
         "largest_chunk_size_seconds": 0.0,
         "smallest_chunk_size_seconds": 0.0
       },
-      "last_saved_at": "2025-08-27T01:30:32.180141",
+      "last_saved_at": "2025-09-04T22:30:30.932727",
       "recovery_data": {}
     },
     "eea6c1a3-a3b2-41bf-a7d2-0224d94c4b7d": {
@@ -272,7 +272,7 @@
         "largest_chunk_size_seconds": 0.0,
         "smallest_chunk_size_seconds": 0.0
       },
-      "last_saved_at": "2025-08-27T01:30:32.180141",
+      "last_saved_at": "2025-09-04T22:30:30.932727",
       "recovery_data": {}
     },
     "7f0fff55-aa08-47b9-bdb2-a650c707e7bf": {
@@ -311,7 +311,46 @@
         "largest_chunk_size_seconds": 0.0,
         "smallest_chunk_size_seconds": 0.0
       },
-      "last_saved_at": "2025-08-27T01:30:32.180141",
+      "last_saved_at": "2025-09-04T22:30:30.932727",
+      "recovery_data": {}
+    },
+    "037a8d59-0b68-462a-a29b-52487ffb5d97": {
+      "session_id": "037a8d59-0b68-462a-a29b-52487ffb5d97",
+      "name": "Meeting 2025-09-04 22:30",
+      "timestamp": "20250904_223021",
+      "status": "stopped",
+      "created_at": "2025-09-04T22:30:21.607501",
+      "started_at": "2025-09-04T22:30:21.611497",
+      "ended_at": "2025-09-04T22:30:30.919099",
+      "last_activity_at": "2025-09-04T22:30:30.919099",
+      "audio_file_path": "meetings\\meeting_037a8d59-0b68-462a-a29b-52487ffb5d97.wav",
+      "transcript_file_path": "meetings\\sessions\\session_20250904_223021_037a8d59\\transcript_20250904_223021.txt",
+      "metadata_file_path": "meetings\\sessions\\session_20250904_223021_037a8d59\\metadata_20250904_223021.json",
+      "chunks_directory": "meetings\\sessions\\session_20250904_223021_037a8d59\\chunks",
+      "session_directory": "meetings\\sessions\\session_20250904_223021_037a8d59",
+      "description": "",
+      "tags": [],
+      "participants": [],
+      "total_duration_seconds": 9.307602,
+      "recording_duration_seconds": 9.307602,
+      "pause_duration_seconds": 0.0,
+      "pause_start_time": null,
+      "chunk_files": [],
+      "current_chunk_index": 0,
+      "statistics": {
+        "total_duration_seconds": 9.307602,
+        "recording_duration_seconds": 9.307602,
+        "pause_duration_seconds": 0.0,
+        "num_chunks": 0,
+        "total_file_size_bytes": 0,
+        "audio_file_size_bytes": 0,
+        "transcript_file_size_bytes": 0,
+        "num_pauses": 0,
+        "average_chunk_size_seconds": 0.0,
+        "largest_chunk_size_seconds": 0.0,
+        "smallest_chunk_size_seconds": 0.0
+      },
+      "last_saved_at": "2025-09-04T22:30:30.932727",
       "recovery_data": {}
     }
   }

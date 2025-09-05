@@ -104,6 +104,7 @@ class MeetingRecorder(AudioRecorder):
         self._auto_save_stop_event = threading.Event()
         self.pause_lock = threading.Lock()
         self.last_frame_count_at_save = 0
+        self._completion_callback: Optional[Callable[[], None]] = None
         
         # Ensure meetings directory exists
         meeting_config.ensure_meetings_directory()
@@ -213,10 +214,13 @@ class MeetingRecorder(AudioRecorder):
             logging.error(f"Failed to resume recording: {e}")
             return False
     
-    def stop_meeting_recording(self) -> bool:
+    def stop_meeting_recording(self, completion_callback: Optional[Callable[[], None]] = None) -> bool:
         """
         Stop the meeting recording and save with metadata.
         
+        Args:
+            completion_callback: Optional callback to invoke after file is saved.
+            
         Returns:
             True if recording stopped and saved successfully, False otherwise.
         """
@@ -225,6 +229,9 @@ class MeetingRecorder(AudioRecorder):
             return False
         
         try:
+            # Store the completion callback
+            self._completion_callback = completion_callback
+            
             # Request stop with enhanced post-roll
             self._stop_requested = True
             # Use MEETING_POST_ROLL_MS instead of POST_ROLL_MS
@@ -258,6 +265,15 @@ class MeetingRecorder(AudioRecorder):
                     # Save session metadata
                     self._save_session_metadata()
                     logging.info(f"Meeting recording finalized - Session: {self.session_info.session_id}")
+                    
+                    # Invoke completion callback if provided
+                    if hasattr(self, '_completion_callback') and self._completion_callback:
+                        try:
+                            self._completion_callback()
+                        except Exception as callback_error:
+                            logging.error(f"Error in completion callback: {callback_error}")
+                        finally:
+                            self._completion_callback = None
                 else:
                     logging.error("Failed to save final meeting recording")
                     
