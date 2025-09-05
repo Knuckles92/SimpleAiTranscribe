@@ -262,7 +262,7 @@ class LocalWhisperBackend(TranscriptionBackend):
             True if model is loaded and available, False otherwise.
         """
         return self.model is not None
-    
+
     def reload_model(self, model_name: str = None):
         """Reload the Whisper model with a different model name.
         

@@ -73,7 +73,7 @@ The application has been refactored into a modular architecture for better maint
 ### 🖥️ User Interface
 - **Main Window**: Model selection dropdown, recording controls, and transcription display
 - **System Tray**: Minimize to tray with show/hide controls
-- **Status Overlay**: Real-time status window that follows mouse cursor with **5 customizable waveform styles**
+- **Status Overlay**: Real-time status window that follows mouse cursor with **7 customizable waveform styles**
 - **Auto-paste**: Automatically pastes transcriptions to the active window
 - **Loading Screen**: Shows initialization progress during startup
 
@@ -109,19 +109,7 @@ Choose from 7 distinct real-time visualization styles for the status overlay:
 - **Windows** (due to keyboard library requirements)
 
 ### Required Dependencies
-```
-tkinter (usually included with Python)
-pyaudio
-wave (built-in)
-whisper
-numpy
-pyperclip
-keyboard
-openai
-pystray
-Pillow
-python-dotenv (optional, for .env file support)
-```
+See `requirements.txt` for a complete list of dependencies.
 
 ### API Setup (Optional)
 - OpenAI API key for cloud transcription features
@@ -202,7 +190,7 @@ The application uses these optimized audio settings:
 - **Minimum Chunk Duration**: 30 seconds per chunk
 
 #### Waveform Styles
-- **Available Styles**: 5 distinct visualization themes
+- **Available Styles**: 7 distinct visualization themes
 - **Live Preview**: Real-time style preview in selection dialog
 - **Persistent Selection**: Remembers your chosen style across sessions
 - **Customizable Colors**: Each style has configurable color schemes
