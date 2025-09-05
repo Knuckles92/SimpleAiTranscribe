@@ -135,7 +135,7 @@ python-dotenv (optional, for .env file support)
 
 1. **Clone the repository:**
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/Knuckles92/SimpleAiTranscribe
    cd whisper_local
    ```
 
