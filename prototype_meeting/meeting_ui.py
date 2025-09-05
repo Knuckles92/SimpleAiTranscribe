@@ -16,6 +16,14 @@ import json
 import shutil
 import os
 
+# Import keyboard for hotkeys
+try:
+    import keyboard
+    KEYBOARD_AVAILABLE = True
+except ImportError:
+    KEYBOARD_AVAILABLE = False
+    logging.warning("keyboard module not available, hotkeys disabled")
+
 # Import meeting-specific modules
 from prototype_meeting.meeting_recorder import MeetingRecorder
 from prototype_meeting.session_manager import SessionManager
@@ -545,10 +553,18 @@ class MeetingUI:
             # Start session in session manager
             self.session_manager.start_session(session_id)
             
+            # Get the session to update audio path
+            session = self.session_manager.get_session(session_id)
+            
             # Start recording
             if self.meeting_recorder.start_meeting_recording(session_id):
                 self.current_session_id = session_id
                 self.is_meeting_active = True
+                
+                # Update session with actual audio file path from recorder
+                if session and self.meeting_recorder.session_info:
+                    session.audio_file_path = self.meeting_recorder.session_info.audio_file_path
+                    self.session_manager.save_session_state()
                 self.recording_start_time = datetime.now()
                 self.total_pause_time = 0.0
                 self.last_pause_start = None
@@ -622,6 +638,13 @@ class MeetingUI:
         try:
             # Define the completion callback that will be called after audio is saved
             def on_recording_saved():
+                # Update session with actual audio file path from recorder
+                if self.current_session_id:
+                    session = self.session_manager.get_session(self.current_session_id)
+                    if session and self.meeting_recorder.session_info:
+                        session.audio_file_path = self.meeting_recorder.session_info.audio_file_path
+                        self.session_manager.save_session_state()
+                
                 # Process meeting in background after file is saved
                 self.executor.submit(self._process_meeting)
             
@@ -634,7 +657,6 @@ class MeetingUI:
                 self.pause_resume_button.config(state=tk.DISABLED, text="Pause")
                 self.stop_meeting_button.config(state=tk.DISABLED)
                 self.save_meeting_button.config(state=tk.DISABLED)
-                self.cancel_button.config(state=tk.DISABLED)
                 
                 # Stop progress animation
                 if self.progress_running:

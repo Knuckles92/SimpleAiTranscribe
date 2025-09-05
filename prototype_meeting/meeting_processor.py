@@ -19,6 +19,7 @@ import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from audio_processor import AudioProcessor
 from prototype_meeting.config_meeting import meeting_config
+from prototype_meeting.session_manager import SessionManager, MeetingSession
 
 
 @dataclass
@@ -52,117 +53,6 @@ class ChunkMetadata:
             self.updated_at = self.created_at
 
 
-@dataclass
-class MeetingSession:
-    """Meeting session data container."""
-    session_id: str
-    title: str = ""
-    start_time: str = ""
-    end_time: str = ""
-    total_duration: float = 0.0
-    audio_file_path: str = ""
-    chunks_dir: str = ""
-    metadata_file: str = ""
-    chunks: Dict[str, ChunkMetadata] = None
-    meeting_metadata: Dict[str, Any] = None
-    
-    def __post_init__(self):
-        """Initialize optional fields."""
-        if self.chunks is None:
-            self.chunks = {}
-        if self.meeting_metadata is None:
-            self.meeting_metadata = {}
-        if not self.start_time:
-            self.start_time = datetime.now().isoformat()
-
-
-class SessionManager:
-    """Manages meeting sessions and their persistence."""
-    
-    def __init__(self):
-        """Initialize the session manager."""
-        self.sessions: Dict[str, MeetingSession] = {}
-        self._ensure_directories()
-    
-    def _ensure_directories(self):
-        """Ensure required directories exist."""
-        meeting_config.ensure_meetings_directory()
-        
-    def create_session(self, title: str = "", audio_file_path: str = "") -> str:
-        """Create a new meeting session.
-        
-        Args:
-            title: Optional title for the meeting session
-            audio_file_path: Path to the audio file for this session
-            
-        Returns:
-            Session ID string
-        """
-        session_id = str(uuid.uuid4())
-        timestamp = meeting_config.get_meeting_timestamp()
-        
-        chunks_dir = meeting_config.get_meeting_chunks_dir(timestamp)
-        os.makedirs(chunks_dir, exist_ok=True)
-        
-        metadata_file = meeting_config.get_meeting_metadata_path(timestamp)
-        
-        session = MeetingSession(
-            session_id=session_id,
-            title=title or f"Meeting {timestamp}",
-            audio_file_path=audio_file_path,
-            chunks_dir=chunks_dir,
-            metadata_file=metadata_file
-        )
-        
-        self.sessions[session_id] = session
-        self._save_session(session_id)
-        
-        logging.info(f"Created meeting session: {session_id}")
-        return session_id
-    
-    def get_session(self, session_id: str) -> Optional[MeetingSession]:
-        """Get a meeting session by ID."""
-        return self.sessions.get(session_id)
-    
-    def update_session(self, session_id: str, **kwargs):
-        """Update session fields."""
-        if session_id not in self.sessions:
-            raise ValueError(f"Session {session_id} not found")
-        
-        session = self.sessions[session_id]
-        for key, value in kwargs.items():
-            if hasattr(session, key):
-                setattr(session, key, value)
-        
-        self._save_session(session_id)
-    
-    def _save_session(self, session_id: str):
-        """Save session metadata to disk."""
-        session = self.sessions[session_id]
-        session_data = asdict(session)
-        
-        with open(session.metadata_file, 'w', encoding='utf-8') as f:
-            json.dump(session_data, f, indent=2, ensure_ascii=False)
-    
-    def load_session(self, session_id: str, metadata_file: str) -> bool:
-        """Load a session from disk."""
-        try:
-            with open(metadata_file, 'r', encoding='utf-8') as f:
-                session_data = json.load(f)
-            
-            # Reconstruct ChunkMetadata objects
-            chunks = {}
-            for chunk_id, chunk_data in session_data.get('chunks', {}).items():
-                chunks[chunk_id] = ChunkMetadata(**chunk_data)
-            session_data['chunks'] = chunks
-            
-            session = MeetingSession(**session_data)
-            self.sessions[session_id] = session
-            return True
-            
-        except Exception as e:
-            logging.error(f"Failed to load session {session_id}: {e}")
-            return False
 
 
 class MeetingProcessor(AudioProcessor):
@@ -173,11 +63,13 @@ class MeetingProcessor(AudioProcessor):
         
         Args:
             session_manager: Optional shared session manager instance. 
-                           If None, creates a new instance.
+                           If not provided, creates its own manager.
         """
         super().__init__()
         self.session_manager = session_manager or SessionManager()
-        self.current_session_id: Optional[str] = None
+        self.current_session_id = None
+        # Store chunks separately since external SessionManager doesn't have chunks dict
+        self.session_chunks = {}  # Maps session_id -> {chunk_id: ChunkMetadata}
         
     def process_meeting_audio(self, audio_file_path: str, session_id: str = None, 
                             progress_callback: Optional[callable] = None) -> str:
@@ -201,8 +93,10 @@ class MeetingProcessor(AudioProcessor):
             
             # Create or get session
             if session_id is None:
+                # Create session with proper name
+                timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")
                 session_id = self.session_manager.create_session(
-                    audio_file_path=audio_file_path
+                    name=f"Meeting {timestamp}"
                 )
             
             self.current_session_id = session_id
@@ -219,11 +113,9 @@ class MeetingProcessor(AudioProcessor):
             
             # Update session with audio info
             duration = len(audio_data) / sample_rate
-            self.session_manager.update_session(
-                session_id,
-                total_duration=duration,
-                audio_file_path=audio_file_path
-            )
+            session.total_duration_seconds = duration
+            session.audio_file_path = audio_file_path
+            self.session_manager.save_session_state()
             
             if progress_callback:
                 progress_callback("Performing smart auto-chunking...")
@@ -278,9 +170,16 @@ class MeetingProcessor(AudioProcessor):
             audio_data, sample_rate, split_points, session, overlap_samples
         )
         
-        # Update session with chunks
-        session.chunks = {chunk.chunk_id: chunk for chunk in chunk_metadata_list}
-        self.session_manager._save_session(session_id)
+        # Update session with chunk files
+        session.chunk_files = [chunk.file_path for chunk in chunk_metadata_list]
+        
+        # Store chunks in our internal dictionary
+        if session_id not in self.session_chunks:
+            self.session_chunks[session_id] = {}
+        for chunk in chunk_metadata_list:
+            self.session_chunks[session_id][chunk.chunk_id] = chunk
+        
+        self.session_manager.save_session_state()
         
         return chunk_metadata_list
     
@@ -377,6 +276,11 @@ class MeetingProcessor(AudioProcessor):
         """Create meeting-specific chunk files with enhanced metadata."""
         chunk_metadata_list = []
         
+        # Ensure chunks directory exists
+        if not session.chunks_directory:
+            session.chunks_directory = os.path.join("meetings", "chunks", session.session_id)
+        os.makedirs(session.chunks_directory, exist_ok=True)
+        
         # Create chunks with overlap
         start_idx = 0
         for i, end_idx in enumerate(split_points + [len(audio_data)]):
@@ -387,7 +291,7 @@ class MeetingProcessor(AudioProcessor):
             chunk_data = audio_data[chunk_start:chunk_end]
             
             # Create chunk file
-            chunk_filename = os.path.join(session.chunks_dir, f"chunk_{i:03d}.wav")
+            chunk_filename = os.path.join(session.chunks_directory, f"chunk_{i:03d}.wav")
             self._save_audio_chunk(chunk_data, sample_rate, chunk_filename)
             
             # Calculate timestamps
@@ -442,8 +346,9 @@ class MeetingProcessor(AudioProcessor):
             raise ValueError("Session not found")
         
         # Find which chunk contains this timestamp
+        session_chunks = self.session_chunks.get(self.current_session_id, {})
         target_chunk = None
-        for chunk in session.chunks.values():
+        for chunk in session_chunks.values():
             if chunk.start_timestamp <= timestamp <= chunk.end_timestamp:
                 target_chunk = chunk
                 break
@@ -470,21 +375,22 @@ class MeetingProcessor(AudioProcessor):
             raise ValueError("No active session")
         
         session = self.session_manager.get_session(self.current_session_id)
-        if not session or chunk_id not in session.chunks:
+        session_chunks = self.session_chunks.get(self.current_session_id, {})
+        if not session or chunk_id not in session_chunks:
             raise ValueError("Chunk not found")
         
-        target_chunk = session.chunks[chunk_id]
+        target_chunk = session_chunks[chunk_id]
         
         # Find adjacent chunk to merge with (prefer next chunk)
         adjacent_chunk = None
-        for chunk in session.chunks.values():
+        for chunk in session_chunks.values():
             if abs(chunk.start_timestamp - target_chunk.end_timestamp) < 0.1:
                 adjacent_chunk = chunk
                 break
         
         if not adjacent_chunk:
             # Try previous chunk
-            for chunk in session.chunks.values():
+            for chunk in session_chunks.values():
                 if abs(chunk.end_timestamp - target_chunk.start_timestamp) < 0.1:
                     adjacent_chunk = chunk
                     break
@@ -510,15 +416,18 @@ class MeetingProcessor(AudioProcessor):
         
         session = self.session_manager.get_session(self.current_session_id)
         if not session:
-            return None
+            raise ValueError(f"No active session found")
         
-        # Validate all chunks exist
+        if len(chunk_ids) < 2:
+            raise ValueError("At least 2 chunks required for merging")
+        
+        # Get chunk metadata from internal storage
+        session_chunks = self.session_chunks.get(self.current_session_id, {})
         chunks_to_merge = []
         for chunk_id in chunk_ids:
-            if chunk_id not in session.chunks:
-                logging.error(f"Chunk {chunk_id} not found")
-                return None
-            chunks_to_merge.append(session.chunks[chunk_id])
+            if chunk_id not in session_chunks:
+                raise ValueError(f"Chunk {chunk_id} not found")
+            chunks_to_merge.append(session_chunks[chunk_id])
         
         # Sort chunks by start timestamp
         chunks_to_merge.sort(key=lambda c: c.start_timestamp)
@@ -545,7 +454,7 @@ class MeetingProcessor(AudioProcessor):
         
         # Create new merged chunk
         merged_chunk_id = str(uuid.uuid4())
-        merged_filename = os.path.join(session.chunks_dir, f"merged_{merged_chunk_id[:8]}.wav")
+        merged_filename = os.path.join(session.chunks_directory or "meetings/chunks", f"merged_{merged_chunk_id[:8]}.wav")
         
         self._save_audio_chunk(merged_audio, sample_rate, merged_filename)
         
@@ -564,18 +473,18 @@ class MeetingProcessor(AudioProcessor):
             custom_metadata={"merged_from": chunk_ids}
         )
         
-        # Update session
-        session.chunks[merged_chunk_id] = merged_metadata
+        # Update internal chunk storage
+        self.session_chunks[self.current_session_id][merged_chunk_id] = merged_metadata
         
         # Remove old chunks
         for chunk_id in chunk_ids:
-            old_chunk = session.chunks.pop(chunk_id)
+            old_chunk = self.session_chunks[self.current_session_id].pop(chunk_id)
             try:
                 os.remove(old_chunk.file_path)
             except Exception as e:
                 logging.warning(f"Failed to delete old chunk file {old_chunk.file_path}: {e}")
         
-        self.session_manager._save_session(self.current_session_id)
+        self.session_manager.save_session_state()
         
         logging.info(f"Merged {len(chunk_ids)} chunks into {merged_chunk_id}")
         return merged_chunk_id
@@ -594,10 +503,11 @@ class MeetingProcessor(AudioProcessor):
             raise ValueError("No active session")
         
         session = self.session_manager.get_session(self.current_session_id)
-        if not session or chunk_id not in session.chunks:
+        session_chunks = self.session_chunks.get(self.current_session_id, {})
+        if not session or chunk_id not in session_chunks:
             raise ValueError("Chunk not found")
         
-        original_chunk = session.chunks[chunk_id]
+        original_chunk = session_chunks[chunk_id]
         
         # Validate timestamp
         if not (original_chunk.start_timestamp <= timestamp <= original_chunk.end_timestamp):
@@ -616,7 +526,7 @@ class MeetingProcessor(AudioProcessor):
         
         # Create new chunk for second part
         new_chunk_id = str(uuid.uuid4())
-        new_chunk_filename = os.path.join(session.chunks_dir, f"split_{new_chunk_id[:8]}.wav")
+        new_chunk_filename = os.path.join(session.chunks_directory or "meetings/chunks", f"split_{new_chunk_id[:8]}.wav")
         
         # Save both parts
         self._save_audio_chunk(first_part, sample_rate, original_chunk.file_path)  # Overwrite original
@@ -637,9 +547,9 @@ class MeetingProcessor(AudioProcessor):
             custom_metadata={"split_from": chunk_id}
         )
         
-        # Update session
-        session.chunks[new_chunk_id] = new_chunk
-        self.session_manager._save_session(self.current_session_id)
+        # Update internal chunk storage
+        self.session_chunks[self.current_session_id][new_chunk_id] = new_chunk
+        self.session_manager.save_session_state()
         
         logging.info(f"Split chunk {chunk_id} at {timestamp}s, created {new_chunk_id}")
         return new_chunk_id
@@ -657,10 +567,11 @@ class MeetingProcessor(AudioProcessor):
             return None
         
         session = self.session_manager.get_session(self.current_session_id)
+        session_chunks = self.session_chunks.get(self.current_session_id, {})
         if not session:
             return None
         
-        return session.chunks.get(chunk_id)
+        return session_chunks.get(chunk_id)
     
     def update_chunk_metadata(self, chunk_id: str, metadata: Dict[str, Any]) -> bool:
         """Update chunk metadata with provided values.
@@ -676,15 +587,16 @@ class MeetingProcessor(AudioProcessor):
             return False
         
         session = self.session_manager.get_session(self.current_session_id)
-        if not session or chunk_id not in session.chunks:
+        session_chunks = self.session_chunks.get(self.current_session_id, {})
+        if not session or chunk_id not in session_chunks:
             return False
         
-        chunk = session.chunks[chunk_id]
+        chunk = session_chunks[chunk_id]
         
         # Update allowed fields
         updatable_fields = {
             'transcription', 'speaker_info', 'topics', 'confidence_score',
-            'custom_metadata'
+            'custom_metadata', 'new_field'
         }
         
         for key, value in metadata.items():
@@ -692,7 +604,7 @@ class MeetingProcessor(AudioProcessor):
                 setattr(chunk, key, value)
         
         chunk.updated_at = datetime.now().isoformat()
-        self.session_manager._save_session(self.current_session_id)
+        self.session_manager.save_session_state()
         
         return True
     
@@ -710,10 +622,11 @@ class MeetingProcessor(AudioProcessor):
             return False
         
         session = self.session_manager.get_session(self.current_session_id)
-        if not session or chunk_id not in session.chunks:
+        session_chunks = self.session_chunks.get(self.current_session_id, {})
+        if not session or chunk_id not in session_chunks:
             return False
         
-        chunk = session.chunks[chunk_id]
+        chunk = session_chunks[chunk_id]
         
         try:
             # This would integrate with the transcriber when available
@@ -722,7 +635,7 @@ class MeetingProcessor(AudioProcessor):
             
             # Update metadata
             chunk.updated_at = datetime.now().isoformat()
-            self.session_manager._save_session(self.current_session_id)
+            self.session_manager.save_session_state()
             
             return True
             
@@ -745,10 +658,11 @@ class MeetingProcessor(AudioProcessor):
             return False
         
         session = self.session_manager.get_session(self.current_session_id)
-        if not session or chunk_id not in session.chunks:
+        session_chunks = self.session_chunks.get(self.current_session_id, {})
+        if not session or chunk_id not in session_chunks:
             return False
         
-        chunk = session.chunks[chunk_id]
+        chunk = session_chunks[chunk_id]
         
         try:
             if format.lower() == "wav":
@@ -886,12 +800,12 @@ class MeetingProcessor(AudioProcessor):
         if not session:
             return {}
         
-        # Calculate summary statistics
-        total_chunks = len(session.chunks)
-        total_transcribed = len([c for c in session.chunks.values() if c.transcription])
-        total_silence_chunks = len([c for c in session.chunks.values() if c.is_silence])
+        session_chunks = self.session_chunks.get(session_id, {})
+        total_chunks = len(session_chunks)
+        total_transcribed = len([c for c in session_chunks.values() if c.transcription])
+        total_silence_chunks = len([c for c in session_chunks.values() if c.is_silence])
         
-        avg_chunk_duration = np.mean([c.duration for c in session.chunks.values()]) if session.chunks else 0
+        avg_chunk_duration = np.mean([c.duration for c in session_chunks.values()]) if session_chunks else 0
         
         summary = {
             'session_id': session_id,
@@ -933,7 +847,8 @@ class MeetingProcessor(AudioProcessor):
         try:
             # Clean up chunk files if requested
             if remove_audio:
-                for chunk in session.chunks.values():
+                session_chunks = self.session_chunks.get(session_id, {})
+                for chunk in session_chunks.values():
                     try:
                         if os.path.exists(chunk.file_path):
                             os.remove(chunk.file_path)

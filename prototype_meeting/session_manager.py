@@ -290,17 +290,13 @@ class SessionManager:
             if name is None:
                 name = f"Meeting {timestamp}"
             
-            # Create session directory
-            session_dir = self._create_session_directory(session_id, timestamp)
-            
-            # Setup file paths
-            audio_file_path = os.path.join(session_dir, f"audio_{timestamp}.wav")
-            transcript_file_path = os.path.join(session_dir, f"transcript_{timestamp}.txt")
-            metadata_file_path = os.path.join(session_dir, f"metadata_{timestamp}.json")
-            chunks_directory = os.path.join(session_dir, "chunks")
-            
-            # Create chunks directory
-            os.makedirs(chunks_directory, exist_ok=True)
+            # Don't create session directory structure here - let the meeting recorder set paths
+            # The meeting recorder will set the actual audio_file_path
+            audio_file_path = None  # Will be set by meeting recorder
+            transcript_file_path = None  # Will be set during processing
+            metadata_file_path = None  # Will be set by meeting recorder
+            chunks_directory = None  # Will be created during processing if needed
+            session_dir = None  # Not using session directory structure
             
             # Create session object
             session = MeetingSession(
