@@ -193,7 +193,7 @@ class MainWindow:
         # Create File menu
         file_menu = tk.Menu(menubar, tearoff=0)
         menubar.add_cascade(label="File", menu=file_menu)
-        file_menu.add_command(label="Open Meeting Transcription", command=self.open_meeting_ui)
+        file_menu.add_command(label="Open Meeting Transcription(beta)", command=self.open_meeting_ui)
         file_menu.add_separator()
         file_menu.add_command(label="Exit", command=self.quit_app)
         

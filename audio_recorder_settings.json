@@ -116,5 +116,5 @@
       "ripple_gain": 22.0
     }
   },
-  "selected_model": "local_whisper"
+  "selected_model": "api_gpt4o"
 }
