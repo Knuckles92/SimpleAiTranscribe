@@ -7,3 +7,4 @@ Pillow>=10.0.0
 pyperclip>=1.8.2
 openai-whisper>=20231117
 python-dotenv>=1.0.0
+pygame>=2.5.0

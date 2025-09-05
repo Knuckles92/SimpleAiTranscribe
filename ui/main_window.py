@@ -193,8 +193,6 @@ class MainWindow:
         # Create File menu
         file_menu = tk.Menu(menubar, tearoff=0)
         menubar.add_cascade(label="File", menu=file_menu)
-        file_menu.add_command(label="Open Meeting Transcription(beta)", command=self.open_meeting_ui)
-        file_menu.add_separator()
         file_menu.add_command(label="Exit", command=self.quit_app)
         
         # Create Settings menu
@@ -586,38 +584,7 @@ class MainWindow:
             logging.error(f"Failed to open FFmpeg dialog: {e}")
             messagebox.showerror("Error", f"Failed to open FFmpeg configuration: {e}")
     
-    def open_meeting_ui(self):
-        """Open the Meeting Transcription UI."""
-        try:
-            from prototype_meeting.meeting_ui import MeetingUI
-            
-            # Check if meeting UI is already open
-            if hasattr(self, '_meeting_ui') and self._meeting_ui:
-                self._meeting_ui.show_window()
-                # Also minimize main window to give meeting window focus
-                self.root.state('iconic')
-                return
-            
-            # Create new meeting UI instance with parent reference
-            self._meeting_ui = MeetingUI(parent_window=self.root)
-            
-            # Set up proper window relationship
-            try:
-                self._meeting_ui.root.transient(self.root)  # Make meeting window modal-like
-            except tk.TclError:
-                pass  # Ignore if transient fails
-            
-            self._meeting_ui.show_window()
-            
-            # Optionally minimize main window to give meeting window more space
-            # User can restore it if needed
-            self.root.state('iconic')  # Minimize main window
-            
-            logging.info("Meeting UI opened")
-            
-        except Exception as e:
-            logging.error(f"Failed to open Meeting UI: {e}")
-            messagebox.showerror("Error", f"Failed to open Meeting Transcription: {e}")
+    
     
     def quit_app(self):
         """Quit the application."""
