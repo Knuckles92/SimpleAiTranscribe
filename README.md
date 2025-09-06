@@ -6,52 +6,6 @@ A modular desktop application for recording audio and transcribing it to text us
 ![Cursor_oltUG9lVTm](https://github.com/user-attachments/assets/ffe3f51e-3faf-4f31-a661-a1de6bcd0bc9)
 
 
-## Architecture
-
-The application has been refactored into a modular architecture for better maintainability and extensibility:
-
-### Core Modules
-- **`app.py`**: Main application bootstrap and initialization
-- **`config.py`**: Centralized configuration and constants
-- **`settings.py`**: Settings persistence and management
-- **`recorder.py`**: Audio recording functionality
-- **`hotkey_manager.py`**: Global keyboard hook management
-
-### Transcription Backends
-- **`transcriber/`**: Pluggable transcription backend system
-  - `base.py`: Abstract base class for all backends
-  - `local_backend.py`: Local Whisper model implementation
-  - `openai_backend.py`: OpenAI API implementation
-
-### User Interface
-- **`ui/`**: Modular UI components
-  - `loading_screen.py`: Application startup screen
-  - `main_window.py`: Primary application window with model selection and status display
-  - `hotkey_dialog.py`: Hotkey configuration dialog with visual key capture
-  - `tray.py`: System tray integration
-  - `waveform_overlay.py`: Real-time audio visualization overlay with 5 customizable styles
-  - `waveform_style_dialog.py`: Style selection dialog with live previews
-  - `ffmpeg_dialog.py`: FFmpeg configuration and detection dialog
-  - `waveform_styles/`: Pluggable visualization style system
-    - `base_style.py`: Abstract base class for waveform styles
-    - `modern_style.py`: Clean modern bars with smooth animations
-    - `retro_style.py`: Neon matrix-style with glitch effects
-    - `minimalist_style.py`: Subtle line-based visualization
-    - `spectrum_style.py`: Circular spectrum analyzer
-    - `particle_style.py`: Dynamic particle system
-    - `style_factory.py`: Style registration and creation
-
-### Testing
-- **`tests/`**: Unit tests for core functionality
-  - `test_settings.py`: Settings management tests
-  - `test_recorder.py`: Audio recording tests
-
-### Extensibility Points
-- **Add New Transcription Backends**: Implement `TranscriptionBackend` interface
-- **Custom UI Components**: Extend the `ui/` package
-- **Configuration Options**: Add settings to `config.py`
-- **New Hotkey Actions**: Extend `HotkeyManager` callbacks
-
 ## Features
 
 ### 🎙️ Audio Recording
@@ -124,7 +78,6 @@ See `requirements.txt` for a complete list of dependencies.
 1. **Clone the repository:**
    ```bash
    git clone https://github.com/Knuckles92/SimpleAiTranscribe
-   cd whisper_local
    ```
 
 2. **Install dependencies:**
@@ -139,9 +92,9 @@ See `requirements.txt` for a complete list of dependencies.
    set OPENAI_API_KEY=your-api-key-here
    ```
    
-   Option B - Create .env file:
+   Option B - Create .env file and set:
    ```bash
-   echo OPENAI_API_KEY=your-api-key-here > .env
+   OPENAI_API_KEY=your-api-key-here
    ```
 
 ## Usage
@@ -152,9 +105,6 @@ python app.py
 ```
 
 The application will show a loading screen while initializing components, then display the main window. You can minimize it to system tray by closing the window.
-
-### Legacy Support
-The original `audio.py` file is still available but deprecated. Use `app.py` for the new modular architecture.
 
 ### Basic Workflow
 1. **Select Model**: Choose your preferred transcription method from the dropdown
@@ -272,3 +222,49 @@ Just use the thing.
 ## Contributing
 
 Do whatever you want.
+
+## Architecture
+
+The application has been refactored into a modular architecture for better maintainability and extensibility:
+
+### Core Modules
+- **`app.py`**: Main application bootstrap and initialization
+- **`config.py`**: Centralized configuration and constants
+- **`settings.py`**: Settings persistence and management
+- **`recorder.py`**: Audio recording functionality
+- **`hotkey_manager.py`**: Global keyboard hook management
+
+### Transcription Backends
+- **`transcriber/`**: Pluggable transcription backend system
+  - `base.py`: Abstract base class for all backends
+  - `local_backend.py`: Local Whisper model implementation
+  - `openai_backend.py`: OpenAI API implementation
+
+### User Interface
+- **`ui/`**: Modular UI components
+  - `loading_screen.py`: Application startup screen
+  - `main_window.py`: Primary application window with model selection and status display
+  - `hotkey_dialog.py`: Hotkey configuration dialog with visual key capture
+  - `tray.py`: System tray integration
+  - `waveform_overlay.py`: Real-time audio visualization overlay with 5 customizable styles
+  - `waveform_style_dialog.py`: Style selection dialog with live previews
+  - `ffmpeg_dialog.py`: FFmpeg configuration and detection dialog
+  - `waveform_styles/`: Pluggable visualization style system
+    - `base_style.py`: Abstract base class for waveform styles
+    - `modern_style.py`: Clean modern bars with smooth animations
+    - `retro_style.py`: Neon matrix-style with glitch effects
+    - `minimalist_style.py`: Subtle line-based visualization
+    - `spectrum_style.py`: Circular spectrum analyzer
+    - `particle_style.py`: Dynamic particle system
+    - `style_factory.py`: Style registration and creation
+
+### Testing
+- **`tests/`**: Unit tests for core functionality
+  - `test_settings.py`: Settings management tests
+  - `test_recorder.py`: Audio recording tests
+
+### Extensibility Points
+- **Add New Transcription Backends**: Implement `TranscriptionBackend` interface
+- **Custom UI Components**: Extend the `ui/` package
+- **Configuration Options**: Add settings to `config.py`
+- **New Hotkey Actions**: Extend `HotkeyManager` callbacks
