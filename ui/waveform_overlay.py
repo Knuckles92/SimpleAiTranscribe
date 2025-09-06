@@ -20,7 +20,7 @@ from .waveform_styles import WaveformStyleFactory, BaseWaveformStyle
 class WaveformOverlay:
     """Modern waveform overlay with real-time audio visualization."""
     
-    def __init__(self, parent: tk.Tk, initial_style: str = "modern"):
+    def __init__(self, parent: tk.Tk, initial_style: str = "particle"):
         """Initialize the waveform overlay.
         
         Args:

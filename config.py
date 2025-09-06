@@ -74,7 +74,7 @@ class AppConfig:
     DEFAULT_WHISPER_MODEL: str = "base"
     
     # Waveform style settings
-    CURRENT_WAVEFORM_STYLE: str = "modern"
+    CURRENT_WAVEFORM_STYLE: str = "particle"
     WAVEFORM_STYLE_CONFIGS: Dict[str, Dict] = None
     
     def __post_init__(self):

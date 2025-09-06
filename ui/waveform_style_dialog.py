@@ -17,7 +17,7 @@ from ui.waveform_styles.base_style import BaseWaveformStyle
 class WaveformStyleDialog:
     """Dialog for configuring waveform style with live previews."""
     
-    def __init__(self, parent, current_style: str = "modern", current_config: Dict = None):
+    def __init__(self, parent, current_style: str = "particle", current_config: Dict = None):
         """Initialize the waveform style dialog.
         
         Args:
@@ -493,8 +493,9 @@ class WaveformStyleDialog:
         # No separate Apply button; selecting a style applies immediately
     
     def _reset_to_default(self):
-        """Reset to default style (modern)."""
-        self._select_style("modern")
+        """Reset to default style (Particle Storm)."""
+        # Use configured default to keep a single source of truth
+        self._select_style(config.CURRENT_WAVEFORM_STYLE)
     
     def _on_apply(self):
         """Apply the selected style."""
@@ -537,7 +538,7 @@ class WaveformStyleDialog:
                 self.dialog = None
 
 
-def show_waveform_style_dialog(parent, current_style: str = "modern"):
+def show_waveform_style_dialog(parent, current_style: str = "particle"):
     """Show the waveform style configuration dialog.
     
     Args:
