@@ -15,12 +15,8 @@ A modular desktop application for recording audio and transcribing it to text us
 - **Smart Audio Splitting**: Automatically splits large audio files (>23MB) using silence detection to prevent API timeouts
 - **Post-roll Recording**: Continues recording for 1.2 seconds after stop to prevent word cutoffs
 
-### 🔄 Multiple Transcription Options
+### 🔄 Fully Local Transcription Options
 - **Local Whisper**: Uses OpenAI's Whisper "base" model locally (~150MB download on first use)
-- **API Options**:
-  - Whisper API (standard model)
-  - GPT-4o Transcribe (premium accuracy)
-  - GPT-4o Mini Transcribe (fast and cost-effective)
 
 ### ⌨️ Global Keyboard Shortcuts
 - `*` (asterisk): Start/stop recording
