@@ -14,11 +14,13 @@ A modular desktop application for recording audio and transcribing it to text us
 - High-quality mono audio recording (44.1kHz, 16-bit)
 - Real-time audio capture using PyAudio
 - Automatic WAV file generation
-- **Smart Audio Splitting**: Automatically splits large audio files (>23MB) using silence detection to prevent API timeouts
+- **Smart Audio Splitting**: Automatically splits large audio files using silence detection
 - **Post-roll Recording**: Continues recording for 1.2 seconds after stop to prevent word cutoffs
 
-### 🔄 Fully Local Transcription Options
+### 🔄 Local Transcription
 - **Local Whisper**: Uses OpenAI's Whisper "base" model locally (~150MB download on first use)
+- Runs entirely offline - audio never leaves your computer
+- Good accuracy with ~2-5 second processing time
 
 ### ⌨️ Global Keyboard Shortcuts
 - `*` (asterisk): Start/stop recording
@@ -27,7 +29,7 @@ A modular desktop application for recording audio and transcribing it to text us
 - **Customizable**: All hotkeys can be remapped via the hotkey configuration dialog
 
 ### 🖥️ User Interface
-- **Main Window**: Model selection dropdown, recording controls, and transcription display
+- **Main Window**: Recording controls and transcription display
 - **System Tray**: Minimize to tray with show/hide controls
 - **Status Overlay**: Real-time status window that follows mouse cursor with **7 customizable waveform styles**
 - **Auto-paste**: Automatically pastes transcriptions to the active window
@@ -48,8 +50,7 @@ Choose from 7 distinct real-time visualization styles for the status overlay:
 - Program can be completely disabled while running
 - Debounce protection (300ms) to prevent accidental double-triggers
 - Comprehensive logging to file and console
-- Support for environment variables and .env files
-- **Persistent Settings**: Remembers your model selection, hotkey preferences, and waveform style
+- **Persistent Settings**: Remembers your hotkey preferences and waveform style
 - **Audio Level Monitoring**: Real-time audio level display during recording
 - **FFmpeg Integration**: Advanced audio processing with automatic detection and configuration. Features include:
   - Automatic FFmpeg binary detection in system PATH
@@ -67,32 +68,16 @@ Choose from 7 distinct real-time visualization styles for the status overlay:
 ### Required Dependencies
 See `requirements.txt` for a complete list of dependencies.
 
-### API Setup (Optional)
-- OpenAI API key for cloud transcription features
-- Set as `OPENAI_API_KEY` environment variable or in `.env` file
-
 ## Installation
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/Knuckles92/SimpleAiTranscribe
+   git clone https://github.com/YourUsername/BLADE
    ```
 
 2. **Install dependencies:**
    ```bash
    pip install -r requirements.txt
-   ```
-
-3. **Set up API key (for cloud features):**
-   
-   Option A - Environment variable:
-   ```bash
-   set OPENAI_API_KEY=your-api-key-here
-   ```
-   
-   Option B - Create .env file and set:
-   ```bash
-   OPENAI_API_KEY=your-api-key-here
    ```
 
 ## Usage
@@ -105,21 +90,14 @@ python app.py
 The application will show a loading screen while initializing components, then display the main window. You can minimize it to system tray by closing the window.
 
 ### Basic Workflow
-1. **Select Model**: Choose your preferred transcription method from the dropdown
-2. **Record**: Press `*` to start recording, press `*` again to stop
-3. **Wait**: The app will process and transcribe your audio
-4. **Auto-paste**: Transcribed text is automatically pasted to your active window
+1. **Record**: Press `*` to start recording, press `*` again to stop
+2. **Wait**: The app will process and transcribe your audio locally (~2-5 seconds)
+3. **Auto-paste**: Transcribed text is automatically pasted to your active window
 
 ### Keyboard Controls
 - **Start/Stop Recording**: Press `*` (works globally in any application)
 - **Cancel Operation**: Press `-` to stop recording or cancel transcription
 - **Disable Program**: Press `Ctrl+Alt+*` to temporarily disable all functionality
-
-### Model Selection
-- **Local Whisper**: Runs entirely offline, good accuracy, ~2-5 second processing time
-- **API: Whisper**: Standard OpenAI Whisper via API, requires internet
-- **API: GPT-4o Transcribe**: Highest accuracy, premium model, requires API key
-- **API: GPT-4o Mini Transcribe**: Fast and cost-effective, requires API key
 
 ### System Tray
 - **Right-click tray icon**: Show/hide window or exit application
@@ -151,16 +129,10 @@ The application uses these optimized audio settings:
 - **Main Settings**: `audio_recorder_settings.json` (persistent configuration)
 - **Log File**: `audio_recorder.log` (application events and errors)
 - **Temporary Files**: `recorded_audio.wav` (current recording, overwritten each time)
-- **Environment**: `.env` file support for API keys and configuration
 
 ## Troubleshooting
 
 ### Common Issues
-
-**"No API key found" error:**
-- Ensure `OPENAI_API_KEY` is set in environment variables or `.env` file
-- API key is only required for cloud transcription options
-- Check that the key has proper permissions for your selected API model
 
 **Keyboard shortcuts not working:**
 - Run the application as administrator if needed
@@ -190,26 +162,26 @@ The application uses these optimized audio settings:
 - Check `audio_recorder.log` for splitting progress and any errors
 
 ### Performance Notes
-- **First Local Run**: Whisper model download (~150MB) may take a few minutes depending on internet speed
-- **Local vs API**: Local processing takes 2-5 seconds, API is usually faster but requires internet
+- **First Run**: Whisper model download (~150MB) may take a few minutes depending on internet speed
+- **Processing Time**: Local processing takes ~2-5 seconds for typical dictations
 - **Memory Usage**: Local Whisper model uses ~500MB RAM when loaded
 - **Audio Splitting**: Large files may take additional time for silence analysis and chunk processing
-- **Waveform Styles**: More complex styles (Particle, Retro) may use slightly more CPU during recording
+- **Waveform Styles**: More complex styles (Particle, Neon Matrix, Galaxy Warp) may use slightly more CPU during recording
 
 ## Technical Details
 
 ### Architecture
 - **GUI Framework**: Tkinter with ttk components
 - **Audio Processing**: PyAudio for capture, Wave for file handling
-- **Speech Recognition**: OpenAI Whisper (local) or OpenAI API (cloud)
+- **Speech Recognition**: OpenAI Whisper (local only)
 - **System Integration**: Keyboard hooks, clipboard operations, system tray
 - **Concurrency**: ThreadPoolExecutor for background tasks
 - **Configuration**: Centralized config management with dataclasses
 - **Testing**: Unit tests with mocking for hardware dependencies
 
 ### Security & Privacy
-- **Local Mode**: Audio never leaves your computer
-- **API Mode**: Audio is sent to OpenAI servers for processing
+- **100% Local**: Audio never leaves your computer
+- **No Internet Required**: All transcription happens on-device
 - **No Data Storage**: Recordings are temporarily saved and overwritten
 - **Logging**: Only application events are logged, not audio content
 
@@ -232,28 +204,29 @@ The application has been refactored into a modular architecture for better maint
 - **`recorder.py`**: Audio recording functionality
 - **`hotkey_manager.py`**: Global keyboard hook management
 
-### Transcription Backends
-- **`transcriber/`**: Pluggable transcription backend system
-  - `base.py`: Abstract base class for all backends
+### Transcription Backend
+- **`transcriber/`**: Local transcription system
+  - `base.py`: Abstract base class for backends
   - `local_backend.py`: Local Whisper model implementation
-  - `openai_backend.py`: OpenAI API implementation
 
 ### User Interface
 - **`ui/`**: Modular UI components
   - `loading_screen.py`: Application startup screen
-  - `main_window.py`: Primary application window with model selection and status display
+  - `main_window.py`: Primary application window with status display
   - `hotkey_dialog.py`: Hotkey configuration dialog with visual key capture
   - `tray.py`: System tray integration
-  - `waveform_overlay.py`: Real-time audio visualization overlay with 5 customizable styles
+  - `waveform_overlay.py`: Real-time audio visualization overlay with 7 customizable styles
   - `waveform_style_dialog.py`: Style selection dialog with live previews
   - `ffmpeg_dialog.py`: FFmpeg configuration and detection dialog
   - `waveform_styles/`: Pluggable visualization style system
     - `base_style.py`: Abstract base class for waveform styles
     - `modern_style.py`: Clean modern bars with smooth animations
-    - `retro_style.py`: Neon matrix-style with glitch effects
+    - `retro_style.py`: Classic VU meter style
     - `minimalist_style.py`: Subtle line-based visualization
     - `spectrum_style.py`: Circular spectrum analyzer
     - `particle_style.py`: Dynamic particle system
+    - `neon_matrix_style.py`: Cyberpunk-inspired visualization
+    - `galaxy_warp_style.py`: Space-themed visualization
     - `style_factory.py`: Style registration and creation
 
 ### Testing
@@ -262,7 +235,7 @@ The application has been refactored into a modular architecture for better maint
   - `test_recorder.py`: Audio recording tests
 
 ### Extensibility Points
-- **Add New Transcription Backends**: Implement `TranscriptionBackend` interface
 - **Custom UI Components**: Extend the `ui/` package
 - **Configuration Options**: Add settings to `config.py`
 - **New Hotkey Actions**: Extend `HotkeyManager` callbacks
+- **Additional Waveform Styles**: Implement `BaseWaveformStyle` interface
