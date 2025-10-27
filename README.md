@@ -4,10 +4,6 @@
 
 A modular desktop application for recording audio and transcribing it to text using local Whisper models. Features a clean Tkinter GUI, system tray integration, global keyboard shortcuts, and real-time status overlay with automatic text pasting.
 
-
-![Cursor_oltUG9lVTm](https://github.com/user-attachments/assets/ffe3f51e-3faf-4f31-a661-a1de6bcd0bc9)
-
-
 ## Features
 
 ### 🎙️ Audio Recording
