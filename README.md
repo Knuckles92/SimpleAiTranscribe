@@ -68,7 +68,7 @@ See `requirements.txt` for a complete list of dependencies.
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/YourUsername/BLADE
+   git clone https://github.com/AustinBrister/BLADE
    ```
 
 2. **Install dependencies:**
