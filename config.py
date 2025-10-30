@@ -37,7 +37,7 @@ class AppConfig:
     # UI settings
     MAIN_WINDOW_SIZE: str = "300x200"
     LOADING_WINDOW_SIZE: str = "300x300"
-    HOTKEY_DIALOG_SIZE: str = "400x300"
+    HOTKEY_DIALOG_SIZE: str = "450x450"
     OVERLAY_SIZE: str = "200x30"
     
     # Waveform overlay settings
