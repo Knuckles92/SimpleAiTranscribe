@@ -19,10 +19,10 @@ A modular desktop application for recording audio and transcribing it to text us
 - Good accuracy with ~2-5 second processing time
 
 ### ⌨️ Global Keyboard Shortcuts
-- `*` (asterisk): Start/stop recording
-- `-` (minus): Universal stop/cancel button
-- `Ctrl+Alt+*`: Enable/disable the entire program globally
-- **Customizable**: All hotkeys can be remapped via the hotkey configuration dialog
+- `Ctrl+Alt+W`: Start/stop recording
+- `Esc`: Universal stop/cancel button
+- `Ctrl+Alt+O`: Enable/disable the entire program globally
+- **Customizable**: All hotkeys can be remapped via Settings → Configure Hotkeys
 
 ### 🖥️ User Interface
 - **Main Window**: Recording controls and transcription display
@@ -86,14 +86,14 @@ python app.py
 The application will show a loading screen while initializing components, then display the main window. You can minimize it to system tray by closing the window.
 
 ### Basic Workflow
-1. **Record**: Press `*` to start recording, press `*` again to stop
+1. **Record**: Press `Ctrl+Alt+W` to start recording, press `Ctrl+Alt+W` again to stop
 2. **Wait**: The app will process and transcribe your audio locally (~2-5 seconds)
 3. **Auto-paste**: Transcribed text is automatically pasted to your active window
 
 ### Keyboard Controls
-- **Start/Stop Recording**: Press `*` (works globally in any application)
-- **Cancel Operation**: Press `-` to stop recording or cancel transcription
-- **Disable Program**: Press `Ctrl+Alt+*` to temporarily disable all functionality
+- **Start/Stop Recording**: Press `Ctrl+Alt+W` (works globally in any application)
+- **Cancel Operation**: Press `Esc` to stop recording or cancel transcription
+- **Disable Program**: Press `Ctrl+Alt+O` to temporarily disable all functionality
 
 ### System Tray
 - **Right-click tray icon**: Show/hide window or exit application
@@ -132,8 +132,8 @@ The application uses these optimized audio settings:
 
 **Keyboard shortcuts not working:**
 - Run the application as administrator if needed
-- Check if the program is disabled (press `Ctrl+Alt+*` to re-enable)
-- Verify hotkey settings haven't been changed in the hotkey configuration dialog
+- Check if the program is disabled (press `Ctrl+Alt+O` to re-enable)
+- Verify hotkey settings haven't been changed in Settings → Configure Hotkeys
 
 **Recording fails:**
 - Check microphone permissions in Windows settings
@@ -201,9 +201,9 @@ The application has been refactored into a modular architecture for better maint
 - **`hotkey_manager.py`**: Global keyboard hook management
 
 ### Transcription Backend
-- **`transcriber/`**: Local transcription system
+- **`transcriber/`**: Local-only transcription system
   - `base.py`: Abstract base class for backends
-  - `local_backend.py`: Local Whisper model implementation
+  - `local_backend.py`: Local Whisper model implementation (100% offline)
 
 ### User Interface
 - **`ui/`**: Modular UI components
