@@ -26,8 +26,8 @@ class LoadingScreen:
         """Create and display a simple static loading screen."""
         try:
             self.root = tk.Tk()
-            self.root.title("Audio Recorder")
-            self.root.geometry("320x180")
+            self.root.title("B.L.A.D.E.")
+            self.root.geometry("400x240")
             self.root.resizable(False, False)
             self.root.attributes('-topmost', True)
             self.root.configure(bg=self._bg_color)
@@ -42,12 +42,22 @@ class LoadingScreen:
             # App title
             title_label = tk.Label(
                 main_frame,
-                text="Audio Recorder",
-                font=("Segoe UI", 20, "bold"),
+                text="B.L.A.D.E.",
+                font=("Segoe UI", 24, "bold"),
                 bg=self._bg_color,
                 fg=self._accent_color,
             )
-            title_label.pack(pady=(0, 30))
+            title_label.pack(pady=(0, 5))
+
+            # Subtitle
+            subtitle_label = tk.Label(
+                main_frame,
+                text="Brister's Linguistic Audio Dictation Engine",
+                font=("Segoe UI", 9),
+                bg=self._bg_color,
+                fg=self._text_secondary,
+            )
+            subtitle_label.pack(pady=(0, 25))
             
             # Simple loading indicator using text
             loading_frame = tk.Frame(main_frame, bg=self._bg_color)
