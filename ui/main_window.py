@@ -123,8 +123,8 @@ class MainWindow:
     def __init__(self):
         """Initialize the main window."""
         self.root = tk.Tk()
-        self.root.title("Audio Recorder")
-        self.root.geometry(config.MAIN_WINDOW_SIZE)
+        self.root.title("B.L.A.D.E. - Brister's Linguistic Audio Dictation Engine")
+        self.root.geometry("350x250")
         self.root.withdraw()  # Hide initially
         
         # Initialize components
@@ -196,10 +196,34 @@ class MainWindow:
         # Main frame with padding
         main_frame = ttk.Frame(self.root, padding=10)
         main_frame.pack(fill=tk.BOTH, expand=True)
-        
+
+        # Header with B.L.A.D.E. branding
+        header_frame = tk.Frame(main_frame, bg=config.WAVEFORM_BG_COLOR)
+        header_frame.pack(fill=tk.X, pady=(0, 10))
+
+        title_label = tk.Label(
+            header_frame,
+            text="B.L.A.D.E.",
+            font=("Segoe UI", 16, "bold"),
+            bg=config.WAVEFORM_BG_COLOR,
+            fg=config.WAVEFORM_ACCENT_COLOR,
+            pady=5
+        )
+        title_label.pack()
+
+        subtitle_label = tk.Label(
+            header_frame,
+            text="Brister's Linguistic Audio Dictation Engine",
+            font=("Segoe UI", 8),
+            bg=config.WAVEFORM_BG_COLOR,
+            fg="#b0b0b0",
+            pady=2
+        )
+        subtitle_label.pack()
+
         # Status label
-        self.status_label = ttk.Label(main_frame, text="Status: Ready")
-        self.status_label.pack(pady=10)
+        self.status_label = ttk.Label(main_frame, text="Status: Ready", font=("Segoe UI", 9))
+        self.status_label.pack(pady=5)
 
         # Buttons frame
         buttons_frame = ttk.Frame(main_frame)
