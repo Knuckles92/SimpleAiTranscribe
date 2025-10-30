@@ -12,7 +12,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 from config import config
 from recorder import AudioRecorder
-from transcriber import TranscriptionBackend, LocalWhisperBackend, OpenAIBackend
+from transcriber import TranscriptionBackend, LocalWhisperBackend
 from hotkey_manager import HotkeyManager
 from settings import settings_manager
 from audio_processor import audio_processor
@@ -137,8 +137,6 @@ class MainWindow:
         
         # UI components
         self.status_label: Optional[tk.Label] = None
-        self.model_choice = tk.StringVar(value="local_whisper")
-        self.model_combobox: Optional[ttk.Combobox] = None
         self.transcription_text: Optional[tk.Text] = None
         self.start_button: Optional[ttk.Button] = None
         self.stop_button: Optional[ttk.Button] = None
@@ -171,18 +169,10 @@ class MainWindow:
         logging.info("Main window initialized")
     
     def _setup_transcription_backends(self):
-        """Initialize transcription backends."""
-        # Local Whisper backend
+        """Initialize transcription backend (local whisper only)."""
+        # Always use Local Whisper backend
         self.transcription_backends['local_whisper'] = LocalWhisperBackend()
-        
-        # OpenAI backends
-        self.transcription_backends['api_whisper'] = OpenAIBackend('api_whisper')
-        self.transcription_backends['api_gpt4o'] = OpenAIBackend('api_gpt4o')
-        self.transcription_backends['api_gpt4o_mini'] = OpenAIBackend('api_gpt4o_mini')
-        
-        # Load saved model selection and set backend
-        saved_model = settings_manager.load_model_selection()
-        self.current_backend = self.transcription_backends.get(saved_model, self.transcription_backends['local_whisper'])
+        self.current_backend = self.transcription_backends['local_whisper']
     
     def _setup_gui(self):
         """Create and configure the main GUI interface."""
@@ -210,40 +200,7 @@ class MainWindow:
         # Status label
         self.status_label = ttk.Label(main_frame, text="Status: Ready")
         self.status_label.pack(pady=10)
-        
-        # Model selection
-        model_frame = ttk.Frame(main_frame)
-        model_frame.pack(pady=5, fill=tk.X)
-        
-        # Create a centered container for the model selection
-        center_frame = ttk.Frame(model_frame)
-        center_frame.pack(expand=True)
-        
-        ttk.Label(center_frame, text="Model:").pack(side=tk.LEFT, padx=(0, 5))
-        
-        self.model_combobox = ttk.Combobox(center_frame, textvariable=self.model_choice, 
-                                          width=25, state="readonly")
-        self.model_combobox['values'] = config.MODEL_CHOICES
-        
-        # Load saved model selection and set in combobox
-        saved_model = settings_manager.load_model_selection()
-        self.model_choice.set(saved_model)
-        
-        # Find display value for saved model and set it in combobox
-        display_value = None
-        for display, internal in config.MODEL_VALUE_MAP.items():
-            if internal == saved_model:
-                display_value = display
-                break
-        
-        if display_value:
-            self.model_combobox.set(display_value)
-        else:
-            self.model_combobox.set(config.MODEL_CHOICES[0])  # Fallback to first choice
-        
-        self.model_combobox.bind('<<ComboboxSelected>>', self.on_model_changed)
-        self.model_combobox.pack(side=tk.LEFT)
-        
+
         # Buttons frame
         buttons_frame = ttk.Frame(main_frame)
         buttons_frame.pack(pady=10, fill=tk.X)
@@ -510,24 +467,7 @@ class MainWindow:
         """Paste text at current cursor position."""
         pyperclip.copy(text)
         keyboard.send('ctrl+v')
-    
-    def on_model_changed(self, event=None):
-        """Handle model selection change."""
-        display_value = self.model_combobox.get()
-        internal_value = config.MODEL_VALUE_MAP.get(display_value)
-        
-        if internal_value and internal_value in self.transcription_backends:
-            self.current_backend = self.transcription_backends[internal_value]
-            self.model_choice.set(internal_value)
-            
-            # Save the model selection
-            try:
-                settings_manager.save_model_selection(internal_value)
-                logging.info(f"Model changed and saved: {internal_value}")
-            except Exception as e:
-                logging.error(f"Failed to save model selection: {e}")
-                # Continue execution even if save fails
-    
+
     def show_status_overlay(self, message: str):
         """Show status overlay with message."""
         if message:
