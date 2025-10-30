@@ -3,7 +3,12 @@
     "allow": [
       "Bash(grep:*)",
       "Bash(python:*)",
-      "Bash(git rm:*)"
+      "Bash(git rm:*)",
+      "Bash(pip install:*)",
+      "Bash(venvScriptspip.exe install -r requirements.txt)",
+      "Bash(.\\venv\\Scripts\\pip.exe install:*)",
+      "Bash(venv/Scripts/pip.exe install:*)",
+      "Bash(venv/Scripts/python.exe:*)"
     ],
     "deny": []
   },

@@ -1,5 +1,5 @@
 # Core Dependencies
-pyaudio==0.2.13
+pyaudio==0.2.14
 numpy>=1.24.0
 keyboard>=0.13.5
 pystray>=0.19.4
@@ -7,7 +7,3 @@ Pillow>=10.0.0
 pyperclip>=1.8.2
 openai-whisper>=20231117
 python-dotenv>=1.0.0
-
-# Optional: Only needed for test audio generation (tests/generate_test_audio.py)
-# gtts>=2.5.0
-# pydub>=0.25.1
