@@ -222,10 +222,10 @@ class HotkeyDialog:
         """
         instructions_text = (
             "Instructions:\n"
-            "• Single keys: a, b, *, -, etc.\n"
-            "• Combinations: ctrl+alt+*, shift+f1, etc.\n"
+            "• Single keys: a, b, *, -, esc, etc.\n"
+            "• Combinations: ctrl+alt+w, shift+f1, etc.\n"
             "• Special keys: space, enter, esc, f1-f12\n"
-            "• Current defaults: * (record), - (cancel), ctrl+alt+* (enable/disable)"
+            "• Current defaults: Ctrl+Alt+W (record), Esc (cancel), Ctrl+Alt+O (enable/disable)"
         )
         
         instructions = tk.Label(parent, text=instructions_text,

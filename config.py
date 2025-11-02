@@ -37,7 +37,7 @@ class AppConfig:
     # UI settings
     MAIN_WINDOW_SIZE: str = "300x200"
     LOADING_WINDOW_SIZE: str = "300x300"
-    HOTKEY_DIALOG_SIZE: str = "400x300"
+    HOTKEY_DIALOG_SIZE: str = "450x450"
     OVERLAY_SIZE: str = "200x30"
     
     # Waveform overlay settings
@@ -81,9 +81,9 @@ class AppConfig:
         """Initialize computed fields after dataclass creation."""
         if self.DEFAULT_HOTKEYS is None:
             self.DEFAULT_HOTKEYS = {
-                'record_toggle': '*',
-                'cancel': '-',
-                'enable_disable': 'ctrl+alt+*'
+                'record_toggle': 'ctrl+alt+w',
+                'cancel': 'esc',
+                'enable_disable': 'ctrl+alt+o'
             }
         
         if self.MODEL_VALUE_MAP is None:
