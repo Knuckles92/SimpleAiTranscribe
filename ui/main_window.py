@@ -589,8 +589,10 @@ class MainWindow:
     def quit_app(self):
         """Quit the application."""
         logging.info("Quitting application")
-        self.cleanup()
-        self.root.quit()
+        # Use destroy() instead of quit() to properly terminate the mainloop
+        # This prevents KeyboardInterrupt exceptions when exiting via tray icon
+        # Schedule destroy on main thread (important when called from tray thread)
+        self.root.after(0, self.root.destroy)
     
     def cleanup(self):
         """Clean up resources."""
@@ -626,5 +628,9 @@ class MainWindow:
         
         try:
             self.root.mainloop()
+        except KeyboardInterrupt:
+            # Handle KeyboardInterrupt gracefully (can occur during shutdown)
+            logging.info("Application interrupted during shutdown")
+            self.cleanup()
         finally:
             self.cleanup()
