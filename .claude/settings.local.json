@@ -3,7 +3,15 @@
     "allow": [
       "Bash(grep:*)",
       "Bash(python:*)",
-      "Bash(git rm:*)"
+      "Bash(git rm:*)",
+      "Bash(if [ -f \"/mnt/d/Python Projects/whisper_local/.cursorrules\" ])",
+      "Bash(then cat \"/mnt/d/Python Projects/whisper_local/.cursorrules\")",
+      "Bash(fi)",
+      "Bash(if [ -f \"/mnt/d/Python Projects/whisper_local/.github/copilot-instructions.md\" ])",
+      "Bash(then cat \"/mnt/d/Python Projects/whisper_local/.github/copilot-instructions.md\")",
+      "Bash(if [ -f \"/mnt/d/Python Projects/whisper_local/CLAUDE.md\" ])",
+      "Bash(then cat \"/mnt/d/Python Projects/whisper_local/CLAUDE.md\")",
+      "Bash(else echo \"No CLAUDE.md found\")"
     ],
     "deny": []
   },

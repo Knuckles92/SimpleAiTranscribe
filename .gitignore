@@ -22,3 +22,4 @@ meetings/meeting_sessions.json.backup
 output.md
 meetings/meeting_sessions.json
 AGENTS.md
+.claude/settings.local.json
