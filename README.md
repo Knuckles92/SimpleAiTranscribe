@@ -246,7 +246,7 @@ The application has been refactored into a modular architecture for better maint
   - `main_window.py`: Primary application window with model selection and status display
   - `hotkey_dialog.py`: Hotkey configuration dialog with visual key capture
   - `tray.py`: System tray integration
-  - `waveform_overlay.py`: Real-time audio visualization overlay with 5 customizable styles
+  - `waveform_overlay.py`: Real-time audio visualization overlay with 7 customizable styles
   - `waveform_style_dialog.py`: Style selection dialog with live previews
   - `ffmpeg_dialog.py`: FFmpeg configuration and detection dialog
   - `waveform_styles/`: Pluggable visualization style system

@@ -7,6 +7,7 @@ import wave
 import numpy as np
 import tempfile
 import logging
+import shutil
 from typing import List, Tuple, Optional
 from pathlib import Path
 from config import config
@@ -309,7 +310,6 @@ class AudioProcessor:
                 if os.path.isfile(temp_path):
                     os.remove(temp_path)
                 elif os.path.isdir(temp_path):
-                    import shutil
                     shutil.rmtree(temp_path)
             except Exception as e:
                 logging.warning(f"Failed to cleanup temp file {temp_path}: {e}")

@@ -173,17 +173,6 @@ class MainWindow:
         # Status management
         self.status_controller = UIStatusController(self)
         
-        # Create overlay window
-        self.overlay = tk.Toplevel(self.root)
-        self.overlay.title("")
-        self.overlay.geometry(config.OVERLAY_SIZE)
-        self.overlay.attributes('-topmost', True)
-        self.overlay.overrideredirect(True)
-        self.overlay.withdraw()
-        
-        self.overlay_label = tk.Label(self.overlay, text="", bg='black', fg='white', pady=5)
-        self.overlay_label.pack(fill=tk.BOTH, expand=True)
-        
         # Setup components
         self._setup_transcription_backends()
         self._setup_gui()
@@ -553,19 +542,6 @@ class MainWindow:
             except Exception as e:
                 logging.error(f"Failed to save model selection: {e}")
                 # Continue execution even if save fails
-    
-    def show_status_overlay(self, message: str):
-        """Show status overlay with message."""
-        if message:
-            # Position overlay near mouse cursor
-            x = self.root.winfo_pointerx() + 10
-            y = self.root.winfo_pointery() + 10
-            self.overlay.geometry(f"+{x}+{y}")
-            
-            self.overlay_label.config(text=message)
-            self.overlay.deiconify()
-        else:
-            self.overlay.withdraw()
     
     def open_hotkey_settings(self):
         """Open hotkey configuration dialog."""
