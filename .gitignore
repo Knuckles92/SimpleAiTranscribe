@@ -23,3 +23,4 @@ output.md
 meetings/meeting_sessions.json
 AGENTS.md
 .claude/settings.local.json
+specs/ANIMATION_STATE_TRANSITION_FIX.md

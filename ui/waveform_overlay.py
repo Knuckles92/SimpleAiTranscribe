@@ -173,55 +173,75 @@ class WaveformOverlay:
         
     def show(self, state: str, message: str = ""):
         """Show the overlay with specified state.
-        
+
         Args:
             state: State of the overlay ('recording', 'processing', 'transcribing')
             message: Optional message to display
         """
         if not self.overlay or not self.current_style:
             return
-            
+
+        # Check if state is changing and we need to restart animation
+        state_changed = (self.current_state != state)
+        animation_running = (self.animation_thread and self.animation_thread.is_alive())
+
         self.current_state = state
         self.current_message = message
         self.is_visible = True
-        
+
         # Position near mouse cursor
         x = self.parent.winfo_pointerx() + 10
         y = self.parent.winfo_pointery() + 10
         self.overlay.geometry(f"{self.width}x{self.height}+{x}+{y}")
-        
+
         self.overlay.deiconify()
-        
-        # Start animation
-        self._start_animation()
+
+        # If state changed and animation is running, restart it for smooth transition
+        if state_changed and animation_running:
+            self._stop_animation()
+            # Small delay to ensure thread cleanup before restart
+            self.parent.after(10, self._start_animation)
+        else:
+            # Start animation if not already running
+            self._start_animation()
         
     def show_canceling(self, message: str = "Cancelled"):
         """Show the overlay with canceling state and animation.
-        
+
         Args:
             message: Optional message to display during cancellation
         """
         if not self.overlay or not self.current_style:
             return
-            
+
+        # Check if state is changing and we need to restart animation
+        state_changed = (self.current_state != "canceling")
+        animation_running = (self.animation_thread and self.animation_thread.is_alive())
+
         self.current_state = "canceling"
         self.current_message = message
         self.is_visible = True
         self.canceling_start_time = time.time()
-        
+
         # Pass canceling start time to the current style
         if self.current_style:
             self.current_style.set_canceling_start_time(self.canceling_start_time)
-        
+
         # Position near mouse cursor
         x = self.parent.winfo_pointerx() + 10
         y = self.parent.winfo_pointery() + 10
         self.overlay.geometry(f"{self.width}x{self.height}+{x}+{y}")
-        
+
         self.overlay.deiconify()
-        
-        # Start animation
-        self._start_animation()
+
+        # If state changed and animation is running, restart it for smooth transition
+        if state_changed and animation_running:
+            self._stop_animation()
+            # Small delay to ensure thread cleanup before restart
+            self.parent.after(10, self._start_animation)
+        else:
+            # Start animation if not already running
+            self._start_animation()
         
     def hide(self):
         """Hide the overlay."""

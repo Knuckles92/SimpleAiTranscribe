@@ -23,14 +23,15 @@ from .waveform_style_dialog import WaveformStyleDialog
 
 class UIStatusController:
     """Manages UI status updates and overlay display."""
-    
+
     def __init__(self, main_window):
         """Initialize the status controller.
-        
+
         Args:
             main_window: Reference to the main window instance.
         """
         self.main_window = main_window
+        self.pending_clear_callback = None  # Track scheduled clear_status callbacks
         # Initialize overlay with saved style if available
         try:
             from settings import settings_manager
@@ -71,19 +72,44 @@ class UIStatusController:
             self.waveform_overlay.hide()
     
     def clear_status(self):
-        """Clear the status overlay."""
+        """Clear the status overlay.
+
+        Only clears if not in an active state (recording/transcribing).
+        """
+        # Clear the callback tracking
+        self.pending_clear_callback = None
+
+        # Don't hide overlay if we're in an active state that should remain visible
+        if self.waveform_overlay:
+            current_state = self.waveform_overlay.current_state
+            # Recording, transcribing, processing, and canceling states should not be auto-cleared
+            if current_state in ["recording", "transcribing", "processing", "canceling"]:
+                return
+
+        # Check if recorder is active
+        if hasattr(self.main_window, 'recorder') and self.main_window.recorder.is_recording:
+            return
+
         self.waveform_overlay.hide()
     
     def update_status_with_auto_clear(self, status: str, delay_ms: int = None):
         """Update status with automatic clearing after a delay.
-        
+
         Args:
             status: Status message to display.
             delay_ms: Delay in milliseconds before clearing. Uses config default if None.
         """
         from config import config
         delay = delay_ms or config.OVERLAY_HIDE_DELAY_MS
-        
+
+        # Cancel any pending clear callback to prevent conflicts
+        if self.pending_clear_callback is not None:
+            try:
+                self.main_window.root.after_cancel(self.pending_clear_callback)
+            except:
+                pass  # Callback may have already fired
+            self.pending_clear_callback = None
+
         # Special handling for STT enable/disable messages
         if "STT Enabled" in status:
             self._show_stt_status(status, "enabled")
@@ -92,9 +118,9 @@ class UIStatusController:
         else:
             # Update status and show overlay for other messages
             self.update_status(status, show_overlay=True)
-        
-        # Schedule clearing after delay
-        self.main_window.root.after(delay, self.clear_status)
+
+        # Schedule clearing after delay and track the callback ID
+        self.pending_clear_callback = self.main_window.root.after(delay, self.clear_status)
     
     def _show_stt_status(self, message: str, state: str):
         """Show STT status with specialized overlay state.
