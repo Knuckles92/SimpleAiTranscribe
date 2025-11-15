@@ -11,3 +11,4 @@ venv/*
 CLAUDE.md
 AGENTS.md
 specs/ANIMATION_STATE_TRANSITION_FIX.md
+wsl_venv/*
