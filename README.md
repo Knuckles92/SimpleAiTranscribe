@@ -10,7 +10,7 @@ A modular desktop application for recording audio and transcribing it to text us
 
 ### 🎙️ Audio Recording
 - High-quality mono audio recording (44.1kHz, 16-bit)
-- Real-time audio capture using PyAudio
+- Real-time audio capture using SoundDevice
 - Automatic WAV file generation
 - **Smart Audio Splitting**: Automatically splits large audio files (>23MB) using silence detection to prevent API timeouts
 - **Post-roll Recording**: Continues recording for 1.2 seconds after stop to prevent word cutoffs
@@ -178,7 +178,7 @@ The application uses these optimized audio settings:
 **Application won't start:**
 - Verify all dependencies are installed: `pip install -r requirements.txt`
 - Check Python version is 3.8 or higher
-- Ensure PyAudio can access your audio devices
+- Ensure SoundDevice can access your audio devices
 - Check for missing Visual C++ redistributables on Windows
 
 **Waveform overlay not appearing:**
@@ -202,7 +202,7 @@ The application uses these optimized audio settings:
 
 ### Architecture
 - **GUI Framework**: Tkinter with ttk components
-- **Audio Processing**: PyAudio for capture, Wave for file handling
+- **Audio Processing**: SoundDevice for capture, Wave for file handling
 - **Speech Recognition**: OpenAI Whisper (local) or OpenAI API (cloud)
 - **System Integration**: Keyboard hooks, clipboard operations, system tray
 - **Concurrency**: ThreadPoolExecutor for background tasks

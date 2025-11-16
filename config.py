@@ -3,6 +3,7 @@ Configuration constants for the Audio Recorder application.
 """
 from dataclasses import dataclass
 from typing import Dict, Tuple
+import numpy as np
 
 
 @dataclass
@@ -17,7 +18,7 @@ class AppConfig:
     
     # Audio settings
     CHUNK_SIZE: int = 1024
-    AUDIO_FORMAT: str = "paInt16"  # Will be converted to pyaudio constant
+    AUDIO_FORMAT: type = np.int16  # NumPy dtype for audio format
     CHANNELS: int = 1
     SAMPLE_RATE: int = 44100
     
