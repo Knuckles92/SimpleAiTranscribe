@@ -136,8 +136,8 @@ class UIStatusController:
         # Show waveform overlay with appropriate state
         if self.waveform_overlay:
             if state == "enabled":
-                # Show as a processing-like state with green-ish theme
-                self.waveform_overlay.show("processing", message)
+                # Show as STT enable state with animation
+                self.waveform_overlay.show("stt_enable", message)
             else:
                 # Show as specialized STT disable state with animation
                 self.waveform_overlay.show("stt_disable", message)

@@ -589,6 +589,123 @@ class ParticleStyle(BaseWaveformStyle):
         text_color = self.interpolate_color(self.text_color, self.bg_color, 1.0 - text_alpha)
         self.draw_text(message, self.width // 2, self.height - 15, text_color)
 
+    def draw_stt_enable_state(self, message: str = "STT Enabled"):
+        """Draw STT enable state with particles converging and glowing green."""
+        if not self.canvas:
+            return
+
+        current_time = self.animation_time
+        dt = current_time - self.last_frame_time if self.last_frame_time > 0 else 1/30
+        self.last_frame_time = current_time
+
+        self.clear_canvas()
+        self._draw_particle_background()
+
+        # Create converging particles that glow green
+        center_x = self.width // 2
+        center_y = self.height // 2 - 5
+
+        # Emit fewer particles that converge inward
+        if len(self.particles) < 30 and random.random() < 0.3:  # 30% chance per frame
+            for _ in range(2):  # Emit 2 particles at a time
+                # Random angle for convergence from edges
+                angle = random.uniform(0, 2 * math.pi)
+                distance = random.uniform(40, 80)
+                start_x = center_x + math.cos(angle) * distance
+                start_y = center_y + math.sin(angle) * distance
+
+                # Velocity toward center
+                speed = random.uniform(15, 35)
+                vx = -math.cos(angle) * speed
+                vy = -math.sin(angle) * speed
+
+                particle = Particle(start_x, start_y, vx, vy)
+                particle.life = random.uniform(1.5, 3.0)  # Longer life for enable effect
+                particle.color_hue = random.uniform(120, 180)  # Green-cyan range for "enabled"
+                self.particles.append(particle)
+
+        # Update particles with gentle convergence
+        alive_particles = []
+        for particle in self.particles:
+            # Apply gentle inward force toward center
+            dx = center_x - particle.x
+            dy = center_y - particle.y
+            distance = math.sqrt(dx*dx + dy*dy)
+
+            if distance > 0:
+                # Gentle inward pull
+                pull_force = 10
+                particle.vx += (dx / distance) * pull_force * dt
+                particle.vy += (dy / distance) * pull_force * dt
+
+            # Apply damping to slow down over time
+            particle.vx *= 0.995
+            particle.vy *= 0.995
+
+            # Update particle
+            if particle.update(dt, self.gravity * 0.1, 0.99):  # Very light gravity and damping
+                alive_particles.append(particle)
+
+        self.particles = alive_particles
+
+        # Draw particles with glowing effect
+        for particle in self.particles:
+            x, y = int(particle.x), int(particle.y)
+
+            # Skip if outside canvas
+            if x < 0 or x >= self.width or y < 0 or y >= self.height:
+                continue
+
+            # Calculate size and color based on life
+            life_factor = particle.life / 3.0  # Normalize to max life
+            size = max(1, int(4 * life_factor))
+
+            # Use green-cyan colors for enable effect
+            hue = particle.color_hue
+            saturation = 0.7 * life_factor  # Fade saturation
+            brightness = 0.8 * life_factor  # Fade brightness
+
+            r, g, b = self.hsv_to_rgb(hue, saturation, brightness)
+            color = self.rgb_to_hex(r, g, b)
+
+            # Draw particle
+            self.canvas.create_oval(
+                x - size, y - size, x + size, y + size,
+                fill=color, outline=""
+            )
+
+            # Add subtle glow for larger particles
+            if self.glow_effect and size > 2:
+                glow_size = size + 1
+                glow_color = self.interpolate_color(color, self.bg_color, 0.8)
+                self.canvas.create_oval(
+                    x - glow_size, y - glow_size,
+                    x + glow_size, y + glow_size,
+                    fill="", outline=glow_color, width=1
+                )
+
+        # Draw central "enabled" indicator - a glowing checkmark
+        check_alpha = 0.6 + 0.2 * math.sin(self.animation_time * 2)
+        check_size = 8
+        check_color = self.interpolate_color("#44ff44", self.bg_color, 1.0 - check_alpha)
+
+        # Draw checkmark shape
+        self.canvas.create_line(
+            center_x - check_size, center_y,
+            center_x - check_size//3, center_y + check_size//2,
+            fill=check_color, width=2, capstyle="round", joinstyle="round"
+        )
+        self.canvas.create_line(
+            center_x - check_size//3, center_y + check_size//2,
+            center_x + check_size, center_y - check_size,
+            fill=check_color, width=2, capstyle="round", joinstyle="round"
+        )
+
+        # Draw status text with slight fade effect
+        text_alpha = 0.8 + 0.1 * math.sin(self.animation_time * 1.5)
+        text_color = self.interpolate_color(self.text_color, self.bg_color, 1.0 - text_alpha)
+        self.draw_text(message, self.width // 2, self.height - 15, text_color)
+
     def draw_idle_state(self, message: str = ""):
         """Draw idle state with minimal particles and muted colors."""
         if not self.canvas:

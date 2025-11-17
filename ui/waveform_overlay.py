@@ -348,6 +348,10 @@ class WaveformOverlay:
                     return
                 # Use the base style cancellation animation for consistency
                 BaseWaveformStyle.draw_canceling_state(self.current_style, message)
+            elif self.current_state == "stt_enable":
+                if not message:
+                    message = "STT Enabled"
+                self.current_style.draw_stt_enable_state(message)
             elif self.current_state == "stt_disable":
                 if not message:
                     message = "STT Disabled"

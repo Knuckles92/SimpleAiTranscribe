@@ -205,6 +205,14 @@ class BaseWaveformStyle(ABC):
         """
         self.draw_idle_state(message)
 
+    def draw_stt_enable_state(self, message: str = "STT Enabled"):
+        """Draw the STT enable state visualization (default: same as idle).
+
+        Args:
+            message: Status message to display
+        """
+        self.draw_idle_state(message)
+
     def draw_idle_state(self, message: str = ""):
         """Draw the idle state (default: clear canvas).
 
