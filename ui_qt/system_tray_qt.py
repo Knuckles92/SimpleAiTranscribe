@@ -166,5 +166,5 @@ class SystemTrayManager(QSystemTrayIcon):
 
     def show_message(self, title: str, message: str, duration: int = 5000):
         """Show a system tray notification."""
-        self.showMessage(title, message, duration=duration)
+        self.showMessage(title, message, msecs=duration)
         self.logger.info(f"Tray notification: {title} - {message}")

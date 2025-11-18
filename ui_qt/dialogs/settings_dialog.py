@@ -13,6 +13,7 @@ from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QFont
 
 from config import config
+from settings import settings_manager
 from ui_qt.widgets import PrimaryButton, ModernButton
 
 
@@ -281,25 +282,58 @@ class SettingsDialog(QDialog):
 
     def _load_settings(self):
         """Load settings from configuration."""
-        self.auto_paste_check.setChecked(True)
-        self.copy_clipboard_check.setChecked(True)
-        self.minimize_tray_check.setChecked(False)
+        try:
+            settings = settings_manager.load_all_settings()
+
+            # Load model selection
+            saved_model = settings.get('selected_model', 'local_whisper')
+            # Find display name for saved model
+            for display_name, internal_value in config.MODEL_VALUE_MAP.items():
+                if internal_value == saved_model:
+                    index = self.model_combo.findText(display_name)
+                    if index >= 0:
+                        self.model_combo.setCurrentIndex(index)
+                    break
+
+            # Load checkboxes
+            self.auto_paste_check.setChecked(settings.get('auto_paste', True))
+            self.copy_clipboard_check.setChecked(settings.get('copy_clipboard', True))
+            self.minimize_tray_check.setChecked(settings.get('minimize_tray', False))
+
+            self.logger.info("Settings loaded successfully")
+        except Exception as e:
+            self.logger.error(f"Failed to load settings: {e}")
+            # Use defaults on error
+            self.auto_paste_check.setChecked(True)
+            self.copy_clipboard_check.setChecked(True)
+            self.minimize_tray_check.setChecked(False)
 
     def _save_settings(self):
         """Save settings and close dialog."""
-        settings_data = {
-            "model": self.model_combo.currentText(),
-            "auto_paste": self.auto_paste_check.isChecked(),
-            "copy_clipboard": self.copy_clipboard_check.isChecked(),
-            "minimize_tray": self.minimize_tray_check.isChecked(),
-            "sample_rate": int(self.sample_rate_combo.currentText()),
-            "channels": 1 if "Mono" in self.channels_combo.currentText() else 2,
-            "max_file_size": self.max_size_spinbox.value(),
-        }
+        try:
+            # Get current display name and convert to internal value
+            model_display = self.model_combo.currentText()
+            model_internal = config.MODEL_VALUE_MAP.get(model_display, 'local_whisper')
 
-        if self.on_settings_save:
-            self.on_settings_save(settings_data)
+            # Load existing settings
+            settings = settings_manager.load_all_settings()
 
-        self.settings_changed.emit(settings_data)
-        self.logger.info("Settings saved")
-        self.accept()
+            # Update with new values
+            settings['selected_model'] = model_internal
+            settings['auto_paste'] = self.auto_paste_check.isChecked()
+            settings['copy_clipboard'] = self.copy_clipboard_check.isChecked()
+            settings['minimize_tray'] = self.minimize_tray_check.isChecked()
+
+            # Save to file
+            settings_manager.save_all_settings(settings)
+
+            self.logger.info("Settings saved successfully")
+
+            # Call callback if set
+            if self.on_settings_save:
+                self.on_settings_save(settings)
+
+            self.accept()
+        except Exception as e:
+            self.logger.error(f"Failed to save settings: {e}")
+            self.reject()

@@ -3,13 +3,18 @@ Modern PyQt6 Waveform Overlay.
 Real-time audio visualization overlay with blur effects and animations.
 """
 import logging
+import time
 from typing import Optional, List
 from PyQt6.QtWidgets import QWidget
 from PyQt6.QtCore import Qt, QTimer, QRect, pyqtSignal, QPoint
 from PyQt6.QtGui import (
     QPainter, QPainterPath, QColor, QBrush, QPen,
-    QLinearGradient, QFont
+    QLinearGradient, QFont, QCursor
 )
+from config import config
+from settings import settings_manager
+from ui_qt.waveform_styles import style_factory
+from ui_qt.waveform_styles.base_style import BaseWaveformStyle
 
 
 class ModernWaveformOverlay(QWidget):
@@ -38,7 +43,11 @@ class ModernWaveformOverlay(QWidget):
             Qt.WindowType.Tool
         )
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
-        self.setMinimumSize(320, 100)
+
+        # Set fixed size from config
+        self.overlay_width = config.WAVEFORM_OVERLAY_WIDTH
+        self.overlay_height = config.WAVEFORM_OVERLAY_HEIGHT
+        self.setFixedSize(self.overlay_width, self.overlay_height)
 
         # State
         self.current_state = self.STATE_IDLE
@@ -46,11 +55,27 @@ class ModernWaveformOverlay(QWidget):
         self.animation_time = 0.0
         self.cancel_progress = 0.0
 
+        # Load waveform style
+        current_style, style_configs = settings_manager.load_waveform_style_settings()
+        try:
+            style_config = style_configs.get(current_style, config.WAVEFORM_STYLE_CONFIGS.get('modern', {}))
+            self.style: BaseWaveformStyle = style_factory.create_style(
+                current_style,
+                self.overlay_width,
+                self.overlay_height,
+                style_config
+            )
+        except (ValueError, KeyError):
+            # Fallback to modern style if loading fails
+            self.logger.warning(f"Failed to load style '{current_style}', using modern")
+            self.style = style_factory.create_style('modern', self.overlay_width, self.overlay_height)
+
         # Animation
         self.timer = QTimer()
         self.timer.timeout.connect(self._update_animation)
         self.frame_rate = 30
         self.animation_duration = 0
+        self.last_frame_time = time.time()
 
         # Hide by default
         self.hidden_timer = QTimer()
@@ -65,19 +90,22 @@ class ModernWaveformOverlay(QWidget):
         # Draw background with blur effect
         self._draw_background(painter)
 
-        # Draw state-specific content
+        # Get drawing rect
+        rect = self.rect()
+
+        # Draw state-specific content using style
         if self.current_state == self.STATE_RECORDING:
-            self._draw_recording_state(painter)
+            self.style.draw_recording_state(painter, rect, "Recording...")
         elif self.current_state == self.STATE_PROCESSING:
-            self._draw_processing_state(painter)
+            self.style.draw_processing_state(painter, rect, "Processing...")
         elif self.current_state == self.STATE_TRANSCRIBING:
-            self._draw_transcribing_state(painter)
+            self.style.draw_transcribing_state(painter, rect, "Transcribing...")
         elif self.current_state == self.STATE_CANCELING:
-            self._draw_canceling_state(painter)
+            self.style.draw_canceling_state(painter, rect, "Cancelled")
         elif self.current_state == self.STATE_STT_ENABLE:
-            self._draw_stt_enable_state(painter)
+            self.style.draw_stt_enable_state(painter, rect, "STT Enabled")
         elif self.current_state == self.STATE_STT_DISABLE:
-            self._draw_stt_disable_state(painter)
+            self.style.draw_stt_disable_state(painter, rect, "STT Disabled")
 
     def _draw_background(self, painter: QPainter):
         """Draw the background with frosted glass effect."""
@@ -232,7 +260,16 @@ class ModernWaveformOverlay(QWidget):
 
     def _update_animation(self):
         """Update animation time and redraw."""
-        self.animation_time += 1.0 / self.frame_rate
+        # Calculate delta time
+        current_time = time.time()
+        delta_time = current_time - self.last_frame_time
+        self.last_frame_time = current_time
+
+        self.animation_time += delta_time
+
+        # Update style animation
+        if self.style:
+            self.style.update_animation_time(delta_time)
 
         if self.current_state == self.STATE_CANCELING:
             self.cancel_progress = min(1.0, self.animation_time / 0.8)
@@ -248,6 +285,10 @@ class ModernWaveformOverlay(QWidget):
             self.current_state = state
             self.animation_time = 0.0
             self.cancel_progress = 0.0
+
+            # Set canceling start time for style
+            if state == self.STATE_CANCELING and self.style:
+                self.style.set_canceling_start_time(time.time())
 
             if state == self.STATE_IDLE:
                 self.timer.stop()
@@ -265,10 +306,21 @@ class ModernWaveformOverlay(QWidget):
         """Update audio level data."""
         self.audio_levels = levels[:20]  # Keep only 20 levels
 
+        # Update style with audio levels
+        if self.style:
+            current_level = sum(levels) / len(levels) if levels else 0.0
+            self.style.update_audio_levels(self.audio_levels, current_level)
+
     def show_at_cursor(self):
         """Show overlay near the cursor."""
-        cursor_pos = self.cursor().pos()
-        self.move(cursor_pos.x() - self.width() // 2, cursor_pos.y() - self.height() // 2)
+        # Get global cursor position
+        cursor_pos = QCursor.pos()
+
+        # Position overlay near cursor (offset slightly)
+        x = cursor_pos.x() + 10
+        y = cursor_pos.y() + 10
+
+        self.move(x, y)
         self.show()
         self.set_state(self.STATE_RECORDING)
 
