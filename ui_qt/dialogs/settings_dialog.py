@@ -1,0 +1,305 @@
+"""
+Modern Settings Dialog for PyQt6 UI.
+Tabbed interface for managing application settings.
+"""
+import logging
+from typing import Optional, Callable
+from PyQt6.QtWidgets import (
+    QDialog, QVBoxLayout, QHBoxLayout, QTabWidget,
+    QWidget, QLabel, QComboBox, QCheckBox, QSpinBox,
+    QSlider, QFrame
+)
+from PyQt6.QtCore import Qt, pyqtSignal
+from PyQt6.QtGui import QFont
+
+from config import config
+from ui_qt.widgets import PrimaryButton, ModernButton
+
+
+class SettingsDialog(QDialog):
+    """Modern settings dialog with tabbed interface."""
+
+    settings_changed = pyqtSignal(dict)
+
+    def __init__(self, parent=None):
+        """Initialize settings dialog."""
+        super().__init__(parent)
+        self.logger = logging.getLogger(__name__)
+        self.setWindowTitle("Settings")
+        self.setMinimumSize(600, 500)
+        self.setMaximumWidth(800)
+
+        # Callbacks
+        self.on_settings_save: Optional[Callable] = None
+
+        self._setup_ui()
+        self._load_settings()
+
+    def _setup_ui(self):
+        """Setup the user interface."""
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
+
+        # Tab widget
+        self.tabs = QTabWidget()
+        self.tabs.setStyleSheet("""
+            QTabWidget::pane {
+                border: 1px solid #404060;
+                background-color: #1e1e2e;
+            }
+            QTabBar::tab {
+                background-color: #2d2d44;
+                color: #a0a0c0;
+                border: none;
+                padding: 10px 20px;
+                margin-right: 2px;
+            }
+            QTabBar::tab:selected {
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+                                            stop:0 #6366f1, stop:1 #8b5cf6);
+                color: #ffffff;
+            }
+        """)
+
+        # Create tabs
+        self._create_general_tab()
+        self._create_audio_tab()
+        self._create_hotkeys_tab()
+        self._create_advanced_tab()
+
+        layout.addWidget(self.tabs)
+
+        # Button layout
+        button_layout = QHBoxLayout()
+        button_layout.setContentsMargins(16, 16, 16, 16)
+        button_layout.setSpacing(8)
+
+        button_layout.addStretch()
+
+        cancel_btn = ModernButton("Cancel")
+        cancel_btn.clicked.connect(self.reject)
+        button_layout.addWidget(cancel_btn)
+
+        save_btn = PrimaryButton("Save Settings")
+        save_btn.clicked.connect(self._save_settings)
+        button_layout.addWidget(save_btn)
+
+        layout.addLayout(button_layout)
+
+        # Apply background
+        self.setStyleSheet("""
+            SettingsDialog {
+                background-color: #1e1e2e;
+                border-radius: 8px;
+            }
+        """)
+
+    def _create_general_tab(self):
+        """Create general settings tab."""
+        tab = QWidget()
+        layout = QVBoxLayout(tab)
+        layout.setContentsMargins(24, 24, 24, 24)
+        layout.setSpacing(16)
+
+        # Title
+        title = QLabel("General Settings")
+        title_font = QFont("Segoe UI", 12)
+        title_font.setBold(True)
+        title.setFont(title_font)
+        title.setStyleSheet("color: #e0e0ff;")
+        layout.addWidget(title)
+
+        # Model selection
+        layout.addSpacing(12)
+        model_label = QLabel("Default Model:")
+        model_label.setStyleSheet("color: #e0e0ff;")
+        layout.addWidget(model_label)
+
+        self.model_combo = QComboBox()
+        self.model_combo.addItems(config.MODEL_CHOICES)
+        self.model_combo.setMinimumHeight(36)
+        layout.addWidget(self.model_combo)
+
+        # Auto-paste checkbox
+        layout.addSpacing(12)
+        self.auto_paste_check = QCheckBox("Auto-paste transcription to active window")
+        self.auto_paste_check.setStyleSheet("color: #e0e0ff;")
+        layout.addWidget(self.auto_paste_check)
+
+        # Copy to clipboard checkbox
+        self.copy_clipboard_check = QCheckBox("Copy transcription to clipboard")
+        self.copy_clipboard_check.setStyleSheet("color: #e0e0ff;")
+        layout.addWidget(self.copy_clipboard_check)
+
+        # Minimize to tray checkbox
+        layout.addSpacing(12)
+        self.minimize_tray_check = QCheckBox("Minimize to system tray on close")
+        self.minimize_tray_check.setStyleSheet("color: #e0e0ff;")
+        layout.addWidget(self.minimize_tray_check)
+
+        layout.addStretch()
+        self.tabs.addTab(tab, "General")
+
+    def _create_audio_tab(self):
+        """Create audio settings tab."""
+        tab = QWidget()
+        layout = QVBoxLayout(tab)
+        layout.setContentsMargins(24, 24, 24, 24)
+        layout.setSpacing(16)
+
+        # Title
+        title = QLabel("Audio Settings")
+        title_font = QFont("Segoe UI", 12)
+        title_font.setBold(True)
+        title.setFont(title_font)
+        title.setStyleSheet("color: #e0e0ff;")
+        layout.addWidget(title)
+
+        # Sample rate
+        layout.addSpacing(12)
+        sample_rate_label = QLabel("Sample Rate (Hz):")
+        sample_rate_label.setStyleSheet("color: #e0e0ff;")
+        layout.addWidget(sample_rate_label)
+
+        self.sample_rate_combo = QComboBox()
+        self.sample_rate_combo.addItems(["16000", "22050", "44100", "48000"])
+        self.sample_rate_combo.setMinimumHeight(36)
+        layout.addWidget(self.sample_rate_combo)
+
+        # Channels
+        layout.addSpacing(12)
+        channels_label = QLabel("Channels:")
+        channels_label.setStyleSheet("color: #e0e0ff;")
+        layout.addWidget(channels_label)
+
+        self.channels_combo = QComboBox()
+        self.channels_combo.addItems(["Mono (1)", "Stereo (2)"])
+        self.channels_combo.setMinimumHeight(36)
+        layout.addWidget(self.channels_combo)
+
+        # Silence threshold
+        layout.addSpacing(12)
+        threshold_label = QLabel("Silence Threshold:")
+        threshold_label.setStyleSheet("color: #e0e0ff;")
+        layout.addWidget(threshold_label)
+
+        threshold_layout = QHBoxLayout()
+        self.threshold_slider = QSlider(Qt.Orientation.Horizontal)
+        self.threshold_slider.setMinimum(0)
+        self.threshold_slider.setMaximum(100)
+        self.threshold_slider.setValue(10)
+
+        self.threshold_value_label = QLabel("0.01")
+        self.threshold_value_label.setStyleSheet("color: #00d4ff; font-weight: bold;")
+        self.threshold_value_label.setMaximumWidth(50)
+
+        self.threshold_slider.valueChanged.connect(self._update_threshold_display)
+
+        threshold_layout.addWidget(self.threshold_slider)
+        threshold_layout.addWidget(self.threshold_value_label)
+        layout.addLayout(threshold_layout)
+
+        layout.addStretch()
+        self.tabs.addTab(tab, "Audio")
+
+    def _create_hotkeys_tab(self):
+        """Create hotkeys settings tab."""
+        tab = QWidget()
+        layout = QVBoxLayout(tab)
+        layout.setContentsMargins(24, 24, 24, 24)
+        layout.setSpacing(16)
+
+        # Title
+        title = QLabel("Hotkeys")
+        title_font = QFont("Segoe UI", 12)
+        title_font.setBold(True)
+        title.setFont(title_font)
+        title.setStyleSheet("color: #e0e0ff;")
+        layout.addWidget(title)
+
+        layout.addSpacing(12)
+        info_label = QLabel("Configure global hotkeys for quick access")
+        info_label.setStyleSheet("color: #a0a0c0; font-style: italic;")
+        layout.addWidget(info_label)
+
+        layout.addSpacing(16)
+        hotkey_button = PrimaryButton("Configure Hotkeys...")
+        hotkey_button.setMinimumHeight(40)
+        hotkey_button.clicked.connect(self._open_hotkey_dialog)
+        layout.addWidget(hotkey_button)
+
+        layout.addStretch()
+        self.tabs.addTab(tab, "Hotkeys")
+
+    def _create_advanced_tab(self):
+        """Create advanced settings tab."""
+        tab = QWidget()
+        layout = QVBoxLayout(tab)
+        layout.setContentsMargins(24, 24, 24, 24)
+        layout.setSpacing(16)
+
+        # Title
+        title = QLabel("Advanced Settings")
+        title_font = QFont("Segoe UI", 12)
+        title_font.setBold(True)
+        title.setFont(title_font)
+        title.setStyleSheet("color: #e0e0ff;")
+        layout.addWidget(title)
+
+        # Max file size
+        layout.addSpacing(12)
+        max_size_label = QLabel("Maximum File Size (MB):")
+        max_size_label.setStyleSheet("color: #e0e0ff;")
+        layout.addWidget(max_size_label)
+
+        self.max_size_spinbox = QSpinBox()
+        self.max_size_spinbox.setMinimum(1)
+        self.max_size_spinbox.setMaximum(500)
+        self.max_size_spinbox.setValue(23)
+        self.max_size_spinbox.setMinimumHeight(36)
+        layout.addWidget(self.max_size_spinbox)
+
+        # Enable logging checkbox
+        layout.addSpacing(12)
+        self.logging_check = QCheckBox("Enable detailed logging")
+        self.logging_check.setStyleSheet("color: #e0e0ff;")
+        layout.addWidget(self.logging_check)
+
+        layout.addStretch()
+        self.tabs.addTab(tab, "Advanced")
+
+    def _update_threshold_display(self, value):
+        """Update threshold value display."""
+        threshold = value / 1000.0
+        self.threshold_value_label.setText(f"{threshold:.3f}")
+
+    def _open_hotkey_dialog(self):
+        """Open hotkey configuration dialog."""
+        self.logger.info("Opening hotkey configuration dialog")
+        # Will be implemented with HotkeyDialog
+
+    def _load_settings(self):
+        """Load settings from configuration."""
+        self.auto_paste_check.setChecked(True)
+        self.copy_clipboard_check.setChecked(True)
+        self.minimize_tray_check.setChecked(False)
+
+    def _save_settings(self):
+        """Save settings and close dialog."""
+        settings_data = {
+            "model": self.model_combo.currentText(),
+            "auto_paste": self.auto_paste_check.isChecked(),
+            "copy_clipboard": self.copy_clipboard_check.isChecked(),
+            "minimize_tray": self.minimize_tray_check.isChecked(),
+            "sample_rate": int(self.sample_rate_combo.currentText()),
+            "channels": 1 if "Mono" in self.channels_combo.currentText() else 2,
+            "max_file_size": self.max_size_spinbox.value(),
+        }
+
+        if self.on_settings_save:
+            self.on_settings_save(settings_data)
+
+        self.settings_changed.emit(settings_data)
+        self.logger.info("Settings saved")
+        self.accept()

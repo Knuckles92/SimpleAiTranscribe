@@ -11,7 +11,13 @@
       "Bash(then cat \"/mnt/d/Python Projects/whisper_local/.github/copilot-instructions.md\")",
       "Bash(if [ -f \"/mnt/d/Python Projects/whisper_local/CLAUDE.md\" ])",
       "Bash(then cat \"/mnt/d/Python Projects/whisper_local/CLAUDE.md\")",
-      "Bash(else echo \"No CLAUDE.md found\")"
+      "Bash(else echo \"No CLAUDE.md found\")",
+      "Bash(cd:*)",
+      "Bash(cat:*)",
+      "Bash(echo:*)",
+      "Bash(\"/d/Python Projects/whisper_local/requirements.txt\")",
+      "Bash(pip install:*)",
+      "Bash(timeout 5 python:*)"
     ],
     "deny": []
   },
