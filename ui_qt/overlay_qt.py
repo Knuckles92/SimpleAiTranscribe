@@ -311,8 +311,12 @@ class ModernWaveformOverlay(QWidget):
             current_level = sum(levels) / len(levels) if levels else 0.0
             self.style.update_audio_levels(self.audio_levels, current_level)
 
-    def show_at_cursor(self):
-        """Show overlay near the cursor."""
+    def show_at_cursor(self, state: Optional[str] = None):
+        """Show overlay near the cursor with optional state.
+
+        Args:
+            state: Optional state to set. If None, uses current state or RECORDING as default.
+        """
         # Get global cursor position
         cursor_pos = QCursor.pos()
 
@@ -322,7 +326,12 @@ class ModernWaveformOverlay(QWidget):
 
         self.move(x, y)
         self.show()
-        self.set_state(self.STATE_RECORDING)
+
+        # Set state if provided, otherwise default to RECORDING
+        if state is not None:
+            self.set_state(state)
+        elif self.current_state == self.STATE_IDLE:
+            self.set_state(self.STATE_RECORDING)
 
     def closeEvent(self, event):
         """Handle closing."""

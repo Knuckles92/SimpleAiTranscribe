@@ -164,7 +164,3 @@ class SystemTrayManager(QSystemTrayIcon):
                     action.setText("Start Recording")
                 break
 
-    def show_message(self, title: str, message: str, duration: int = 5000):
-        """Show a system tray notification."""
-        self.showMessage(title, message, msecs=duration)
-        self.logger.info(f"Tray notification: {title} - {message}")

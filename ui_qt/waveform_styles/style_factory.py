@@ -4,11 +4,13 @@ Style factory for creating waveform visualization styles.
 from typing import Dict, Any, Optional
 from .base_style import BaseWaveformStyle
 from .modern_style import ModernStyle
+from .particle_style import ParticleStyle
 
 
 # Registry of available styles
 _style_registry: Dict[str, type] = {
     'modern': ModernStyle,
+    'particle': ParticleStyle,
 }
 
 

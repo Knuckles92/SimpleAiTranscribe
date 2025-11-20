@@ -2,16 +2,44 @@
 Modern Hotkey Configuration Dialog for PyQt6 UI.
 """
 import logging
+import keyboard
 from typing import Optional, Callable, Dict
 from PyQt6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel,
     QLineEdit, QPushButton, QFrame
 )
-from PyQt6.QtCore import Qt, pyqtSignal, QTimer
-from PyQt6.QtGui import QFont, QKeySequence
+from PyQt6.QtCore import Qt, pyqtSignal, QTimer, QThread
+from PyQt6.QtGui import QFont, QKeySequence, QMouseEvent
 
 from config import config
 from ui_qt.widgets import PrimaryButton, ModernButton, HeaderCard
+
+
+class ClickableLineEdit(QLineEdit):
+    """QLineEdit that emits a clicked signal when clicked."""
+    clicked = pyqtSignal()
+    
+    def mousePressEvent(self, event: QMouseEvent):
+        """Emit clicked signal on mouse press."""
+        self.clicked.emit()
+        super().mousePressEvent(event)
+
+
+class HotkeyCaptureThread(QThread):
+    """Thread to capture a single hotkey without blocking UI."""
+    captured = pyqtSignal(str)
+
+    def run(self):
+        """Run the capture."""
+        try:
+            # read_hotkey blocks until a hotkey is pressed
+            # suppress=False to let the key event pass through if needed,
+            # but here we probably want to consume it or just read it.
+            # Using suppress=True might block other apps, but for configuration it's okay.
+            hotkey = keyboard.read_hotkey(suppress=False)
+            self.captured.emit(hotkey)
+        except Exception as e:
+            logging.error(f"Error capturing hotkey: {e}")
 
 
 class HotkeyDialog(QDialog):
@@ -29,8 +57,7 @@ class HotkeyDialog(QDialog):
         # State
         self.current_hotkeys: Dict[str, str] = {}
         self.capturing = None
-        self.capture_timer = QTimer()
-        self.capture_timer.setSingleShot(True)
+        self.capture_thread: Optional[HotkeyCaptureThread] = None
 
         # Callbacks
         self.on_hotkeys_save: Optional[Callable] = None
@@ -54,8 +81,8 @@ class HotkeyDialog(QDialog):
 
         # Instructions
         instructions = QLabel(
-            "Click on a field and press the key combination you want to use.\n"
-            "Press ESC to reset a field."
+            "Click on a field to record a new hotkey.\n"
+            "Press the desired key combination."
         )
         instructions.setStyleSheet("color: #a0a0c0;")
         instructions.setFont(QFont("Segoe UI", 10))
@@ -131,9 +158,9 @@ class HotkeyDialog(QDialog):
             }
         """)
 
-    def _create_hotkey_input(self) -> QLineEdit:
+    def _create_hotkey_input(self) -> ClickableLineEdit:
         """Create a hotkey input field."""
-        input_field = QLineEdit()
+        input_field = ClickableLineEdit()
         input_field.setReadOnly(True)
         input_field.setMinimumHeight(36)
         input_field.setFont(QFont("Segoe UI", 10))
@@ -151,12 +178,22 @@ class HotkeyDialog(QDialog):
                 border: 2px solid #00d4ff;
             }
         """)
+        # Store original style for reset
+        input_field.setProperty("original_style", input_field.styleSheet())
         return input_field
 
-    def _start_capture(self, hotkey_type: str, input_field: QLineEdit):
+    def _start_capture(self, hotkey_type: str, input_field: ClickableLineEdit):
         """Start capturing a hotkey."""
+        # If already capturing, stop previous capture
+        if self.capture_thread and self.capture_thread.isRunning():
+            self.capture_thread.terminate()
+            self.capture_thread.wait()
+            self._reset_input_styles()
+
         self.capturing = hotkey_type
-        input_field.setText("Waiting for input...")
+        self.current_input_field = input_field
+        
+        input_field.setText("Press keys...")
         input_field.setStyleSheet("""
             QLineEdit {
                 background-color: #6366f1;
@@ -168,9 +205,47 @@ class HotkeyDialog(QDialog):
             }
         """)
 
-        # For now, this is a placeholder. In a real implementation,
-        # you would use a low-level keyboard hook like the existing one
         self.logger.info(f"Capturing hotkey for: {hotkey_type}")
+        
+        # Start capture thread
+        self.capture_thread = HotkeyCaptureThread()
+        self.capture_thread.captured.connect(self._on_hotkey_captured)
+        self.capture_thread.start()
+
+    def _on_hotkey_captured(self, hotkey: str):
+        """Handle captured hotkey."""
+        if not self.capturing or not self.current_input_field:
+            return
+
+        self.logger.info(f"Captured hotkey: {hotkey}")
+        
+        # Update state
+        self.current_hotkeys[self.capturing] = hotkey
+        self.current_input_field.setText(hotkey)
+        
+        # Reset UI
+        self._reset_input_styles()
+        self.capturing = None
+        self.current_input_field = None
+
+    def _reset_input_styles(self):
+        """Reset all input fields to default style."""
+        style = """
+            QLineEdit {
+                background-color: #2d2d44;
+                color: #00d4ff;
+                border: 1px solid #404060;
+                border-radius: 6px;
+                padding: 6px 12px;
+                font-weight: bold;
+            }
+            QLineEdit:focus {
+                border: 2px solid #00d4ff;
+            }
+        """
+        self.record_input.setStyleSheet(style)
+        self.cancel_input.setStyleSheet(style)
+        self.enable_input.setStyleSheet(style)
 
     def _reset_to_defaults(self):
         """Reset hotkeys to default values."""
@@ -181,6 +256,21 @@ class HotkeyDialog(QDialog):
     def _load_hotkeys(self):
         """Load current hotkey settings."""
         self.current_hotkeys = config.DEFAULT_HOTKEYS.copy()
+        # Load from settings if available (passed via parent or config)
+        # For now we use defaults as base, but in real app we should load from settings_manager
+        # However, the dialog is initialized with defaults. 
+        # Ideally we should pass current hotkeys to __init__ or load them here.
+        # Let's try to load from settings_manager if possible, or rely on what's passed.
+        # Since we don't have direct access to settings_manager here (to avoid circular imports if any),
+        # we'll rely on the fact that we are setting them.
+        # Actually, let's import settings_manager to be safe.
+        try:
+            from settings import settings_manager
+            saved_hotkeys = settings_manager.load_hotkey_settings()
+            self.current_hotkeys.update(saved_hotkeys)
+        except ImportError:
+            pass
+            
         self._update_displays()
 
     def _update_displays(self):
@@ -191,46 +281,16 @@ class HotkeyDialog(QDialog):
 
     def _save_hotkeys(self):
         """Save hotkey settings."""
-        hotkeys_data = {
-            "record_toggle": self.record_input.text(),
-            "cancel": self.cancel_input.text(),
-            "enable_disable": self.enable_input.text(),
-        }
-
         if self.on_hotkeys_save:
-            self.on_hotkeys_save(hotkeys_data)
+            self.on_hotkeys_save(self.current_hotkeys)
 
-        self.hotkeys_changed.emit(hotkeys_data)
+        self.hotkeys_changed.emit(self.current_hotkeys)
         self.logger.info("Hotkeys saved")
         self.accept()
 
-    def keyPressEvent(self, event):
-        """Handle key press events for hotkey capture."""
-        if self.capturing:
-            # Get the key sequence
-            key_sequence = QKeySequence(event.key() + int(event.modifiers()))
-            key_text = key_sequence.toString()
-
-            if event.key() == Qt.Key.Key_Escape:
-                # Clear the current hotkey
-                if self.capturing == "record_toggle":
-                    self.record_input.setText("")
-                elif self.capturing == "cancel":
-                    self.cancel_input.setText("")
-                elif self.capturing == "enable_disable":
-                    self.enable_input.setText("")
-            else:
-                # Update the appropriate field
-                if self.capturing == "record_toggle":
-                    self.record_input.setText(key_text)
-                    self.current_hotkeys["record_toggle"] = key_text
-                elif self.capturing == "cancel":
-                    self.cancel_input.setText(key_text)
-                    self.current_hotkeys["cancel"] = key_text
-                elif self.capturing == "enable_disable":
-                    self.enable_input.setText(key_text)
-                    self.current_hotkeys["enable_disable"] = key_text
-
-            # Reset input field styling
-            self._update_displays()
-            self.capturing = None
+    def closeEvent(self, event):
+        """Handle close event."""
+        if self.capture_thread and self.capture_thread.isRunning():
+            self.capture_thread.terminate()
+            self.capture_thread.wait()
+        super().closeEvent(event)

@@ -100,6 +100,15 @@ class ApplicationController(QObject):
         self.ui_controller.on_record_stop = self.stop_recording
         self.ui_controller.on_record_cancel = self.cancel_recording
         self.ui_controller.on_model_changed = self.on_model_changed
+        self.ui_controller.on_hotkeys_changed = self.update_hotkeys
+
+    def update_hotkeys(self, hotkeys: Dict[str, str]):
+        """Update application hotkeys."""
+        logging.info(f"Updating hotkeys: {hotkeys}")
+        if self.hotkey_manager:
+            self.hotkey_manager.update_hotkeys(hotkeys)
+            settings_manager.save_hotkey_settings(hotkeys)
+            self.ui_controller.set_status("Hotkeys updated")
 
     def _setup_audio_level_callback(self):
         """Setup audio level callback for waveform display."""
@@ -119,16 +128,20 @@ class ApplicationController(QObject):
     def start_recording(self):
         """Start audio recording."""
         if self.recorder.start_recording():
-            self.ui_controller.show_overlay()
             logging.info("Recording started")
+            # Emit status to trigger overlay display
+            self.status_update.emit("Recording...")
         else:
-            self.ui_controller.set_status("Failed to start recording")
+            self.status_update.emit("Failed to start recording")
 
     def stop_recording(self):
         """Stop audio recording and start transcription."""
         if not self.recorder.stop_recording():
-            self.ui_controller.set_status("Failed to stop recording")
+            self.status_update.emit("Failed to stop recording")
             return
+
+        # Emit processing status to show overlay
+        self.status_update.emit("Processing...")
 
         # Check if we have recording data
         if not self.recorder.has_recording_data():
@@ -163,7 +176,7 @@ class ApplicationController(QObject):
 
             if needs_splitting:
                 logging.info(f"Large file ({file_size_mb:.2f} MB), using split workflow")
-                self.ui_controller.set_status(f"Processing large file ({file_size_mb:.1f} MB)...")
+                self.status_update.emit(f"Processing large file ({file_size_mb:.1f} MB)...")
                 self.executor.submit(self._transcribe_large_audio)
             else:
                 self.executor.submit(self._transcribe_audio)

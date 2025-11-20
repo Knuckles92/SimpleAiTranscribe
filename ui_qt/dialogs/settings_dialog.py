@@ -278,7 +278,10 @@ class SettingsDialog(QDialog):
     def _open_hotkey_dialog(self):
         """Open hotkey configuration dialog."""
         self.logger.info("Opening hotkey configuration dialog")
-        # Will be implemented with HotkeyDialog
+        from ui_qt.dialogs.hotkey_dialog import HotkeyDialog
+        
+        dialog = HotkeyDialog(self)
+        dialog.exec()
 
     def _load_settings(self):
         """Load settings from configuration."""

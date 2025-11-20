@@ -12,6 +12,7 @@ from PyQt6.QtCore import Qt, QTimer, pyqtSignal
 from PyQt6.QtGui import QFont, QIcon, QPixmap
 
 from config import config
+from settings import settings_manager
 from ui_qt.widgets import (
     HeaderCard, Card, PrimaryButton, DangerButton,
     SuccessButton, ControlPanel, ModernButton
@@ -25,6 +26,10 @@ class ModernMainWindow(QMainWindow):
     record_toggled = pyqtSignal(bool)
     model_changed = pyqtSignal(str)
     transcription_ready = pyqtSignal(str)
+    settings_requested = pyqtSignal()
+    hotkeys_requested = pyqtSignal()
+    overlay_toggle_requested = pyqtSignal()
+    about_requested = pyqtSignal()
 
     def __init__(self):
         """Initialize the main window."""
@@ -48,16 +53,37 @@ class ModernMainWindow(QMainWindow):
         self._setup_ui()
         self._setup_menu()
         self._connect_signals()
+        self._load_saved_settings()
 
     def _setup_ui(self):
         """Setup the user interface."""
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
 
-        # Main layout
-        main_layout = QVBoxLayout(central_widget)
-        main_layout.setContentsMargins(16, 16, 16, 16)
-        main_layout.setSpacing(16)
+        # Main layout (root)
+        root_layout = QVBoxLayout(central_widget)
+        root_layout.setContentsMargins(0, 0, 0, 0)
+        root_layout.setSpacing(0)
+
+        # Content Container (Centered)
+        content_container = QWidget()
+        content_container.setObjectName("contentContainer")
+        content_layout = QVBoxLayout(content_container)
+        content_layout.setContentsMargins(24, 24, 24, 24) # Reduced margins
+        content_layout.setSpacing(16) # Reduced spacing for compactness
+        content_layout.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignHCenter)
+
+        # Wrapper to center the content container horizontally
+        center_wrapper = QHBoxLayout()
+        center_wrapper.addStretch()
+        center_wrapper.addWidget(content_container, stretch=1)
+        center_wrapper.addStretch()
+        
+        # Limit max width of content
+        content_container.setMaximumWidth(700) # Slightly narrower for cleaner look
+        content_container.setMinimumWidth(500)
+
+        root_layout.addLayout(center_wrapper)
 
         # Header section
         header_layout = QHBoxLayout()
@@ -65,71 +91,73 @@ class ModernMainWindow(QMainWindow):
 
         # Title
         title_label = QLabel("Audio Recorder")
-        title_font = QFont("Segoe UI", 16)
+        title_font = QFont("Segoe UI", 20) # Slightly smaller than 24 for compactness
         title_font.setBold(True)
         title_label.setFont(title_font)
-        title_label.setObjectName("accentLabel")
+        title_label.setObjectName("headerLabel")
+
+        # Hotkeys info (Relocated to header)
+        hotkey_label = QLabel("Hotkeys: * (rec)  - (cancel)")
+        hotkey_label.setObjectName("statusLabel")
+        hotkey_label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+        hotkey_label.setStyleSheet("color: #8e8e93; font-size: 12px;")
 
         header_layout.addWidget(title_label)
         header_layout.addStretch()
+        header_layout.addWidget(hotkey_label)
 
-        main_layout.addLayout(header_layout)
+        content_layout.addLayout(header_layout)
 
         # Model selection card
         model_card = Card()
-        model_card.layout.setContentsMargins(12, 12, 12, 12)
+        # Layout margins handled by Card class
 
         model_label = QLabel("Transcription Model")
         model_label.setObjectName("headerLabel")
-        model_label.setFont(QFont("Segoe UI", 11))
+        model_label.setFont(QFont("Segoe UI", 13)) # Adjusted font size
 
         self.model_combo = QComboBox()
         self.model_combo.addItems(config.MODEL_CHOICES)
-        self.model_combo.setMinimumHeight(36)
-        self.model_combo.setFont(QFont("Segoe UI", 10))
+        self.model_combo.setMinimumHeight(40) # Slightly reduced height
+        self.model_combo.setFont(QFont("Segoe UI", 12))
 
         model_card.layout.addWidget(model_label)
         model_card.layout.addWidget(self.model_combo)
 
-        main_layout.addWidget(model_card)
+        content_layout.addWidget(model_card)
 
         # Status label
         self.status_label = QLabel("Ready to record")
         self.status_label.setObjectName("statusLabel")
         self.status_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        main_layout.addWidget(self.status_label)
+        self.status_label.setFont(QFont("Segoe UI", 13))
+        content_layout.addWidget(self.status_label)
 
         # Control buttons
         control_panel = ControlPanel()
+        control_panel.layout.setSpacing(12) # Reduced spacing
 
         self.record_button = PrimaryButton("Start Recording")
-        self.record_button.setMinimumHeight(44)
-        self.record_button.setMinimumWidth(150)
-
         self.cancel_button = DangerButton("Cancel")
-        self.cancel_button.setMinimumHeight(44)
-        self.cancel_button.setMinimumWidth(120)
         self.cancel_button.setEnabled(False)
-
         self.stop_button = SuccessButton("Stop")
-        self.stop_button.setMinimumHeight(44)
-        self.stop_button.setMinimumWidth(120)
         self.stop_button.setEnabled(False)
 
+        control_panel.layout.addStretch()
         control_panel.layout.addWidget(self.record_button)
         control_panel.layout.addWidget(self.stop_button)
         control_panel.layout.addWidget(self.cancel_button)
         control_panel.layout.addStretch()
 
-        main_layout.addWidget(control_panel)
+        content_layout.addWidget(control_panel)
 
         # Transcription display card
         transcription_card = HeaderCard("Transcription")
 
         self.transcription_text = QTextEdit()
         self.transcription_text.setReadOnly(True)
-        self.transcription_text.setMinimumHeight(200)
-        self.transcription_text.setFont(QFont("Segoe UI", 10))
+        self.transcription_text.setMinimumHeight(250) # Adjusted height
+        self.transcription_text.setFont(QFont("Segoe UI", 13))
         self.transcription_text.setPlaceholderText(
             "Transcription will appear here...\n"
             "Start recording to begin."
@@ -137,15 +165,10 @@ class ModernMainWindow(QMainWindow):
 
         transcription_card.layout.addWidget(self.transcription_text)
 
-        main_layout.addWidget(transcription_card)
-
-        # Footer info
-        footer_label = QLabel("© 2024 Audio Recorder. Global hotkeys: * (record), - (cancel)")
-        footer_label.setObjectName("statusLabel")
-        footer_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        footer_label.setFont(QFont("Segoe UI", 9))
-
-        main_layout.addWidget(footer_label)
+        content_layout.addWidget(transcription_card)
+        
+        # Footer removed as requested
+        content_layout.addStretch() # Push everything up
 
     def _setup_menu(self):
         """Setup the menu bar."""
@@ -188,6 +211,28 @@ class ModernMainWindow(QMainWindow):
         self.stop_button.clicked.connect(self._on_stop_clicked)
         self.cancel_button.clicked.connect(self._on_cancel_clicked)
         self.model_combo.currentTextChanged.connect(self._on_model_changed)
+
+    def _load_saved_settings(self):
+        """Load saved settings and apply to UI."""
+        try:
+            # Load the saved model selection
+            saved_model = settings_manager.load_model_selection()
+            
+            # Find the display name for the saved model
+            for display_name, internal_value in config.MODEL_VALUE_MAP.items():
+                if internal_value == saved_model:
+                    index = self.model_combo.findText(display_name)
+                    if index >= 0:
+                        # Block signals temporarily to avoid triggering on_model_changed
+                        self.model_combo.blockSignals(True)
+                        self.model_combo.setCurrentIndex(index)
+                        self.current_model = display_name
+                        self.model_combo.blockSignals(False)
+                        self.logger.info(f"Loaded saved model selection: {display_name}")
+                    break
+        except Exception as e:
+            self.logger.error(f"Failed to load saved settings: {e}")
+            # Use default (already set)
 
     def _on_record_clicked(self):
         """Handle record button click."""
@@ -269,22 +314,22 @@ class ModernMainWindow(QMainWindow):
     def open_settings(self):
         """Open settings dialog."""
         self.logger.info("Opening settings dialog")
-        # Will be implemented in settings dialog module
+        self.settings_requested.emit()
 
     def open_hotkey_settings(self):
         """Open hotkey settings dialog."""
         self.logger.info("Opening hotkey settings")
-        # Will be implemented in hotkey dialog module
+        self.hotkeys_requested.emit()
 
     def toggle_overlay(self):
         """Toggle the overlay visibility."""
         self.logger.info("Toggling overlay")
-        # Will be implemented in overlay module
+        self.overlay_toggle_requested.emit()
 
     def show_about(self):
         """Show about dialog."""
         self.logger.info("Showing about dialog")
-        # Will be implemented
+        self.about_requested.emit()
 
     def closeEvent(self, event):
         """Handle window close event."""

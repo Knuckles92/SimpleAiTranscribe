@@ -6,11 +6,13 @@ Bridges between UI and application logic.
 import logging
 from typing import Optional, Callable, List
 from PyQt6.QtCore import QTimer, pyqtSignal, QObject
+from PyQt6.QtWidgets import QMessageBox
 
 from ui_qt.main_window_qt import ModernMainWindow
 from ui_qt.overlay_qt import ModernWaveformOverlay
 from ui_qt.system_tray_qt import SystemTrayManager
 from ui_qt.dialogs.settings_dialog import SettingsDialog
+from ui_qt.dialogs.hotkey_dialog import HotkeyDialog
 
 
 class UIController(QObject):
@@ -44,6 +46,7 @@ class UIController(QObject):
         self.on_record_stop: Optional[Callable] = None
         self.on_record_cancel: Optional[Callable] = None
         self.on_model_changed: Optional[Callable] = None
+        self.on_hotkeys_changed: Optional[Callable] = None
 
         self._setup_connections()
 
@@ -52,6 +55,10 @@ class UIController(QObject):
         # Main window signals
         self.main_window.record_toggled.connect(self._on_record_toggled)
         self.main_window.model_changed.connect(self._on_model_changed)
+        self.main_window.settings_requested.connect(self.open_settings_dialog)
+        self.main_window.hotkeys_requested.connect(self.open_hotkey_dialog)
+        self.main_window.overlay_toggle_requested.connect(self.toggle_overlay)
+        self.main_window.about_requested.connect(self.show_about_dialog)
 
         # Tray manager signals
         self.tray_manager.show_requested.connect(self._on_tray_show)
@@ -111,22 +118,30 @@ class UIController(QObject):
     def _on_internal_record_started(self):
         """Handle internal record started signal."""
         self.tray_manager.set_recording(True)
-        self.overlay.set_state(self.overlay.STATE_RECORDING)
+        # Show overlay with recording state if not already visible
+        if not self.overlay.isVisible():
+            self.overlay.show_at_cursor(self.overlay.STATE_RECORDING)
+        else:
+            self.overlay.set_state(self.overlay.STATE_RECORDING)
 
     def _on_internal_record_stopped(self):
         """Handle internal record stopped signal."""
         self.tray_manager.set_recording(False)
-        self.overlay.set_state(self.overlay.STATE_PROCESSING)
+        # Show overlay with processing state if not already visible
+        if not self.overlay.isVisible():
+            self.overlay.show_at_cursor(self.overlay.STATE_PROCESSING)
+        else:
+            self.overlay.set_state(self.overlay.STATE_PROCESSING)
 
     def _on_internal_transcription(self, text: str):
         """Handle transcription received."""
         self.main_window.set_transcription(text)
-        self.overlay.set_state(self.overlay.STATE_IDLE)
+        # Hide overlay when transcription is complete
+        self.hide_overlay()
 
     def _on_internal_status_changed(self, status: str):
         """Handle status change."""
         self.main_window.set_status(status)
-        self.tray_manager.show_message("Audio Recorder", status, duration=3000)
 
     def _on_internal_audio_levels(self, levels: List[float]):
         """Handle audio levels update."""
@@ -169,8 +184,29 @@ class UIController(QObject):
         self.transcription_received.emit(text)
 
     def set_status(self, status: str):
-        """Set status message."""
+        """Set status message and update overlay state based on status."""
         self.status_changed.emit(status)
+
+        # Map status messages to overlay states (similar to old Tkinter app)
+        # This ensures overlay visibility is automatically managed
+        if "Recording" in status:
+            if not self.overlay.isVisible():
+                self.overlay.show_at_cursor(self.overlay.STATE_RECORDING)
+            else:
+                self.overlay.set_state(self.overlay.STATE_RECORDING)
+        elif "Processing" in status:
+            if not self.overlay.isVisible():
+                self.overlay.show_at_cursor(self.overlay.STATE_PROCESSING)
+            else:
+                self.overlay.set_state(self.overlay.STATE_PROCESSING)
+        elif "Transcribing" in status:
+            if not self.overlay.isVisible():
+                self.overlay.show_at_cursor(self.overlay.STATE_TRANSCRIBING)
+            else:
+                self.overlay.set_state(self.overlay.STATE_TRANSCRIBING)
+        elif any(keyword in status.lower() for keyword in ["complete", "ready", "failed", "error"]):
+            # Hide overlay when task is complete or failed
+            self.hide_overlay()
 
     def update_audio_levels(self, levels: List[float]):
         """Update audio level display."""
@@ -185,6 +221,13 @@ class UIController(QObject):
         """Hide the overlay."""
         self.overlay.hide()
 
+    def toggle_overlay(self):
+        """Toggle the overlay visibility."""
+        if self.overlay.isVisible():
+            self.hide_overlay()
+        else:
+            self.show_overlay()
+
     def show_main_window(self):
         """Show the main window."""
         self.main_window.showNormal()
@@ -198,7 +241,30 @@ class UIController(QObject):
     def open_settings_dialog(self):
         """Open the settings dialog."""
         dialog = SettingsDialog(self.main_window)
+        # Connect hotkey button in settings to hotkey dialog
+        dialog.tabs.setCurrentIndex(0) # Default to general
         dialog.exec()
+
+    def open_hotkey_dialog(self):
+        """Open the hotkey configuration dialog."""
+        dialog = HotkeyDialog(self.main_window)
+        
+        def on_hotkeys_save(hotkeys):
+            if self.on_hotkeys_changed:
+                self.on_hotkeys_changed(hotkeys)
+                
+        dialog.on_hotkeys_save = on_hotkeys_save
+        dialog.exec()
+
+    def show_about_dialog(self):
+        """Show the about dialog."""
+        QMessageBox.about(
+            self.main_window,
+            "About Audio Recorder",
+            "Audio Recorder with Whisper Integration\n\n"
+            "A modern PyQt6 interface for local and API-based transcription.\n\n"
+            "© 2024"
+        )
 
     def get_model_value(self) -> str:
         """Get the selected model value."""
@@ -209,3 +275,4 @@ class UIController(QObject):
         self.overlay.close()
         self.main_window.close()
         self.logger.info("UI Controller cleaned up")
+

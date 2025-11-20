@@ -14,7 +14,7 @@ class Card(QWidget):
         super().__init__(parent)
         self.setObjectName("card")
         self.layout = QVBoxLayout(self)
-        self.layout.setContentsMargins(16, 16, 16, 16)
+        self.layout.setContentsMargins(16, 16, 16, 16) # Reduced from 20
         self.layout.setSpacing(12)
         self.setMinimumHeight(100)
 
@@ -27,8 +27,8 @@ class ControlPanel(QWidget):
         super().__init__(parent)
         self.setObjectName("controlPanel")
         self.layout = QHBoxLayout(self)
-        self.layout.setContentsMargins(12, 8, 12, 8)
-        self.layout.setSpacing(8)
+        self.layout.setContentsMargins(16, 16, 16, 16) # Reduced from 20
+        self.layout.setSpacing(12)
 
 
 class HeaderCard(Card):
@@ -37,22 +37,17 @@ class HeaderCard(Card):
     def __init__(self, title: str = "", parent=None):
         """Initialize header card."""
         super().__init__(parent)
-        self.setStyleSheet("""
-            HeaderCard {
-                background-color: #2d2d44;
-                border-radius: 8px;
-                border: 1px solid #404060;
-            }
-        """)
+        # Stylesheet removed to allow QSS to control appearance
 
         # Create header
         self.header_layout = QHBoxLayout()
         self.header_layout.setContentsMargins(0, 0, 0, 0)
-        self.header_layout.setSpacing(8)
+        self.header_layout.setSpacing(12)
 
         self.title_label = QLabel(title)
         self.title_label.setObjectName("headerLabel")
-        self.title_font = QFont("Segoe UI", 12)
+        # Font size increased in QSS, removing hardcoded font here or ensuring it matches
+        self.title_font = QFont("Segoe UI", 14)
         self.title_font.setBold(True)
         self.title_label.setFont(self.title_font)
 
@@ -61,7 +56,7 @@ class HeaderCard(Card):
 
         # Insert header at the beginning
         self.layout.insertLayout(0, self.header_layout)
-        self.layout.insertSpacing(1, 8)
+        self.layout.insertSpacing(1, 12)
 
     def add_header_widget(self, widget):
         """Add a widget to the header."""
@@ -84,7 +79,7 @@ class StatCard(Card):
 
         self.value = QLabel(value)
         self.value.setObjectName("accentLabel")
-        self.value_font = QFont("Segoe UI", 18)
+        self.value_font = QFont("Segoe UI", 24) # Increased size
         self.value_font.setBold(True)
         self.value.setFont(self.value_font)
 
