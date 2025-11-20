@@ -1,6 +1,6 @@
 # Audio Recorder with Speech-to-Text
 
-A modular desktop application for recording audio and transcribing it to text using either local Whisper models or OpenAI API. Features a clean Tkinter GUI, system tray integration, global keyboard shortcuts, and real-time status overlay with automatic text pasting.
+A modular desktop application for recording audio and transcribing it to text using either local Whisper models or OpenAI API. Features a modern PyQt6 GUI, system tray integration, global keyboard shortcuts, and real-time status overlay with automatic text pasting.
 
 
 ![Cursor_oltUG9lVTm](https://github.com/user-attachments/assets/ffe3f51e-3faf-4f31-a661-a1de6bcd0bc9)
@@ -101,7 +101,7 @@ See `requirements.txt` for a complete list of dependencies.
 
 ### Starting the Application
 ```bash
-python app.py
+python app_qt.py
 ```
 
 The application will show a loading screen while initializing components, then display the main window. You can minimize it to system tray by closing the window.
@@ -201,7 +201,7 @@ The application uses these optimized audio settings:
 ## Technical Details
 
 ### Architecture
-- **GUI Framework**: Tkinter with ttk components
+- **GUI Framework**: PyQt6 with modern UI components
 - **Audio Processing**: SoundDevice for capture, Wave for file handling
 - **Speech Recognition**: OpenAI Whisper (local) or OpenAI API (cloud)
 - **System Integration**: Keyboard hooks, clipboard operations, system tray
@@ -228,7 +228,7 @@ Do whatever you want.
 The application has been refactored into a modular architecture for better maintainability and extensibility:
 
 ### Core Modules
-- **`app.py`**: Main application bootstrap and initialization
+- **`app_qt.py`**: Main application bootstrap and initialization
 - **`config.py`**: Centralized configuration and constants
 - **`settings.py`**: Settings persistence and management
 - **`recorder.py`**: Audio recording functionality
@@ -241,22 +241,18 @@ The application has been refactored into a modular architecture for better maint
   - `openai_backend.py`: OpenAI API implementation
 
 ### User Interface
-- **`ui/`**: Modular UI components
-  - `loading_screen.py`: Application startup screen
-  - `main_window.py`: Primary application window with model selection and status display
-  - `hotkey_dialog.py`: Hotkey configuration dialog with visual key capture
-  - `tray.py`: System tray integration
-  - `waveform_overlay.py`: Real-time audio visualization overlay with 7 customizable styles
-  - `waveform_style_dialog.py`: Style selection dialog with live previews
-  - `ffmpeg_dialog.py`: FFmpeg configuration and detection dialog
+- **`ui_qt/`**: Modern PyQt6 UI components
+  - `main_window_qt.py`: Main application window
+  - `ui_controller.py`: UI orchestration layer
+  - `loading_screen_qt.py`: Application startup screen
+  - `overlay_qt.py`: Real-time status overlay with waveform visualization
+  - `system_tray_qt.py`: System tray integration
+  - `dialogs/`: Configuration dialogs
+    - `hotkey_dialog.py`: Hotkey configuration with visual key capture
+    - `settings_dialog.py`: Application settings
+  - `widgets/`: Custom PyQt6 widgets
   - `waveform_styles/`: Pluggable visualization style system
-    - `base_style.py`: Abstract base class for waveform styles
-    - `modern_style.py`: Clean modern bars with smooth animations
-    - `retro_style.py`: Neon matrix-style with glitch effects
-    - `minimalist_style.py`: Subtle line-based visualization
-    - `spectrum_style.py`: Circular spectrum analyzer
-    - `particle_style.py`: Dynamic particle system
-    - `style_factory.py`: Style registration and creation
+    - Multiple style implementations for real-time audio visualization
 
 ### Testing
 - **`tests/`**: Unit tests for core functionality
@@ -265,6 +261,7 @@ The application has been refactored into a modular architecture for better maint
 
 ### Extensibility Points
 - **Add New Transcription Backends**: Implement `TranscriptionBackend` interface
-- **Custom UI Components**: Extend the `ui/` package
+- **Custom UI Components**: Extend the `ui_qt/` package
+- **Custom Waveform Styles**: Implement new visualization styles
 - **Configuration Options**: Add settings to `config.py`
 - **New Hotkey Actions**: Extend `HotkeyManager` callbacks
