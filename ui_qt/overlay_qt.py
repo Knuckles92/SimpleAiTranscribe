@@ -276,6 +276,10 @@ class ModernWaveformOverlay(QWidget):
             if self.cancel_progress >= 1.0:
                 self.set_state(self.STATE_IDLE)
                 self.timer.stop()
+        elif self.current_state in [self.STATE_STT_ENABLE, self.STATE_STT_DISABLE]:
+            # Stop animation after 0.5s (animation completes), hidden_timer handles hiding
+            if self.animation_time >= 0.5:
+                self.timer.stop()
 
         self.update()
 
@@ -310,6 +314,19 @@ class ModernWaveformOverlay(QWidget):
         if self.style:
             current_level = sum(levels) / len(levels) if levels else 0.0
             self.style.update_audio_levels(self.audio_levels, current_level)
+
+    def hide(self):
+        """Hide the overlay and stop animations."""
+        # Stop animation timer
+        self.timer.stop()
+        self.hidden_timer.stop()
+
+        # Reset state to IDLE to prevent hanging
+        self.current_state = self.STATE_IDLE
+        self.animation_time = 0.0
+        self.cancel_progress = 0.0
+
+        super().hide()
 
     def show_at_cursor(self, state: Optional[str] = None):
         """Show overlay near the cursor with optional state.

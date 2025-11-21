@@ -204,6 +204,16 @@ class UIController(QObject):
                 self.overlay.show_at_cursor(self.overlay.STATE_TRANSCRIBING)
             else:
                 self.overlay.set_state(self.overlay.STATE_TRANSCRIBING)
+        elif "STT Enabled" in status:
+            if not self.overlay.isVisible():
+                self.overlay.show_at_cursor(self.overlay.STATE_STT_ENABLE)
+            else:
+                self.overlay.set_state(self.overlay.STATE_STT_ENABLE)
+        elif "STT Disabled" in status:
+            if not self.overlay.isVisible():
+                self.overlay.show_at_cursor(self.overlay.STATE_STT_DISABLE)
+            else:
+                self.overlay.set_state(self.overlay.STATE_STT_DISABLE)
         elif any(keyword in status.lower() for keyword in ["complete", "ready", "failed", "error"]):
             # Hide overlay when task is complete or failed
             self.hide_overlay()

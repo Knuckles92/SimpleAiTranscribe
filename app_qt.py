@@ -43,6 +43,7 @@ class ApplicationController(QObject):
     transcription_completed = pyqtSignal(str)
     transcription_failed = pyqtSignal(str)
     status_update = pyqtSignal(str)
+    stt_state_changed = pyqtSignal(bool)  # True = enabled, False = disabled
 
     def __init__(self, ui_controller: UIController):
         """Initialize the application controller."""
@@ -124,6 +125,14 @@ class ApplicationController(QObject):
         self.transcription_completed.connect(self._on_transcription_complete)
         self.transcription_failed.connect(self._on_transcription_error)
         self.status_update.connect(self.ui_controller.set_status)
+        self.stt_state_changed.connect(self._on_stt_state_changed)
+
+    def _on_stt_state_changed(self, enabled: bool):
+        """Handle STT state change on main thread."""
+        if enabled:
+            self.ui_controller.overlay.show_at_cursor(self.ui_controller.overlay.STATE_STT_ENABLE)
+        else:
+            self.ui_controller.overlay.show_at_cursor(self.ui_controller.overlay.STATE_STT_DISABLE)
 
     def start_recording(self):
         """Start audio recording."""
@@ -325,8 +334,14 @@ class ApplicationController(QObject):
 
     def update_status_with_auto_hide(self, status: str):
         """Update status with auto-hide after delay."""
-        self.ui_controller.set_status(status)
-        # TODO: Implement auto-hide timer if needed
+        # Use signals for thread-safe UI updates (called from hotkey thread)
+        self.status_update.emit(status)
+
+        # Show overlay for STT enable/disable states
+        if status == "STT Enabled":
+            self.stt_state_changed.emit(True)
+        elif status == "STT Disabled":
+            self.stt_state_changed.emit(False)
 
     def cleanup(self):
         """Cleanup resources."""
