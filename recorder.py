@@ -23,6 +23,7 @@ class AudioRecorder:
         self.recording_thread: Optional[threading.Thread] = None
         self._stop_requested: bool = False
         self._post_roll_until: float = 0.0
+        self._recording_complete_event = threading.Event()
 
         # Audio settings from config
         self.chunk = config.CHUNK_SIZE
@@ -61,6 +62,9 @@ class AudioRecorder:
             return False
 
         try:
+            # Reset completion signal for this session
+            self._recording_complete_event = threading.Event()
+
             # Clear any old recording data
             self.frames = []
             logging.info(f"Cleared recording frames. Old frame count: {len(self.frames)}")
@@ -113,6 +117,27 @@ class AudioRecorder:
         except Exception as e:
             logging.error(f"Failed to stop recording: {e}")
             return False
+
+    def wait_for_stop_completion(self, timeout: float = None) -> bool:
+        """Wait for the recorder thread to finish post-roll capture.
+
+        Args:
+            timeout: Optional timeout in seconds. Defaults to post-roll plus grace.
+
+        Returns:
+            True if the recorder finished within the timeout, False otherwise.
+        """
+        if not self.recording_thread or not self.recording_thread.is_alive():
+            return True
+
+        # Give the thread enough time for post-roll plus a small buffer
+        default_timeout = (config.POST_ROLL_MS + config.POST_ROLL_FINALIZE_GRACE_MS) / 1000.0
+        wait_timeout = timeout if timeout is not None else default_timeout
+
+        finished = self._recording_complete_event.wait(wait_timeout)
+        if not finished:
+            logging.warning("Recording thread did not finish during post-roll wait; proceeding with available audio")
+        return finished
 
     def _audio_callback(self, indata: np.ndarray, frames: int, time_info, status):
         """Callback function for sounddevice to process incoming audio data.
@@ -177,6 +202,9 @@ class AudioRecorder:
             self.is_recording = False
             self._stop_requested = False
             self._post_roll_until = 0.0
+            self.recording_thread = None
+            # Signal any waiters that recording is fully finished
+            self._recording_complete_event.set()
 
     def _calculate_and_report_level(self, audio_data: np.ndarray):
         """Calculate audio level from numpy audio data and report it via callback.
@@ -227,8 +255,22 @@ class AudioRecorder:
             return False
 
         filename = filename or config.RECORDED_AUDIO_FILE
-        frame_count = len(self.frames)
-        total_bytes = sum(len(frame) for frame in self.frames)
+
+        # Take a snapshot of frames while holding the callback lock to avoid races
+        with self._callback_lock:
+            frames_to_write = list(self.frames)
+
+        frame_count = len(frames_to_write)
+        total_bytes = sum(len(frame) for frame in frames_to_write)
+
+        # Add a bit of trailing silence to reduce ASR truncation at the end
+        padding_bytes = b''
+        if config.END_PADDING_MS > 0:
+            padding_samples = int(self.rate * (config.END_PADDING_MS / 1000.0))
+            if padding_samples > 0:
+                silence_shape = (padding_samples, self.channels) if self.channels > 1 else (padding_samples,)
+                padding_bytes = np.zeros(silence_shape, dtype=self.dtype).tobytes()
+                total_bytes += len(padding_bytes)
 
         try:
             # Create a temporary file first, then rename for atomic operation
@@ -243,7 +285,7 @@ class AudioRecorder:
                         # Get sample width from numpy dtype
                         wf.setsampwidth(np.dtype(self.dtype).itemsize)
                         wf.setframerate(self.rate)
-                        wf.writeframes(b''.join(self.frames))
+                        wf.writeframes(b''.join(frames_to_write) + padding_bytes)
 
                 # Atomically replace the old file
                 if os.path.exists(filename):
@@ -251,6 +293,8 @@ class AudioRecorder:
                 os.rename(temp_path, filename)
 
                 import time
+                if padding_bytes:
+                    logging.info(f"Appended {config.END_PADDING_MS}ms of silence to protect the tail of the recording")
                 logging.info(f"Audio saved to {filename} at {time.strftime('%Y-%m-%d %H:%M:%S')} - {frame_count} frames, {total_bytes} bytes, {self.get_recording_duration():.2f}s")
                 return True
 

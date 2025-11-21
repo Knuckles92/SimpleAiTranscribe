@@ -143,6 +143,10 @@ class ApplicationController(QObject):
         # Emit processing status to show overlay
         self.status_update.emit("Processing...")
 
+        # Ensure the recorder thread has flushed the post-roll before saving
+        if not self.recorder.wait_for_stop_completion():
+            logging.warning("Proceeding without confirmed post-roll completion; tail of recording may be short")
+
         # Check if we have recording data
         if not self.recorder.has_recording_data():
             logging.error("No recording data available")

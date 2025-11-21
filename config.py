@@ -63,6 +63,10 @@ class AppConfig:
     PROGRESS_BAR_INTERVAL_MS: int = 10
     # Continue capturing this many ms after stop to avoid end cut-offs
     POST_ROLL_MS: int = 1200
+    # How long to wait for the recorder thread to flush post-roll frames before saving
+    POST_ROLL_FINALIZE_GRACE_MS: int = 800
+    # Extra silence appended to the end of saved audio so ASR models don't drop the last word
+    END_PADDING_MS: int = 500
     
     # Audio splitting settings
     MAX_FILE_SIZE_MB: int = 23  # Maximum file size before splitting

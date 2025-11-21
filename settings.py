@@ -47,7 +47,9 @@ class SettingsManager:
             Exception: If saving fails.
         """
         try:
-            settings = {'hotkeys': hotkeys}
+            # Load existing settings first to preserve other settings
+            settings = self.load_all_settings()
+            settings['hotkeys'] = hotkeys  # Update only hotkeys
             with open(self.settings_file, 'w') as f:
                 json.dump(settings, f, indent=2)
             logging.info("Hotkey settings saved successfully")

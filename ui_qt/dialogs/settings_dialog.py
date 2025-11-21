@@ -301,7 +301,7 @@ class SettingsDialog(QDialog):
             # Load checkboxes
             self.auto_paste_check.setChecked(settings.get('auto_paste', True))
             self.copy_clipboard_check.setChecked(settings.get('copy_clipboard', True))
-            self.minimize_tray_check.setChecked(settings.get('minimize_tray', False))
+            self.minimize_tray_check.setChecked(settings.get('minimize_tray', True))
 
             self.logger.info("Settings loaded successfully")
         except Exception as e:
@@ -309,7 +309,7 @@ class SettingsDialog(QDialog):
             # Use defaults on error
             self.auto_paste_check.setChecked(True)
             self.copy_clipboard_check.setChecked(True)
-            self.minimize_tray_check.setChecked(False)
+            self.minimize_tray_check.setChecked(True)
 
     def _save_settings(self):
         """Save settings and close dialog."""

@@ -1,69 +1,22 @@
 """
 Modern PyQt6 Loading Screen.
-Shows a modern animated spinner with status messages during initialization.
+Unified, custom-painted loading screen with smooth animations.
 """
 import logging
-from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLabel
-from PyQt6.QtCore import Qt, QTimer, QRect, QPropertyAnimation, QSequentialAnimationGroup
-from PyQt6.QtGui import QPainter, QPainterPath, QColor, QFont, QBrush, QPen
-from PyQt6.QtCore import pyqtSignal
-
-
-class AnimatedSpinner(QWidget):
-    """Modern animated spinner widget."""
-
-    def __init__(self, parent=None):
-        """Initialize spinner."""
-        super().__init__(parent)
-        self.setMinimumSize(80, 80)
-        self.setMaximumSize(80, 80)
-        self.angle = 0
-        self.timer = QTimer()
-        self.timer.timeout.connect(self._rotate)
-
-    def start(self):
-        """Start the spinner animation."""
-        self.timer.start(50)
-
-    def stop(self):
-        """Stop the spinner animation."""
-        self.timer.stop()
-
-    def _rotate(self):
-        """Rotate the spinner."""
-        self.angle = (self.angle + 6) % 360
-        self.update()
-
-    def paintEvent(self, event):
-        """Paint the spinner."""
-        painter = QPainter(self)
-        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-
-        # Translate to center
-        w = self.width()
-        h = self.height()
-        painter.translate(w / 2, h / 2)
-        painter.rotate(self.angle)
-
-        # Draw the spinning arc
-        rect = QRect(-30, -30, 60, 60)
-
-        # Outer circle
-        painter.setPen(QPen(QColor("#6366f1"), 4))
-        painter.drawArc(rect, 0, int(200 * 16))
-
-        # Inner accent
-        painter.rotate(120)
-        painter.setPen(QPen(QColor("#8b5cf6"), 4))
-        painter.drawArc(rect, 0, int(200 * 16))
-
-        painter.rotate(120)
-        painter.setPen(QPen(QColor("#00d4ff"), 4))
-        painter.drawArc(rect, 0, int(200 * 16))
+import math
+from PyQt6.QtWidgets import QWidget, QApplication
+from PyQt6.QtCore import Qt, QTimer, QRectF, pyqtSignal
+from PyQt6.QtGui import (
+    QPainter, QPainterPath, QColor, QFont, QBrush, QPen,
+    QLinearGradient, QRadialGradient
+)
 
 
 class ModernLoadingScreen(QWidget):
-    """Modern loading screen with animated spinner."""
+    """
+    Unified modern loading screen with custom painting.
+    Features a dark theme, pulsing animation, and smooth text rendering.
+    """
 
     # Signal to notify loading completion
     finished = pyqtSignal()
@@ -72,102 +25,135 @@ class ModernLoadingScreen(QWidget):
         """Initialize loading screen."""
         super().__init__()
         self.logger = logging.getLogger(__name__)
-        self.setWindowTitle("Audio Recorder")
-        self.setMinimumSize(400, 350)
-        self.setMaximumSize(400, 350)
-        self.setWindowFlags(Qt.WindowType.FramelessWindowHint)
+        
+        # Window setup
+        self.setWindowFlags(
+            Qt.WindowType.FramelessWindowHint | 
+            Qt.WindowType.WindowStaysOnTopHint |
+            Qt.WindowType.Tool
+        )
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
-
+        
+        # Size
+        self.setFixedSize(450, 300)
+        
         # Center on screen
-        screen = self.screen().geometry()
+        screen = QApplication.primaryScreen().geometry()
         self.move(
             screen.center().x() - self.width() // 2,
             screen.center().y() - self.height() // 2
         )
 
-        self._setup_ui()
+        # Animation state
+        self.animation_timer = QTimer(self)
+        self.animation_timer.timeout.connect(self.update)
+        self.animation_timer.start(16)  # ~60 FPS
+        
+        self.time = 0.0
+        self.status_text = "Initializing..."
+        self.progress_text = "Please wait..."
+        
+        # Colors
+        self.bg_color = QColor("#0f172a")  # Slate 900
+        self.accent_color = QColor("#6366f1")  # Indigo 500
+        self.text_color = QColor("#e2e8f0")  # Slate 200
+        self.subtext_color = QColor("#94a3b8")  # Slate 400
 
-    def _setup_ui(self):
-        """Setup the user interface."""
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(40, 40, 40, 40)
-        layout.setSpacing(20)
+    def paintEvent(self, event):
+        """Paint the custom loading screen."""
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        
+        rect = self.rect()
+        w, h = rect.width(), rect.height()
+        
+        # 1. Background with subtle gradient
+        gradient = QLinearGradient(0, 0, 0, h)
+        gradient.setColorAt(0, self.bg_color)
+        gradient.setColorAt(1, self.bg_color.darker(120))
+        
+        path = QPainterPath()
+        path.addRoundedRect(QRectF(rect), 16, 16)
+        
+        painter.fillPath(path, gradient)
+        
+        # Border
+        painter.setPen(QPen(QColor("#1e293b"), 1))  # Slate 800
+        painter.drawPath(path)
+        
+        # 2. Central Animation (Pulsing Circles + Orbit)
+        center_x, center_y = w / 2, h / 2 - 20
+        self.time += 0.05
+        
+        # Draw pulsing glow
+        for i in range(3):
+            scale = (math.sin(self.time * 0.5 + i * 2) + 1) / 2  # 0 to 1
+            radius = 40 + scale * 20
+            opacity = int(50 * (1 - scale))
+            
+            radial = QRadialGradient(center_x, center_y, radius)
+            radial.setColorAt(0, QColor(99, 102, 241, opacity))  # Indigo
+            radial.setColorAt(1, QColor(99, 102, 241, 0))
+            
+            painter.setPen(Qt.PenStyle.NoPen)
+            painter.setBrush(QBrush(radial))
+            painter.drawEllipse(QRectF(center_x - radius, center_y - radius, radius * 2, radius * 2))
 
+        # Draw orbiting dots
+        num_dots = 5
+        orbit_radius = 35
+        for i in range(num_dots):
+            angle = self.time * 2 + (i * (2 * math.pi / num_dots))
+            dot_x = center_x + math.cos(angle) * orbit_radius
+            dot_y = center_y + math.sin(angle) * orbit_radius
+            
+            dot_size = 6
+            painter.setPen(Qt.PenStyle.NoPen)
+            painter.setBrush(self.accent_color)
+            painter.drawEllipse(QRectF(dot_x - dot_size/2, dot_y - dot_size/2, dot_size, dot_size))
+            
+        # Draw central icon/logo placeholder (Microphone shape simplified)
+        mic_w, mic_h = 16, 24
+        mic_rect = QRectF(center_x - mic_w/2, center_y - mic_h/2, mic_w, mic_h)
+        painter.setPen(QPen(QColor("#ffffff"), 2))
+        painter.setBrush(Qt.BrushStyle.NoBrush)
+        painter.drawRoundedRect(mic_rect, 8, 8)
+        painter.drawLine(int(center_x), int(center_y + 12), int(center_x), int(center_y + 18))
+        painter.drawLine(int(center_x - 8), int(center_y + 18), int(center_x + 8), int(center_y + 18))
+
+        # 3. Text
         # Title
-        title = QLabel("Audio Recorder")
-        title_font = QFont("Segoe UI", 18)
-        title_font.setBold(True)
-        title.setFont(title_font)
-        title.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        title.setStyleSheet("color: #e0e0ff;")
-        layout.addWidget(title)
-
-        # Subtitle
-        subtitle = QLabel("Modern Speech-to-Text Application")
-        subtitle_font = QFont("Segoe UI", 10)
-        subtitle.setFont(subtitle_font)
-        subtitle.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        subtitle.setStyleSheet("color: #a0a0c0;")
-        layout.addWidget(subtitle)
-
-        # Spinner
-        layout.addSpacing(20)
-        self.spinner = AnimatedSpinner()
-        spinner_container = QWidget()
-        spinner_layout = QVBoxLayout(spinner_container)
-        spinner_layout.setContentsMargins(0, 0, 0, 0)
-        spinner_layout.addWidget(self.spinner, alignment=Qt.AlignmentFlag.AlignCenter)
-        layout.addWidget(spinner_container)
-
-        # Status label
-        layout.addSpacing(20)
-        self.status_label = QLabel("Initializing...")
-        status_font = QFont("Segoe UI", 11)
-        self.status_label.setFont(status_font)
-        self.status_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.status_label.setStyleSheet("color: #00d4ff;")
-        layout.addWidget(self.status_label)
-
-        # Progress label
-        self.progress_label = QLabel("")
-        progress_font = QFont("Segoe UI", 9)
-        self.progress_label.setFont(progress_font)
-        self.progress_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.progress_label.setStyleSheet("color: #a0a0c0;")
-        layout.addWidget(self.progress_label)
-
-        layout.addStretch()
-
-        # Apply background styling
-        self.setStyleSheet("""
-            ModernLoadingScreen {
-                background-color: #1e1e2e;
-                border-radius: 12px;
-                border: 1px solid #404060;
-            }
-        """)
-
-    def show(self):
-        """Show the loading screen and start animation."""
-        super().show()
-        self.spinner.start()
-        self.logger.info("Loading screen displayed")
+        painter.setPen(self.text_color)
+        painter.setFont(QFont("Segoe UI", 16, QFont.Weight.Bold))
+        painter.drawText(QRectF(0, h - 90, w, 30), Qt.AlignmentFlag.AlignCenter, "Audio Recorder")
+        
+        # Status
+        painter.setPen(self.accent_color)
+        painter.setFont(QFont("Segoe UI", 10, QFont.Weight.DemiBold))
+        painter.drawText(QRectF(0, h - 55, w, 20), Qt.AlignmentFlag.AlignCenter, self.status_text)
+        
+        # Progress/Details
+        painter.setPen(self.subtext_color)
+        painter.setFont(QFont("Segoe UI", 9))
+        painter.drawText(QRectF(0, h - 35, w, 20), Qt.AlignmentFlag.AlignCenter, self.progress_text)
 
     def update_status(self, status_text: str):
         """Update the status message."""
-        self.status_label.setText(status_text)
+        self.status_text = status_text
+        self.update()
 
     def update_progress(self, progress_text: str):
         """Update the progress message."""
-        self.progress_label.setText(progress_text)
+        self.progress_text = progress_text
+        self.update()
 
     def closeEvent(self, event):
         """Handle closing."""
-        self.spinner.stop()
+        self.animation_timer.stop()
         event.accept()
         self.logger.info("Loading screen closed")
 
     def destroy(self, destroyWindow=True, destroySubWindows=True):
         """Destroy the widget."""
-        self.spinner.stop()
+        self.animation_timer.stop()
         super().destroy(destroyWindow, destroySubWindows)

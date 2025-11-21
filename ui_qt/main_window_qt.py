@@ -13,6 +13,7 @@ from PyQt6.QtGui import QFont, QIcon, QPixmap
 
 from config import config
 from settings import settings_manager
+from ui_qt.loading_screen_qt import ModernLoadingScreen
 from ui_qt.widgets import (
     HeaderCard, Card, PrimaryButton, DangerButton,
     SuccessButton, ControlPanel, ModernButton
@@ -42,6 +43,7 @@ class ModernMainWindow(QMainWindow):
         # State
         self.is_recording = False
         self.current_model = config.MODEL_CHOICES[0]
+        self.test_loading_screen_instance = None  # Keep reference to prevent GC
 
         # Callbacks (will be set by controller)
         self.on_record_start: Optional[Callable] = None
@@ -200,6 +202,7 @@ class ModernMainWindow(QMainWindow):
         # View menu
         view_menu = menubar.addMenu("View")
         view_menu.addAction("Show Overlay", self.toggle_overlay)
+        view_menu.addAction("Show Loading Screen", self.test_loading_screen)
 
         # Help menu
         help_menu = menubar.addMenu("Help")
@@ -326,6 +329,34 @@ class ModernMainWindow(QMainWindow):
         self.logger.info("Toggling overlay")
         self.overlay_toggle_requested.emit()
 
+    def test_loading_screen(self):
+        """Show the loading screen for testing purposes."""
+        self.logger.info("Testing loading screen")
+        
+        if self.test_loading_screen_instance:
+            self.test_loading_screen_instance.destroy()
+            self.test_loading_screen_instance = None
+            
+        self.test_loading_screen_instance = ModernLoadingScreen()
+        self.test_loading_screen_instance.show()
+        
+        # Simulate some activity
+        QTimer.singleShot(1000, lambda: self.test_loading_screen_instance.update_status("Loading resources..."))
+        QTimer.singleShot(2000, lambda: self.test_loading_screen_instance.update_progress("Connecting to services..."))
+        QTimer.singleShot(3000, lambda: self.test_loading_screen_instance.update_status("Almost ready..."))
+        
+        # Auto close after 5 seconds
+        QTimer.singleShot(5000, lambda: self.test_loading_screen_instance.destroy())
+        
+        # Allow click to close
+        original_mouse_press = self.test_loading_screen_instance.mousePressEvent
+        
+        def close_on_click(event):
+            self.test_loading_screen_instance.destroy()
+            self.test_loading_screen_instance = None
+            
+        self.test_loading_screen_instance.mousePressEvent = close_on_click
+
     def show_about(self):
         """Show about dialog."""
         self.logger.info("Showing about dialog")
@@ -334,4 +365,22 @@ class ModernMainWindow(QMainWindow):
     def closeEvent(self, event):
         """Handle window close event."""
         self.logger.info("Main window closing")
-        event.accept()
+        if self.test_loading_screen_instance:
+            self.test_loading_screen_instance.destroy()
+        
+        # Check if minimize to tray is enabled (default: True)
+        try:
+            settings = settings_manager.load_all_settings()
+            minimize_tray = settings.get('minimize_tray', True)  # Default to True
+        except Exception as e:
+            self.logger.error(f"Failed to load settings: {e}")
+            minimize_tray = True  # Default to True on error
+        
+        if minimize_tray:
+            # Hide window instead of closing
+            event.ignore()
+            self.hide()
+            self.logger.info("Window hidden to system tray")
+        else:
+            # Close normally
+            event.accept()
