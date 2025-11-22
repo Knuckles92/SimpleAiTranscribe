@@ -50,7 +50,9 @@ class HeaderCard(Card):
         self.title_font = QFont("Segoe UI", 14)
         self.title_font.setBold(True)
         self.title_label.setFont(self.title_font)
+        self.title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
+        self.header_layout.addStretch()
         self.header_layout.addWidget(self.title_label)
         self.header_layout.addStretch()
 

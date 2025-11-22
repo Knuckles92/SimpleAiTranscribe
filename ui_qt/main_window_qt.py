@@ -87,26 +87,6 @@ class ModernMainWindow(QMainWindow):
 
         root_layout.addLayout(center_wrapper)
 
-        # Header section
-        header_layout = QHBoxLayout()
-        header_layout.setSpacing(12)
-
-        # Title
-        title_label = QLabel("Audio Recorder")
-        title_font = QFont("Segoe UI", 20) # Slightly smaller than 24 for compactness
-        title_font.setBold(True)
-        title_label.setFont(title_font)
-        title_label.setObjectName("headerLabel")
-
-        # Modern hotkey display
-        self.hotkey_display = HotkeyDisplay()
-
-        header_layout.addWidget(title_label)
-        header_layout.addStretch()
-        header_layout.addWidget(self.hotkey_display)
-
-        content_layout.addLayout(header_layout)
-
         # Model selection card
         model_card = Card()
         # Layout margins handled by Card class
@@ -114,6 +94,7 @@ class ModernMainWindow(QMainWindow):
         model_label = QLabel("Transcription Model")
         model_label.setObjectName("headerLabel")
         model_label.setFont(QFont("Segoe UI", 13)) # Adjusted font size
+        model_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         self.model_combo = QComboBox()
         self.model_combo.addItems(config.MODEL_CHOICES)
@@ -166,7 +147,18 @@ class ModernMainWindow(QMainWindow):
 
         content_layout.addWidget(transcription_card)
         
-        # Footer removed as requested
+        # Hotkey display at the bottom, centered
+        hotkey_layout = QHBoxLayout()
+        hotkey_layout.setSpacing(12)
+        
+        # Modern hotkey display
+        self.hotkey_display = HotkeyDisplay()
+        
+        hotkey_layout.addStretch()
+        hotkey_layout.addWidget(self.hotkey_display)
+        hotkey_layout.addStretch()
+        
+        content_layout.addLayout(hotkey_layout)
         content_layout.addStretch() # Push everything up
 
     def _setup_menu(self):
