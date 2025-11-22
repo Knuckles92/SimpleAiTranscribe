@@ -14,6 +14,7 @@ from ui_qt.widgets.cards import (
     HeaderCard,
     StatCard,
 )
+from ui_qt.widgets.hotkey_display import HotkeyDisplay
 
 __all__ = [
     "ModernButton",
@@ -25,4 +26,5 @@ __all__ = [
     "ControlPanel",
     "HeaderCard",
     "StatCard",
+    "HotkeyDisplay",
 ]

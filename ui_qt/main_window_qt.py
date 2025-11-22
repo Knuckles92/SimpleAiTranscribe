@@ -16,7 +16,7 @@ from settings import settings_manager
 from ui_qt.loading_screen_qt import ModernLoadingScreen
 from ui_qt.widgets import (
     HeaderCard, Card, PrimaryButton, DangerButton,
-    SuccessButton, ControlPanel, ModernButton
+    SuccessButton, ControlPanel, ModernButton, HotkeyDisplay
 )
 
 
@@ -98,15 +98,12 @@ class ModernMainWindow(QMainWindow):
         title_label.setFont(title_font)
         title_label.setObjectName("headerLabel")
 
-        # Hotkeys info (Relocated to header)
-        hotkey_label = QLabel("Hotkeys: * (rec)  - (cancel)")
-        hotkey_label.setObjectName("statusLabel")
-        hotkey_label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
-        hotkey_label.setStyleSheet("color: #8e8e93; font-size: 12px;")
+        # Modern hotkey display
+        self.hotkey_display = HotkeyDisplay()
 
         header_layout.addWidget(title_label)
         header_layout.addStretch()
-        header_layout.addWidget(hotkey_label)
+        header_layout.addWidget(self.hotkey_display)
 
         content_layout.addLayout(header_layout)
 

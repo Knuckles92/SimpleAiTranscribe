@@ -262,9 +262,23 @@ class UIController(QObject):
         def on_hotkeys_save(hotkeys):
             if self.on_hotkeys_changed:
                 self.on_hotkeys_changed(hotkeys)
+            # Update the hotkey display in the main window
+            self.update_hotkey_display(hotkeys)
                 
         dialog.on_hotkeys_save = on_hotkeys_save
         dialog.exec()
+
+    def update_hotkey_display(self, hotkeys: dict):
+        """
+        Update the hotkey display in the main window.
+        
+        Args:
+            hotkeys: Dictionary with hotkey mappings
+        """
+        record_key = hotkeys.get('record_toggle', '*')
+        cancel_key = hotkeys.get('cancel', '-')
+        enable_disable_key = hotkeys.get('enable_disable', 'Ctrl+Alt+*')
+        self.main_window.hotkey_display.update_hotkeys(record_key, cancel_key, enable_disable_key)
 
     def show_about_dialog(self):
         """Show the about dialog."""

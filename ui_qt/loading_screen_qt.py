@@ -1,11 +1,11 @@
 """
 Modern PyQt6 Loading Screen.
-Unified, custom-painted loading screen with smooth animations.
+Unified, custom-painted loading screen with static display for fast startup.
 """
 import logging
 import math
 from PyQt6.QtWidgets import QWidget, QApplication
-from PyQt6.QtCore import Qt, QTimer, QRectF, pyqtSignal
+from PyQt6.QtCore import Qt, QRectF, pyqtSignal
 from PyQt6.QtGui import (
     QPainter, QPainterPath, QColor, QFont, QBrush, QPen,
     QLinearGradient, QRadialGradient
@@ -15,7 +15,7 @@ from PyQt6.QtGui import (
 class ModernLoadingScreen(QWidget):
     """
     Unified modern loading screen with custom painting.
-    Features a dark theme, pulsing animation, and smooth text rendering.
+    Features a dark theme with static display for fast startup.
     """
 
     # Signal to notify loading completion
@@ -25,18 +25,18 @@ class ModernLoadingScreen(QWidget):
         """Initialize loading screen."""
         super().__init__()
         self.logger = logging.getLogger(__name__)
-        
+
         # Window setup
         self.setWindowFlags(
-            Qt.WindowType.FramelessWindowHint | 
+            Qt.WindowType.FramelessWindowHint |
             Qt.WindowType.WindowStaysOnTopHint |
             Qt.WindowType.Tool
         )
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
-        
+
         # Size
         self.setFixedSize(450, 300)
-        
+
         # Center on screen
         screen = QApplication.primaryScreen().geometry()
         self.move(
@@ -44,15 +44,9 @@ class ModernLoadingScreen(QWidget):
             screen.center().y() - self.height() // 2
         )
 
-        # Animation state
-        self.animation_timer = QTimer(self)
-        self.animation_timer.timeout.connect(self.update)
-        self.animation_timer.start(16)  # ~60 FPS
-        
-        self.time = 0.0
         self.status_text = "Initializing..."
         self.progress_text = "Please wait..."
-        
+
         # Colors
         self.bg_color = QColor("#0f172a")  # Slate 900
         self.accent_color = QColor("#6366f1")  # Indigo 500
@@ -63,55 +57,50 @@ class ModernLoadingScreen(QWidget):
         """Paint the custom loading screen."""
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-        
+
         rect = self.rect()
         w, h = rect.width(), rect.height()
-        
+
         # 1. Background with subtle gradient
         gradient = QLinearGradient(0, 0, 0, h)
         gradient.setColorAt(0, self.bg_color)
         gradient.setColorAt(1, self.bg_color.darker(120))
-        
+
         path = QPainterPath()
         path.addRoundedRect(QRectF(rect), 16, 16)
-        
+
         painter.fillPath(path, gradient)
-        
+
         # Border
         painter.setPen(QPen(QColor("#1e293b"), 1))  # Slate 800
         painter.drawPath(path)
-        
-        # 2. Central Animation (Pulsing Circles + Orbit)
-        center_x, center_y = w / 2, h / 2 - 20
-        self.time += 0.05
-        
-        # Draw pulsing glow
-        for i in range(3):
-            scale = (math.sin(self.time * 0.5 + i * 2) + 1) / 2  # 0 to 1
-            radius = 40 + scale * 20
-            opacity = int(50 * (1 - scale))
-            
-            radial = QRadialGradient(center_x, center_y, radius)
-            radial.setColorAt(0, QColor(99, 102, 241, opacity))  # Indigo
-            radial.setColorAt(1, QColor(99, 102, 241, 0))
-            
-            painter.setPen(Qt.PenStyle.NoPen)
-            painter.setBrush(QBrush(radial))
-            painter.drawEllipse(QRectF(center_x - radius, center_y - radius, radius * 2, radius * 2))
 
-        # Draw orbiting dots
+        # 2. Central static display
+        center_x, center_y = w / 2, h / 2 - 20
+
+        # Draw static glow
+        radius = 50
+        radial = QRadialGradient(center_x, center_y, radius)
+        radial.setColorAt(0, QColor(99, 102, 241, 40))  # Indigo
+        radial.setColorAt(1, QColor(99, 102, 241, 0))
+
+        painter.setPen(Qt.PenStyle.NoPen)
+        painter.setBrush(QBrush(radial))
+        painter.drawEllipse(QRectF(center_x - radius, center_y - radius, radius * 2, radius * 2))
+
+        # Draw static dots in circle
         num_dots = 5
         orbit_radius = 35
         for i in range(num_dots):
-            angle = self.time * 2 + (i * (2 * math.pi / num_dots))
+            angle = i * (2 * math.pi / num_dots) - math.pi / 2  # Start from top
             dot_x = center_x + math.cos(angle) * orbit_radius
             dot_y = center_y + math.sin(angle) * orbit_radius
-            
+
             dot_size = 6
             painter.setPen(Qt.PenStyle.NoPen)
             painter.setBrush(self.accent_color)
             painter.drawEllipse(QRectF(dot_x - dot_size/2, dot_y - dot_size/2, dot_size, dot_size))
-            
+
         # Draw central icon/logo placeholder (Microphone shape simplified)
         mic_w, mic_h = 16, 24
         mic_rect = QRectF(center_x - mic_w/2, center_y - mic_h/2, mic_w, mic_h)
@@ -149,11 +138,9 @@ class ModernLoadingScreen(QWidget):
 
     def closeEvent(self, event):
         """Handle closing."""
-        self.animation_timer.stop()
         event.accept()
         self.logger.info("Loading screen closed")
 
     def destroy(self, destroyWindow=True, destroySubWindows=True):
         """Destroy the widget."""
-        self.animation_timer.stop()
         super().destroy(destroyWindow, destroySubWindows)

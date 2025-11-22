@@ -94,6 +94,8 @@ class ApplicationController(QObject):
             on_status_update=self.update_status_with_auto_hide,
             on_status_update_auto_hide=self.update_status_with_auto_hide
         )
+        # Initialize the hotkey display with current settings
+        self.ui_controller.update_hotkey_display(hotkeys)
 
     def _setup_ui_callbacks(self):
         """Setup UI event callbacks."""
