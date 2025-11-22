@@ -118,6 +118,8 @@ class UIController(QObject):
     def _on_internal_record_started(self):
         """Handle internal record started signal."""
         self.tray_manager.set_recording(True)
+        # Update hotkey display state to recording
+        self.main_window.hotkey_display.set_state('recording')
         # Show overlay with recording state if not already visible
         if not self.overlay.isVisible():
             self.overlay.show_at_cursor(self.overlay.STATE_RECORDING)
@@ -127,6 +129,8 @@ class UIController(QObject):
     def _on_internal_record_stopped(self):
         """Handle internal record stopped signal."""
         self.tray_manager.set_recording(False)
+        # Update hotkey display state to processing
+        self.main_window.hotkey_display.set_state('processing')
         # Show overlay with processing state if not already visible
         if not self.overlay.isVisible():
             self.overlay.show_at_cursor(self.overlay.STATE_PROCESSING)
@@ -136,6 +140,8 @@ class UIController(QObject):
     def _on_internal_transcription(self, text: str):
         """Handle transcription received."""
         self.main_window.set_transcription(text)
+        # Set hotkey display back to idle state
+        self.main_window.hotkey_display.set_state('idle')
         # Hide overlay when transcription is complete
         self.hide_overlay()
 
@@ -177,6 +183,8 @@ class UIController(QObject):
 
         self.record_canceled.emit()
         self.main_window.clear_transcription()
+        # Update hotkey display state to canceling
+        self.main_window.hotkey_display.set_state('canceling')
         self.overlay.set_state(self.overlay.STATE_CANCELING)
 
     def set_transcription(self, text: str):
@@ -190,32 +198,38 @@ class UIController(QObject):
         # Map status messages to overlay states (similar to old Tkinter app)
         # This ensures overlay visibility is automatically managed
         if "Recording" in status:
+            self.main_window.hotkey_display.set_state('recording')
             if not self.overlay.isVisible():
                 self.overlay.show_at_cursor(self.overlay.STATE_RECORDING)
             else:
                 self.overlay.set_state(self.overlay.STATE_RECORDING)
         elif "Processing" in status:
+            self.main_window.hotkey_display.set_state('processing')
             if not self.overlay.isVisible():
                 self.overlay.show_at_cursor(self.overlay.STATE_PROCESSING)
             else:
                 self.overlay.set_state(self.overlay.STATE_PROCESSING)
         elif "Transcribing" in status:
+            self.main_window.hotkey_display.set_state('processing')
             if not self.overlay.isVisible():
                 self.overlay.show_at_cursor(self.overlay.STATE_TRANSCRIBING)
             else:
                 self.overlay.set_state(self.overlay.STATE_TRANSCRIBING)
         elif "STT Enabled" in status:
+            self.main_window.hotkey_display.set_state('idle')
             if not self.overlay.isVisible():
                 self.overlay.show_at_cursor(self.overlay.STATE_STT_ENABLE)
             else:
                 self.overlay.set_state(self.overlay.STATE_STT_ENABLE)
         elif "STT Disabled" in status:
+            self.main_window.hotkey_display.set_state('idle')
             if not self.overlay.isVisible():
                 self.overlay.show_at_cursor(self.overlay.STATE_STT_DISABLE)
             else:
                 self.overlay.set_state(self.overlay.STATE_STT_DISABLE)
         elif any(keyword in status.lower() for keyword in ["complete", "ready", "failed", "error"]):
-            # Hide overlay when task is complete or failed
+            # Set hotkey display back to idle state and hide overlay
+            self.main_window.hotkey_display.set_state('idle')
             self.hide_overlay()
 
     def update_audio_levels(self, levels: List[float]):

@@ -20,6 +20,15 @@ QDialog {
     color: #f5f5f7;
 }
 
+/* Hotkey display elements with smooth transitions */
+HotkeyKey {
+    transition: all 0.3s ease;
+}
+
+HotkeyKey:hover {
+    transition: border-color 0.2s ease;
+}
+
 /* Standard buttons with modern styling */
 QPushButton {
     background-color: #2c2c2e; /* Secondary System Fill */
