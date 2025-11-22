@@ -271,8 +271,15 @@ class UIController(QObject):
         QMessageBox.about(
             self.main_window,
             "About Audio Recorder",
-            "Audio Recorder with Whisper Integration\n\n"
-            "A modern PyQt6 interface for local and API-based transcription.\n\n"
+            "Audio Recorder with Speech-to-Text\n\n"
+            "Record audio and turn it into text. Works offline with local Whisper or online with OpenAI.\n\n"
+            "Features:\n"
+            "• Local or cloud transcription\n"
+            "• Global hotkeys (press * to record)\n"
+            "• Cool waveform visualizations\n"
+            "• Auto-pastes text for you\n"
+            "• Runs in the background\n\n"
+            "Open source and free to use.\n\n"
             "© 2024"
         )
 

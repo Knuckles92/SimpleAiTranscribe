@@ -3,10 +3,12 @@ Modern PyQt6 Waveform Overlay.
 Real-time audio visualization overlay with blur effects and animations.
 """
 import logging
+import math
+import random
 import time
 from typing import Optional, List
 from PyQt6.QtWidgets import QWidget
-from PyQt6.QtCore import Qt, QTimer, QRect, pyqtSignal, QPoint
+from PyQt6.QtCore import Qt, QTimer, QRect, QRectF, pyqtSignal, QPoint
 from PyQt6.QtGui import (
     QPainter, QPainterPath, QColor, QBrush, QPen,
     QLinearGradient, QFont, QCursor
@@ -15,6 +17,33 @@ from config import config
 from settings import settings_manager
 from ui_qt.waveform_styles import style_factory
 from ui_qt.waveform_styles.base_style import BaseWaveformStyle
+
+
+class STTParticle:
+    """Particle for STT enable/disable animations."""
+
+    def __init__(self, x: float, y: float, vx: float, vy: float, hue: float):
+        self.x = x
+        self.y = y
+        self.vx = vx
+        self.vy = vy
+        self.hue = hue
+        self.life = 1.0
+        self.size = random.uniform(2.0, 4.0)
+
+    def update(self, dt: float, damping: float = 0.98) -> bool:
+        """Update particle position and life. Returns True if still alive."""
+        self.x += self.vx * dt
+        self.y += self.vy * dt
+        self.vx *= damping
+        self.vy *= damping
+        self.life -= dt * 0.5  # Slower decay for longer visibility
+        return self.life > 0
+
+    def get_color(self) -> QColor:
+        """Get particle color based on hue and life."""
+        alpha = int(255 * self.life)
+        return QColor.fromHsv(int(self.hue) % 360, 200, 230, alpha)
 
 
 class ModernWaveformOverlay(QWidget):
@@ -54,6 +83,7 @@ class ModernWaveformOverlay(QWidget):
         self.audio_levels: List[float] = [0.0] * 20
         self.animation_time = 0.0
         self.cancel_progress = 0.0
+        self.stt_particles: List[STTParticle] = []
 
         # Load waveform style
         current_style, style_configs = settings_manager.load_waveform_style_settings()
@@ -103,9 +133,9 @@ class ModernWaveformOverlay(QWidget):
         elif self.current_state == self.STATE_CANCELING:
             self.style.draw_canceling_state(painter, rect, "Cancelled")
         elif self.current_state == self.STATE_STT_ENABLE:
-            self.style.draw_stt_enable_state(painter, rect, "STT Enabled")
+            self._draw_stt_enable_state(painter)
         elif self.current_state == self.STATE_STT_DISABLE:
-            self.style.draw_stt_disable_state(painter, rect, "STT Disabled")
+            self._draw_stt_disable_state(painter)
 
     def _draw_background(self, painter: QPainter):
         """Draw the background with frosted glass effect."""
@@ -221,18 +251,41 @@ class ModernWaveformOverlay(QWidget):
         painter.drawText(rect.adjusted(0, h - 25, 0, 0), Qt.AlignmentFlag.AlignCenter, "Canceling...")
 
     def _draw_stt_enable_state(self, painter: QPainter):
-        """Draw STT enable state."""
+        """Draw STT enable state with power up particle effect."""
         rect = self.rect()
         w, h = rect.width(), rect.height()
 
-        # Draw checkmark animation
-        progress = min(1.0, self.animation_time / 0.5)
-
-        painter.setPen(QPen(QColor(16, 185, 129), 4))
-        if progress > 0.0:
-            # Checkmark path
+        # Draw checkmark first (behind particles) - fades in after particles converge
+        if self.animation_time > 0.4:
+            progress = min(1.0, (self.animation_time - 0.4) / 0.3)
+            alpha = int(200 * progress)
+            painter.setPen(QPen(QColor(16, 185, 129, alpha), 3))
             painter.drawLine(int(w // 2 - 15), int(h // 2), int(w // 2 - 5), int(h // 2 + 10))
             painter.drawLine(int(w // 2 - 5), int(h // 2 + 10), int(w // 2 + 15), int(h // 2 - 10))
+
+        # Draw particles on top
+        painter.setPen(Qt.PenStyle.NoPen)
+        for particle in self.stt_particles:
+            color = particle.get_color()
+            painter.setBrush(color)
+            size = particle.size * particle.life
+            painter.drawEllipse(QRectF(
+                particle.x - size, particle.y - size,
+                size * 2, size * 2
+            ))
+
+            # Glow effect for brighter particles
+            if particle.life > 0.3:
+                glow_color = QColor(color)
+                glow_color.setAlpha(100)
+                painter.setBrush(Qt.BrushStyle.NoBrush)
+                painter.setPen(QPen(glow_color, 1))
+                glow_size = size + 3
+                painter.drawEllipse(QRectF(
+                    particle.x - glow_size, particle.y - glow_size,
+                    glow_size * 2, glow_size * 2
+                ))
+                painter.setPen(Qt.PenStyle.NoPen)
 
         # Status text
         painter.setPen(QPen(QColor(224, 224, 255)))
@@ -240,18 +293,42 @@ class ModernWaveformOverlay(QWidget):
         painter.drawText(rect.adjusted(0, h - 25, 0, 0), Qt.AlignmentFlag.AlignCenter, "Enabled")
 
     def _draw_stt_disable_state(self, painter: QPainter):
-        """Draw STT disable state."""
+        """Draw STT disable state with power down particle effect."""
         rect = self.rect()
         w, h = rect.width(), rect.height()
 
-        # Draw X animation
-        progress = min(1.0, self.animation_time / 0.5)
+        # Draw X first (behind particles) - appears quickly then particles explode from it
+        if self.animation_time > 0.1:
+            progress = min(1.0, (self.animation_time - 0.1) / 0.2)
+            alpha = int(200 * progress)
+            x_size = 15
+            painter.setPen(QPen(QColor(239, 68, 68, alpha), 3))
+            painter.drawLine(w // 2 - x_size, h // 2 - x_size, w // 2 + x_size, h // 2 + x_size)
+            painter.drawLine(w // 2 + x_size, h // 2 - x_size, w // 2 - x_size, h // 2 + x_size)
 
-        painter.setPen(QPen(QColor(239, 68, 68), 4))
-        if progress > 0.0:
-            size = int(20 * progress)
-            painter.drawLine(w // 2 - size, h // 2 - size, w // 2 + size, h // 2 + size)
-            painter.drawLine(w // 2 + size, h // 2 - size, w // 2 - size, h // 2 + size)
+        # Draw particles (exploding outward) on top
+        painter.setPen(Qt.PenStyle.NoPen)
+        for particle in self.stt_particles:
+            color = particle.get_color()
+            painter.setBrush(color)
+            size = particle.size * particle.life
+            painter.drawEllipse(QRectF(
+                particle.x - size, particle.y - size,
+                size * 2, size * 2
+            ))
+
+            # Glow effect for brighter particles
+            if particle.life > 0.3:
+                glow_color = QColor(color)
+                glow_color.setAlpha(100)
+                painter.setBrush(Qt.BrushStyle.NoBrush)
+                painter.setPen(QPen(glow_color, 1))
+                glow_size = size + 3
+                painter.drawEllipse(QRectF(
+                    particle.x - glow_size, particle.y - glow_size,
+                    glow_size * 2, glow_size * 2
+                ))
+                painter.setPen(Qt.PenStyle.NoPen)
 
         # Status text
         painter.setPen(QPen(QColor(224, 224, 255)))
@@ -277,9 +354,8 @@ class ModernWaveformOverlay(QWidget):
                 self.set_state(self.STATE_IDLE)
                 self.timer.stop()
         elif self.current_state in [self.STATE_STT_ENABLE, self.STATE_STT_DISABLE]:
-            # Stop animation after 0.5s (animation completes), hidden_timer handles hiding
-            if self.animation_time >= 0.5:
-                self.timer.stop()
+            # Update particles
+            self._update_stt_particles(delta_time)
 
         self.update()
 
@@ -289,10 +365,19 @@ class ModernWaveformOverlay(QWidget):
             self.current_state = state
             self.animation_time = 0.0
             self.cancel_progress = 0.0
+            self.last_frame_time = time.time()  # Reset to prevent huge delta on first frame
 
             # Set canceling start time for style
             if state == self.STATE_CANCELING and self.style:
                 self.style.set_canceling_start_time(time.time())
+
+            # Initialize particles for STT states
+            if state == self.STATE_STT_ENABLE:
+                self._init_power_up_particles()
+            elif state == self.STATE_STT_DISABLE:
+                self._init_power_down_particles()
+            else:
+                self.stt_particles = []
 
             if state == self.STATE_IDLE:
                 self.timer.stop()
@@ -305,6 +390,92 @@ class ModernWaveformOverlay(QWidget):
             # Auto-hide after delay for certain states
             if state in [self.STATE_STT_ENABLE, self.STATE_STT_DISABLE]:
                 self.hidden_timer.start(1500)
+
+    def _init_power_up_particles(self):
+        """Initialize particles for power up animation - converging to center."""
+        self.stt_particles = []
+        center_x = self.overlay_width // 2
+        center_y = self.overlay_height // 2 - 5
+
+        # Create particles around the edges that will converge to center
+        for i in range(60):
+            # Spawn from random positions around edges
+            angle = (i / 60) * 2 * math.pi + random.uniform(-0.3, 0.3)
+            radius = random.uniform(50, 90)
+
+            x = center_x + radius * math.cos(angle)
+            y = center_y + radius * math.sin(angle)
+
+            # Velocity towards center with some swirl
+            speed = random.uniform(60, 100)
+            vx = -math.cos(angle) * speed + random.uniform(-15, 15)
+            vy = -math.sin(angle) * speed + random.uniform(-15, 15)
+
+            # Green/cyan hues for power up
+            hue = random.uniform(120, 180)
+
+            particle = STTParticle(x, y, vx, vy, hue)
+            particle.size = random.uniform(3.0, 6.0)  # Larger particles
+            self.stt_particles.append(particle)
+
+    def _init_power_down_particles(self):
+        """Initialize particles for power down animation - exploding from center."""
+        self.stt_particles = []
+        center_x = self.overlay_width // 2
+        center_y = self.overlay_height // 2 - 5
+
+        # Create particles at center that will explode outward
+        for i in range(60):
+            # Start near center
+            x = center_x + random.uniform(-8, 8)
+            y = center_y + random.uniform(-8, 8)
+
+            # Velocity outward in all directions
+            angle = (i / 60) * 2 * math.pi + random.uniform(-0.3, 0.3)
+            speed = random.uniform(100, 200)
+            vx = math.cos(angle) * speed
+            vy = math.sin(angle) * speed
+
+            # Red/orange hues for power down
+            hue = random.uniform(0, 40)
+
+            particle = STTParticle(x, y, vx, vy, hue)
+            particle.size = random.uniform(3.0, 6.0)  # Larger particles
+            self.stt_particles.append(particle)
+
+    def _update_stt_particles(self, dt: float):
+        """Update STT particle positions and apply forces."""
+        center_x = self.overlay_width // 2
+        center_y = self.overlay_height // 2 - 5
+
+        alive_particles = []
+        for particle in self.stt_particles:
+            if self.current_state == self.STATE_STT_ENABLE:
+                # Power up: attract to center with swirl
+                dx = center_x - particle.x
+                dy = center_y - particle.y
+                distance = math.sqrt(dx * dx + dy * dy)
+
+                if distance > 3:
+                    # Normalize
+                    nx = dx / distance
+                    ny = dy / distance
+
+                    # Strong attraction + swirl
+                    attraction = 800 / (distance + 5)
+                    swirl = 200
+
+                    particle.vx += (nx * attraction - ny * swirl) * dt
+                    particle.vy += (ny * attraction + nx * swirl) * dt
+                else:
+                    # At center, fade fast
+                    particle.life -= dt * 3.0
+
+            # Update physics
+            if particle.update(dt, damping=0.92):
+                alive_particles.append(particle)
+
+        self.stt_particles = alive_particles
 
     def update_audio_levels(self, levels: List[float]):
         """Update audio level data."""
