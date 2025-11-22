@@ -21,12 +21,13 @@ QDialog {
 }
 
 /* Hotkey display elements with smooth transitions */
+/* Note: QSS doesn't support CSS transitions - animations are handled in Python code */
 HotkeyKey {
-    transition: all 0.3s ease;
+    /* Transitions handled programmatically in hotkey_display.py */
 }
 
 HotkeyKey:hover {
-    transition: border-color 0.2s ease;
+    /* Hover effects handled programmatically */
 }
 
 /* Standard buttons with modern styling */

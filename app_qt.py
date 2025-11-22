@@ -347,12 +347,27 @@ class ApplicationController(QObject):
 
     def cleanup(self):
         """Cleanup resources."""
-        if self.hotkey_manager:
-            self.hotkey_manager.cleanup()
-        if self.recorder:
-            self.recorder.cleanup()
-        self.executor.shutdown(wait=False)
-        self.ui_controller.cleanup()
+        try:
+            if self.hotkey_manager:
+                self.hotkey_manager.cleanup()
+        except Exception as e:
+            logging.debug(f"Error during hotkey cleanup: {e}")
+        
+        try:
+            if self.recorder:
+                self.recorder.cleanup()
+        except Exception as e:
+            logging.debug(f"Error during recorder cleanup: {e}")
+        
+        try:
+            self.executor.shutdown(wait=False)
+        except Exception as e:
+            logging.debug(f"Error during executor shutdown: {e}")
+        
+        try:
+            self.ui_controller.cleanup()
+        except Exception as e:
+            logging.debug(f"Error during UI controller cleanup: {e}")
         logging.info("Application controller cleaned up")
 
 

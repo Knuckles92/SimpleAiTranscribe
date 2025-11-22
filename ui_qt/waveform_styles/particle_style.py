@@ -305,7 +305,13 @@ class ParticleStyle(BaseWaveformStyle):
                 if particle.update(dt, self.gravity, self.damping):
                     alive_particles.append(particle)
         
-        self.particles = alive_particles
+        # Filter out any invalid particles and ensure we have Particle objects
+        valid_particles = []
+        for p in alive_particles:
+            if isinstance(p, Particle) and hasattr(p, 'x') and hasattr(p, 'y'):
+                valid_particles.append(p)
+        
+        self.particles = valid_particles
         if len(self.particles) > self.max_particles:
             self.particles = self.particles[-self.max_particles:]
 
@@ -314,20 +320,30 @@ class ParticleStyle(BaseWaveformStyle):
         painter.setPen(Qt.PenStyle.NoPen)
         
         for particle in self.particles:
-            color = particle.get_qcolor()
-            painter.setBrush(color)
-            
-            size = particle.size * particle.life
-            painter.drawEllipse(QRectF(particle.x - size, particle.y - size, size * 2, size * 2))
-            
-            if self.glow_effect and particle.life > 0.5:
-                glow_color = QColor(color)
-                glow_color.setAlpha(100)
-                painter.setBrush(Qt.BrushStyle.NoBrush)
-                painter.setPen(QPen(glow_color, 1))
-                glow_size = size + 1
-                painter.drawEllipse(QRectF(particle.x - glow_size, particle.y - glow_size, glow_size * 2, glow_size * 2))
-                painter.setPen(Qt.PenStyle.NoPen)
+            try:
+                # Ensure particle is a Particle object, not a tuple or list
+                if not hasattr(particle, 'x') or not hasattr(particle, 'y'):
+                    continue
+                    
+                color = particle.get_qcolor()
+                painter.setBrush(color)
+                
+                size = particle.size * particle.life
+                painter.drawEllipse(QRectF(particle.x - size, particle.y - size, size * 2, size * 2))
+                
+                if self.glow_effect and particle.life > 0.5:
+                    glow_color = QColor(color)
+                    glow_color.setAlpha(100)
+                    painter.setBrush(Qt.BrushStyle.NoBrush)
+                    painter.setPen(QPen(glow_color, 1))
+                    glow_size = size + 1
+                    painter.drawEllipse(QRectF(particle.x - glow_size, particle.y - glow_size, glow_size * 2, glow_size * 2))
+                    painter.setPen(Qt.PenStyle.NoPen)
+            except (AttributeError, TypeError) as e:
+                # Skip invalid particles
+                import logging
+                logging.debug(f"Skipping invalid particle: {e}")
+                continue
 
     def _draw_text(self, painter: QPainter, rect: QRect, message: str):
         """Draw status text."""

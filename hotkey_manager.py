@@ -161,7 +161,17 @@ class HotkeyManager:
     def cleanup(self):
         """Clean up keyboard hooks."""
         try:
-            keyboard.unhook_all()
+            # Use a timeout to avoid blocking if cleanup is called from wrong thread
+            import threading
+            if threading.current_thread() is threading.main_thread():
+                keyboard.unhook_all()
+            else:
+                # If called from non-main thread, just log a warning
+                logging.warning("Hotkey cleanup called from non-main thread, skipping unhook")
+        except RuntimeError as e:
+            # Ignore "cannot join current thread" errors - they're harmless during shutdown
+            if "cannot join" not in str(e).lower():
+                logging.error(f"Error cleaning up keyboard hooks: {e}")
         except Exception as e:
             logging.error(f"Error cleaning up keyboard hooks: {e}")
     

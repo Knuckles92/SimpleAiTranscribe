@@ -338,9 +338,25 @@ class AudioRecorder:
         try:
             if self.is_recording:
                 self.stop_recording()
+                # Give the thread a moment to finish, but don't wait indefinitely
+                if self.recording_thread and self.recording_thread.is_alive():
+                    # Wait briefly for thread to finish, but don't block forever
+                    self.recording_thread.join(timeout=0.5)
+                    if self.recording_thread.is_alive():
+                        logging.warning("Recording thread did not finish during cleanup timeout")
+
+            # Close stream if still open
+            if self.stream:
+                try:
+                    self.stream.stop()
+                    self.stream.close()
+                except Exception:
+                    pass  # Ignore errors during cleanup
+                self.stream = None
 
             # SoundDevice doesn't require explicit termination like PyAudio
             logging.info("Audio recorder cleaned up")
 
         except Exception as e:
-            logging.error(f"Error during audio recorder cleanup: {e}")
+            # Don't log errors during shutdown - they're often harmless
+            logging.debug(f"Error during audio recorder cleanup: {e}")

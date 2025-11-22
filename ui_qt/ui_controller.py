@@ -307,8 +307,7 @@ class UIController(QObject):
             "• Cool waveform visualizations\n"
             "• Auto-pastes text for you\n"
             "• Runs in the background\n\n"
-            "Open source and free to use.\n\n"
-            "© 2024"
+            "Open source and free to use."
         )
 
     def get_model_value(self) -> str:
@@ -317,7 +316,18 @@ class UIController(QObject):
 
     def cleanup(self):
         """Cleanup resources."""
-        self.overlay.close()
-        self.main_window.close()
+        try:
+            # Stop overlay timer before closing
+            if hasattr(self.overlay, 'timer') and self.overlay.timer.isActive():
+                self.overlay.timer.stop()
+            self.overlay.close()
+        except Exception as e:
+            self.logger.debug(f"Error closing overlay: {e}")
+        
+        try:
+            self.main_window.close()
+        except Exception as e:
+            self.logger.debug(f"Error closing main window: {e}")
+        
         self.logger.info("UI Controller cleaned up")
 

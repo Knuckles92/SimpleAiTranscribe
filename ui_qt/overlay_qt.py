@@ -114,28 +114,45 @@ class ModernWaveformOverlay(QWidget):
 
     def paintEvent(self, event):
         """Paint the overlay."""
-        painter = QPainter(self)
-        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        try:
+            painter = QPainter(self)
+            painter.setRenderHint(QPainter.RenderHint.Antialiasing)
 
-        # Draw background with blur effect
-        self._draw_background(painter)
+            # Draw background with blur effect
+            self._draw_background(painter)
 
-        # Get drawing rect
-        rect = self.rect()
+            # Get drawing rect
+            rect = self.rect()
 
-        # Draw state-specific content using style
-        if self.current_state == self.STATE_RECORDING:
-            self.style.draw_recording_state(painter, rect, "Recording...")
-        elif self.current_state == self.STATE_PROCESSING:
-            self.style.draw_processing_state(painter, rect, "Processing...")
-        elif self.current_state == self.STATE_TRANSCRIBING:
-            self.style.draw_transcribing_state(painter, rect, "Transcribing...")
-        elif self.current_state == self.STATE_CANCELING:
-            self.style.draw_canceling_state(painter, rect, "Cancelled")
-        elif self.current_state == self.STATE_STT_ENABLE:
-            self._draw_stt_enable_state(painter)
-        elif self.current_state == self.STATE_STT_DISABLE:
-            self._draw_stt_disable_state(painter)
+            # Draw state-specific content using style
+            if self.current_state == self.STATE_RECORDING:
+                if self.style:
+                    self.style.draw_recording_state(painter, rect, "Recording...")
+            elif self.current_state == self.STATE_PROCESSING:
+                if self.style:
+                    self.style.draw_processing_state(painter, rect, "Processing...")
+            elif self.current_state == self.STATE_TRANSCRIBING:
+                if self.style:
+                    self.style.draw_transcribing_state(painter, rect, "Transcribing...")
+            elif self.current_state == self.STATE_CANCELING:
+                if self.style:
+                    self.style.draw_canceling_state(painter, rect, "Cancelled")
+            elif self.current_state == self.STATE_STT_ENABLE:
+                self._draw_stt_enable_state(painter)
+            elif self.current_state == self.STATE_STT_DISABLE:
+                self._draw_stt_disable_state(painter)
+        except Exception as e:
+            # Log error but don't crash the overlay
+            self.logger.error(f"Error drawing waveform frame: {e}", exc_info=True)
+            # Draw a simple fallback
+            try:
+                painter = QPainter(self)
+                painter.fillRect(self.rect(), QColor(45, 45, 68, 200))
+                painter.setPen(QPen(QColor(224, 224, 255)))
+                painter.setFont(QFont("Segoe UI", 10, QFont.Weight.Bold))
+                painter.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter, "Error")
+            except Exception:
+                pass  # If even fallback fails, just skip
 
     def _draw_background(self, painter: QPainter):
         """Draw the background with frosted glass effect."""

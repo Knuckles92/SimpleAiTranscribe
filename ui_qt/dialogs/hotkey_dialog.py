@@ -184,33 +184,38 @@ class HotkeyDialog(QDialog):
 
     def _start_capture(self, hotkey_type: str, input_field: ClickableLineEdit):
         """Start capturing a hotkey."""
-        # If already capturing, stop previous capture
-        if self.capture_thread and self.capture_thread.isRunning():
-            self.capture_thread.terminate()
-            self.capture_thread.wait()
+        try:
+            # If already capturing, stop previous capture
+            if self.capture_thread and self.capture_thread.isRunning():
+                self.capture_thread.terminate()
+                self.capture_thread.wait(1000)  # Wait with timeout
+                self._reset_input_styles()
+
+            self.capturing = hotkey_type
+            self.current_input_field = input_field
+            
+            input_field.setText("Press keys...")
+            input_field.setStyleSheet("""
+                QLineEdit {
+                    background-color: #6366f1;
+                    color: #ffffff;
+                    border: 2px solid #00d4ff;
+                    border-radius: 6px;
+                    padding: 6px 12px;
+                    font-weight: bold;
+                }
+            """)
+
+            self.logger.info(f"Capturing hotkey for: {hotkey_type}")
+            
+            # Start capture thread
+            self.capture_thread = HotkeyCaptureThread()
+            self.capture_thread.captured.connect(self._on_hotkey_captured)
+            self.capture_thread.start()
+        except Exception as e:
+            self.logger.error(f"Failed to start hotkey capture: {e}")
             self._reset_input_styles()
-
-        self.capturing = hotkey_type
-        self.current_input_field = input_field
-        
-        input_field.setText("Press keys...")
-        input_field.setStyleSheet("""
-            QLineEdit {
-                background-color: #6366f1;
-                color: #ffffff;
-                border: 2px solid #00d4ff;
-                border-radius: 6px;
-                padding: 6px 12px;
-                font-weight: bold;
-            }
-        """)
-
-        self.logger.info(f"Capturing hotkey for: {hotkey_type}")
-        
-        # Start capture thread
-        self.capture_thread = HotkeyCaptureThread()
-        self.capture_thread.captured.connect(self._on_hotkey_captured)
-        self.capture_thread.start()
+            self.capturing = None
 
     def _on_hotkey_captured(self, hotkey: str):
         """Handle captured hotkey."""
@@ -290,7 +295,11 @@ class HotkeyDialog(QDialog):
 
     def closeEvent(self, event):
         """Handle close event."""
-        if self.capture_thread and self.capture_thread.isRunning():
-            self.capture_thread.terminate()
-            self.capture_thread.wait()
-        super().closeEvent(event)
+        try:
+            if self.capture_thread and self.capture_thread.isRunning():
+                self.capture_thread.terminate()
+                self.capture_thread.wait(1000)  # Wait with timeout
+        except Exception as e:
+            self.logger.debug(f"Error stopping capture thread: {e}")
+        finally:
+            super().closeEvent(event)

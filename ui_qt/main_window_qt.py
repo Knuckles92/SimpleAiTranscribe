@@ -354,8 +354,11 @@ class ModernMainWindow(QMainWindow):
     def closeEvent(self, event):
         """Handle window close event."""
         self.logger.info("Main window closing")
-        if self.test_loading_screen_instance:
-            self.test_loading_screen_instance.destroy()
+        try:
+            if self.test_loading_screen_instance:
+                self.test_loading_screen_instance.destroy()
+        except Exception as e:
+            self.logger.debug(f"Error destroying loading screen: {e}")
         
         # Check if minimize to tray is enabled (default: True)
         try:
@@ -368,8 +371,13 @@ class ModernMainWindow(QMainWindow):
         if minimize_tray:
             # Hide window instead of closing
             event.ignore()
-            self.hide()
-            self.logger.info("Window hidden to system tray")
+            try:
+                self.hide()
+                self.logger.info("Window hidden to system tray")
+            except Exception as e:
+                self.logger.debug(f"Error hiding window: {e}")
+                # If hiding fails, accept the close event
+                event.accept()
         else:
             # Close normally
             event.accept()
