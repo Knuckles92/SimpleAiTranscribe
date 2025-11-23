@@ -4,7 +4,8 @@ PyQt6 version.
 """
 import math
 import random
-from typing import Dict, Any, List, Tuple
+import time
+from typing import Dict, Any, List, Optional, Tuple
 from PyQt6.QtGui import QPainter, QColor, QPen, QFont, QBrush
 from PyQt6.QtCore import QRect, QRectF, Qt
 from .base_style import BaseWaveformStyle
@@ -80,6 +81,10 @@ class ParticleStyle(BaseWaveformStyle):
         # Particle system state
         self.particles: List[Particle] = []
         self.last_frame_time = 0
+        self.cancel_particles: List[Particle] = []
+        self._cancel_initialized = False
+        self._last_cancel_progress = 1.0
+        self._last_cancel_update: Optional[float] = None
 
     def _hex_to_qcolor(self, hex_color: str) -> QColor:
         """Convert hex color string to QColor."""
@@ -182,10 +187,42 @@ class ParticleStyle(BaseWaveformStyle):
         self._draw_text(painter, rect, message)
 
     def draw_canceling_state(self, painter: QPainter, rect: QRect, message: str = "Cancelled"):
-        """Draw canceling state."""
-        # Just draw text for now to keep it simple, or implement dispersion if needed
-        # The base implementation might handle clearing, but we need to draw something
-        self._draw_text(painter, rect, message)
+        """Draw canceling state with a quick red burst."""
+        progress = self.get_cancellation_progress()
+
+        # Reinitialize burst when a new cancel starts (progress resets)
+        if (progress < self._last_cancel_progress - 0.2) or not self._cancel_initialized:
+            self._init_cancel_particles(rect)
+
+        dt = self._cancel_dt()
+        self._update_cancel_particles(dt)
+        self._draw_cancel_particles(painter, progress)
+
+        # Fading red X, similar in feel to other states
+        center_x = rect.width() // 2
+        center_y = rect.height() // 2 - 5
+        size = int(26 * (1.0 - 0.6 * progress))
+        alpha = max(0, int(255 * (1.0 - progress)))
+
+        painter.setPen(QPen(QColor(239, 68, 68, alpha), 3))
+        painter.drawLine(center_x - size, center_y - size, center_x + size, center_y + size)
+        painter.drawLine(center_x + size, center_y - size, center_x - size, center_y + size)
+
+        # Status text with fade
+        painter.setPen(QColor(255, 255, 255, alpha))
+        font = QFont("Segoe UI", 10)
+        painter.setFont(font)
+        text_rect = QRect(0, rect.height() - 25, rect.width(), 20)
+        painter.drawText(text_rect, 0x0004 | 0x0080, message)
+
+        # Cleanup when animation finishes
+        if progress >= 1.0:
+            self.cancel_particles.clear()
+            self._cancel_initialized = False
+            self._last_cancel_progress = 1.0
+            self._last_cancel_update = None
+        else:
+            self._last_cancel_progress = progress
 
     def draw_stt_enable_state(self, painter: QPainter, rect: QRect, message: str = "STT Enabled"):
         """Draw STT enable state."""

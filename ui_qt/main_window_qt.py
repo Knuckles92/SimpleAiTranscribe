@@ -254,8 +254,6 @@ class ModernMainWindow(QMainWindow):
         if self.on_record_cancel:
             self.on_record_cancel()
 
-        self.record_toggled.emit(False)
-
     def _on_model_changed(self, model_name: str):
         """Handle model selection change."""
         self.current_model = model_name

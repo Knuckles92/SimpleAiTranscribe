@@ -217,19 +217,14 @@ class ApplicationController(QObject):
         if self.recorder.is_recording:
             self.recorder.stop_recording()
             self.recorder.clear_recording_data()
-            self.ui_controller.set_status("Recording cancelled")
-            # Show canceling state in overlay, then hide
-            self.ui_controller.overlay.set_state(self.ui_controller.overlay.STATE_CANCELING)
+            self.status_update.emit("Recording cancelled")
             logging.info("Recording cancelled")
         elif self.current_backend and self.current_backend.is_transcribing:
             self.current_backend.cancel_transcription()
-            self.ui_controller.set_status("Transcription cancelled")
-            # Show canceling state in overlay, then hide
-            self.ui_controller.overlay.set_state(self.ui_controller.overlay.STATE_CANCELING)
+            self.status_update.emit("Transcription cancelled")
             logging.info("Transcription cancelled")
         else:
-            self.ui_controller.set_status("Cancelled")
-            self.ui_controller.hide_overlay()
+            self.status_update.emit("Cancelled")
 
     def _transcribe_audio(self):
         """Transcribe audio in background thread."""

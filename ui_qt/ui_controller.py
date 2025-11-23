@@ -8,6 +8,7 @@ from typing import Optional, Callable, List
 from PyQt6.QtCore import QTimer, pyqtSignal, QObject
 from PyQt6.QtWidgets import QMessageBox
 
+from config import config
 from ui_qt.main_window_qt import ModernMainWindow
 from ui_qt.overlay_qt import ModernWaveformOverlay
 from ui_qt.system_tray_qt import SystemTrayManager
@@ -47,6 +48,11 @@ class UIController(QObject):
         self.on_record_cancel: Optional[Callable] = None
         self.on_model_changed: Optional[Callable] = None
         self.on_hotkeys_changed: Optional[Callable] = None
+
+        # Timer to hide overlay after cancel animation completes
+        self.cancel_animation_timer = QTimer()
+        self.cancel_animation_timer.setSingleShot(True)
+        self.cancel_animation_timer.timeout.connect(self._on_cancel_animation_finished)
 
         self._setup_connections()
 
@@ -183,9 +189,7 @@ class UIController(QObject):
 
         self.record_canceled.emit()
         self.main_window.clear_transcription()
-        # Update hotkey display state to canceling
-        self.main_window.hotkey_display.set_state('canceling')
-        self.overlay.set_state(self.overlay.STATE_CANCELING)
+        self._start_cancel_animation()
 
     def set_transcription(self, text: str):
         """Set transcription text."""
@@ -194,22 +198,27 @@ class UIController(QObject):
     def set_status(self, status: str):
         """Set status message and update overlay state based on status."""
         self.status_changed.emit(status)
+        lower_status = status.lower()
+
+        if "cancel" in lower_status:
+            self._start_cancel_animation()
+            return
 
         # Map status messages to overlay states (similar to old Tkinter app)
         # This ensures overlay visibility is automatically managed
-        if "Recording" in status:
+        if "recording" in lower_status:
             self.main_window.hotkey_display.set_state('recording')
             if not self.overlay.isVisible():
                 self.overlay.show_at_cursor(self.overlay.STATE_RECORDING)
             else:
                 self.overlay.set_state(self.overlay.STATE_RECORDING)
-        elif "Processing" in status:
+        elif "processing" in lower_status:
             self.main_window.hotkey_display.set_state('processing')
             if not self.overlay.isVisible():
                 self.overlay.show_at_cursor(self.overlay.STATE_PROCESSING)
             else:
                 self.overlay.set_state(self.overlay.STATE_PROCESSING)
-        elif "Transcribing" in status:
+        elif "transcribing" in lower_status:
             self.main_window.hotkey_display.set_state('processing')
             if not self.overlay.isVisible():
                 self.overlay.show_at_cursor(self.overlay.STATE_TRANSCRIBING)
@@ -227,7 +236,7 @@ class UIController(QObject):
                 self.overlay.show_at_cursor(self.overlay.STATE_STT_DISABLE)
             else:
                 self.overlay.set_state(self.overlay.STATE_STT_DISABLE)
-        elif any(keyword in status.lower() for keyword in ["complete", "ready", "failed", "error"]):
+        elif any(keyword in lower_status for keyword in ["complete", "ready", "failed", "error"]):
             # Set hotkey display back to idle state and hide overlay
             self.main_window.hotkey_display.set_state('idle')
             self.hide_overlay()
@@ -251,6 +260,28 @@ class UIController(QObject):
             self.hide_overlay()
         else:
             self.show_overlay()
+
+    def _start_cancel_animation(self):
+        """Show the cancel animation and schedule hide."""
+        self.cancel_animation_timer.stop()
+        self.main_window.hotkey_display.set_state('canceling')
+
+        if not self.overlay.isVisible():
+            self.overlay.show_at_cursor(self.overlay.STATE_CANCELING)
+        else:
+            self.overlay.set_state(self.overlay.STATE_CANCELING)
+
+        self.cancel_animation_timer.start(config.CANCELLATION_ANIMATION_DURATION_MS + 200)
+
+    def _on_cancel_animation_finished(self):
+        """Cleanup after cancel animation completes."""
+        if self.overlay.current_state not in {
+            self.overlay.STATE_CANCELING,
+            self.overlay.STATE_IDLE
+        }:
+            return
+        self.main_window.hotkey_display.set_state('idle')
+        self.hide_overlay()
 
     def show_main_window(self):
         """Show the main window."""
@@ -330,4 +361,3 @@ class UIController(QObject):
             self.logger.debug(f"Error closing main window: {e}")
         
         self.logger.info("UI Controller cleaned up")
-
