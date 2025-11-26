@@ -20,6 +20,26 @@ class ModernButton(QPushButton):
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
 
         # Remove default focus outline
+        self._base_text = text
+        self._hotkey_text = ""
+
+    def setText(self, text: str):
+        """Override setText to update base text and re-apply hotkey."""
+        self._base_text = text
+        self._update_text()
+
+    def set_hotkey(self, hotkey: str):
+        """Set the hotkey text to display on the button."""
+        self._hotkey_text = hotkey
+        self._update_text()
+
+    def _update_text(self):
+        """Update the button text combining base text and hotkey."""
+        if self._hotkey_text:
+            # Use a slightly smaller font for the hotkey or just append it
+            super().setText(f"{self._base_text} [{self._hotkey_text}]")
+        else:
+            super().setText(self._base_text)
 
 
 class PrimaryButton(ModernButton):

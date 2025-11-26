@@ -132,8 +132,6 @@ class UIController(QObject):
     def _on_internal_record_started(self):
         """Handle internal record started signal."""
         self.tray_manager.set_recording(True)
-        # Update hotkey display state to recording
-        self.main_window.hotkey_display.set_state('recording')
         # Show overlay with recording state if not already visible
         if not self.overlay.isVisible():
             self.overlay.show_at_cursor(self.overlay.STATE_RECORDING)
@@ -143,8 +141,6 @@ class UIController(QObject):
     def _on_internal_record_stopped(self):
         """Handle internal record stopped signal."""
         self.tray_manager.set_recording(False)
-        # Update hotkey display state to processing
-        self.main_window.hotkey_display.set_state('processing')
         # Show overlay with processing state if not already visible
         if not self.overlay.isVisible():
             self.overlay.show_at_cursor(self.overlay.STATE_PROCESSING)
@@ -154,8 +150,6 @@ class UIController(QObject):
     def _on_internal_transcription(self, text: str):
         """Handle transcription received."""
         self.main_window.set_transcription(text)
-        # Set hotkey display back to idle state
-        self.main_window.hotkey_display.set_state('idle')
         # Hide overlay when transcription is complete
         self.hide_overlay()
 
@@ -215,38 +209,32 @@ class UIController(QObject):
         # Map status messages to overlay states (similar to old Tkinter app)
         # This ensures overlay visibility is automatically managed
         if "recording" in lower_status:
-            self.main_window.hotkey_display.set_state('recording')
             if not self.overlay.isVisible():
                 self.overlay.show_at_cursor(self.overlay.STATE_RECORDING)
             else:
                 self.overlay.set_state(self.overlay.STATE_RECORDING)
         elif "processing" in lower_status:
-            self.main_window.hotkey_display.set_state('processing')
             if not self.overlay.isVisible():
                 self.overlay.show_at_cursor(self.overlay.STATE_PROCESSING)
             else:
                 self.overlay.set_state(self.overlay.STATE_PROCESSING)
         elif "transcribing" in lower_status:
-            self.main_window.hotkey_display.set_state('processing')
             if not self.overlay.isVisible():
                 self.overlay.show_at_cursor(self.overlay.STATE_TRANSCRIBING)
             else:
                 self.overlay.set_state(self.overlay.STATE_TRANSCRIBING)
         elif "STT Enabled" in status:
-            self.main_window.hotkey_display.set_state('idle')
             if not self.overlay.isVisible():
                 self.overlay.show_at_cursor(self.overlay.STATE_STT_ENABLE)
             else:
                 self.overlay.set_state(self.overlay.STATE_STT_ENABLE)
         elif "STT Disabled" in status:
-            self.main_window.hotkey_display.set_state('idle')
             if not self.overlay.isVisible():
                 self.overlay.show_at_cursor(self.overlay.STATE_STT_DISABLE)
             else:
                 self.overlay.set_state(self.overlay.STATE_STT_DISABLE)
         elif any(keyword in lower_status for keyword in ["complete", "ready", "failed", "error"]):
-            # Set hotkey display back to idle state and hide overlay
-            self.main_window.hotkey_display.set_state('idle')
+            # Hide overlay
             self.hide_overlay()
 
     def update_audio_levels(self, levels: List[float]):
@@ -276,7 +264,6 @@ class UIController(QObject):
     def _start_cancel_animation(self):
         """Show the cancel animation and schedule hide."""
         self.cancel_animation_timer.stop()
-        self.main_window.hotkey_display.set_state('canceling')
 
         if not self.overlay.isVisible():
             self.overlay.show_at_cursor(self.overlay.STATE_CANCELING)
@@ -292,7 +279,6 @@ class UIController(QObject):
             self.overlay.STATE_IDLE
         }:
             return
-        self.main_window.hotkey_display.set_state('idle')
         self.hide_overlay()
 
     def show_main_window(self):
@@ -335,7 +321,7 @@ class UIController(QObject):
         record_key = hotkeys.get('record_toggle', '*')
         cancel_key = hotkeys.get('cancel', '-')
         enable_disable_key = hotkeys.get('enable_disable', 'Ctrl+Alt+*')
-        self.main_window.hotkey_display.update_hotkeys(record_key, cancel_key, enable_disable_key)
+        self.main_window.update_hotkeys(record_key, cancel_key, enable_disable_key)
 
     def show_about_dialog(self):
         """Show the about dialog."""

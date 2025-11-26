@@ -16,7 +16,7 @@ from settings import settings_manager
 from ui_qt.loading_screen_qt import ModernLoadingScreen
 from ui_qt.widgets import (
     HeaderCard, Card, PrimaryButton, DangerButton,
-    SuccessButton, ControlPanel, ModernButton, HotkeyDisplay,
+    SuccessButton, ControlPanel, ModernButton,
     HistorySidebar, HistoryEdgeTab
 )
 from history_manager import history_manager
@@ -166,18 +166,8 @@ class ModernMainWindow(QMainWindow):
 
         content_layout.addWidget(transcription_card)
         
-        # Hotkey display at the bottom, centered
-        hotkey_layout = QHBoxLayout()
-        hotkey_layout.setSpacing(12)
+        content_layout.addWidget(transcription_card)
         
-        # Modern hotkey display
-        self.hotkey_display = HotkeyDisplay()
-        
-        hotkey_layout.addStretch()
-        hotkey_layout.addWidget(self.hotkey_display)
-        hotkey_layout.addStretch()
-        
-        content_layout.addLayout(hotkey_layout)
         content_layout.addStretch() # Push everything up
 
         # Add main area to root layout
@@ -535,3 +525,16 @@ class ModernMainWindow(QMainWindow):
         else:
             # Close normally
             event.accept()
+
+    def update_hotkeys(self, record_key: str, cancel_key: str, enable_disable_key: str = "Ctrl+Alt+*"):
+        """
+        Update the hotkey display on buttons.
+        
+        Args:
+            record_key: The key for recording
+            cancel_key: The key for canceling
+            enable_disable_key: The key for enabling/disabling STT
+        """
+        self.record_button.set_hotkey(record_key)
+        self.cancel_button.set_hotkey(cancel_key)
+        self.stop_button.set_hotkey(record_key) # Stop uses same key as record usually
