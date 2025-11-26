@@ -1,6 +1,13 @@
 {
   "entries": [
     {
+      "id": "4072451f-441c-478b-be8d-faa9137b4ab6",
+      "text": "Instead of having the hotkeys shown at the bottom of the window, maybe we could incorporate them into the actual buttons like record, stop and cancel, like in the middle of the button or something.",
+      "timestamp": "2025-11-26T14:09:55.394439",
+      "model": "local_whisper",
+      "audio_file": "recording_20251126_140955.wav"
+    },
+    {
       "id": "27076911-c42a-4607-852c-c97d25ee378a",
       "text": "Please make these functionality changes when the user goes file exit that should still that should close the whole program down. We should add a minimize to tray button on the main menu but then if they hit the X in the top right corner that should minimize it to the tray too because right now the only way to exit is to right click on the tray icon and hit exit there.",
       "timestamp": "2025-11-26T13:04:19.349977",
@@ -19,7 +26,7 @@
       "text": "In addition to the style's message, we should use the use a create a new animation for the copy, but obviously still using the same particle effect. We look at the other animation styles to determine how you should do it.",
       "timestamp": "2025-11-26T01:22:16.081187",
       "model": "local_whisper",
-      "audio_file": "recording_20251126_012216.wav"
+      "audio_file": null
     },
     {
       "id": "76c4b8d3-e45f-4d23-aa8c-44b04aaeb52f",
