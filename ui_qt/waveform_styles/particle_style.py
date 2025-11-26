@@ -389,3 +389,73 @@ class ParticleStyle(BaseWaveformStyle):
         painter.setFont(font)
         text_rect = QRect(0, rect.height() - 25, rect.width(), 20)
         painter.drawText(text_rect, Qt.AlignmentFlag.AlignCenter, message)
+
+    def _init_cancel_particles(self, rect: QRect):
+        """Create an outward burst for cancel animation."""
+        self.cancel_particles = []
+        center_x = rect.width() // 2
+        center_y = rect.height() // 2 - 5
+
+        for _ in range(70):
+            angle = random.uniform(0, 2 * math.pi)
+            speed = random.uniform(160, 320)
+            vx = math.cos(angle) * speed
+            vy = math.sin(angle) * speed
+
+            particle = Particle(center_x, center_y, vx, vy)
+            particle.size = random.uniform(2.5, 5.0)
+            # Warm hues for cancel burst
+            particle.color_hue = random.uniform(0, 40)
+            self.cancel_particles.append(particle)
+
+        self._cancel_initialized = True
+        self._last_cancel_progress = 0.0
+        self._last_cancel_update = time.time()
+
+    def _cancel_dt(self) -> float:
+        """Compute time delta for cancel animation."""
+        now = time.time()
+        if self._last_cancel_update is None:
+            self._last_cancel_update = now
+            return 1 / 30
+
+        dt = now - self._last_cancel_update
+        self._last_cancel_update = now
+        return max(0.0, min(0.05, dt))
+
+    def _update_cancel_particles(self, dt: float):
+        """Update cancel burst particles."""
+        alive = []
+        for particle in self.cancel_particles:
+            # Small random wobble to keep the burst organic
+            particle.vx += random.uniform(-25, 25) * dt
+            particle.vy += random.uniform(-25, 25) * dt
+
+            if particle.update(dt, gravity=0, damping=0.92):
+                alive.append(particle)
+
+        self.cancel_particles = alive
+
+    def _draw_cancel_particles(self, painter: QPainter, progress: float):
+        """Render cancel burst particles."""
+        painter.setPen(Qt.PenStyle.NoPen)
+
+        for particle in self.cancel_particles:
+            color = particle.get_qcolor(base_hue=particle.color_hue)
+            alpha = int(255 * particle.life * (1.0 - progress * 0.7))
+            if alpha <= 0:
+                continue
+
+            color.setAlpha(alpha)
+            size = particle.size * (1.0 + 0.8 * (1.0 - progress))
+            painter.setBrush(color)
+            painter.drawEllipse(QRectF(particle.x - size, particle.y - size, size * 2, size * 2))
+
+            if self.glow_effect and alpha > 80:
+                glow_color = QColor(color)
+                glow_color.setAlpha(int(alpha * 0.5))
+                painter.setBrush(Qt.BrushStyle.NoBrush)
+                painter.setPen(QPen(glow_color, 1))
+                glow_size = size + 2
+                painter.drawEllipse(QRectF(particle.x - glow_size, particle.y - glow_size, glow_size * 2, glow_size * 2))
+                painter.setPen(Qt.PenStyle.NoPen)

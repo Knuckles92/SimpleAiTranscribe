@@ -116,7 +116,7 @@
       "ripple_gain": 22.0
     }
   },
-  "selected_model": "api_gpt4o",
+  "selected_model": "local_whisper",
   "auto_paste": true,
   "copy_clipboard": true,
   "minimize_tray": true
