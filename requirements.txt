@@ -1,13 +1,13 @@
+# Core dependencies
 sounddevice>=0.4.6
 numpy>=1.24.0
 keyboard>=0.13.5
 openai>=1.3.0
-pystray>=0.19.4
-Pillow>=10.0.0
 pyperclip>=1.8.2
 openai-whisper>=20231117
 python-dotenv>=1.0.0
-pygame>=2.5.0
-gtts>=2.5.0
-pydub>=0.25.1
 PyQt6>=6.0.0
+
+# Optional: Only needed for tests/generate_test_audio.py test utility
+# gtts>=2.5.0
+# pydub>=0.25.1

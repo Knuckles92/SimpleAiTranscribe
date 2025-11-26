@@ -1,6 +1,5 @@
 """
-Main application bootstrap for Audio Recorder using modern PyQt6 UI.
-This is the new entry point for the refactored application.
+Main application bootstrap
 """
 import logging
 import os
