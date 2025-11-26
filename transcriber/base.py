@@ -74,7 +74,15 @@ class TranscriptionBackend(ABC):
         
         return audio_processor.combine_transcriptions(transcriptions)
     
+    def cleanup(self):
+        """Clean up backend resources.
+        
+        Override this method in subclasses to release any resources
+        (e.g., models, connections, etc.) when the application shuts down.
+        """
+        pass
+    
     @property
     def name(self) -> str:
         """Get the backend name."""
-        return self.__class__.__name__ 
+        return self.__class__.__name__

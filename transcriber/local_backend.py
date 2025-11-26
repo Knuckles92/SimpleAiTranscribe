@@ -337,8 +337,43 @@ class LocalWhisperBackend(TranscriptionBackend):
         self._setup_ffmpeg()
         self._load_model()
     
+    def cleanup(self):
+        """Clean up Whisper model and release resources.
+        
+        This unloads the model from memory (including GPU memory if applicable).
+        """
+        try:
+            if self.model is not None:
+                logging.info("Cleaning up LocalWhisperBackend - unloading model...")
+                
+                # Cancel any ongoing transcription
+                self.should_cancel = True
+                
+                # Delete the model to free memory
+                del self.model
+                self.model = None
+                
+                # Force garbage collection to release GPU memory
+                import gc
+                gc.collect()
+                
+                # If using CUDA, clear GPU cache
+                try:
+                    import torch
+                    if torch.cuda.is_available():
+                        torch.cuda.empty_cache()
+                        logging.info("Cleared CUDA cache")
+                except ImportError:
+                    pass  # torch not available, skip GPU cleanup
+                except Exception as e:
+                    logging.debug(f"Error clearing CUDA cache: {e}")
+                
+                logging.info("LocalWhisperBackend cleaned up successfully")
+        except Exception as e:
+            logging.debug(f"Error during LocalWhisperBackend cleanup: {e}")
+    
     @property
     def name(self) -> str:
         """Get the backend name with model info."""
         status = "Ready" if self.is_available() else "FFmpeg Required"
-        return f"LocalWhisper ({self.model_name}) - {status}" 
+        return f"LocalWhisper ({self.model_name}) - {status}"

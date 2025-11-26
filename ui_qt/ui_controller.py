@@ -373,15 +373,33 @@ class UIController(QObject):
 
     def cleanup(self):
         """Cleanup resources."""
+        self.logger.info("Starting UI Controller cleanup...")
+        
+        # Stop the cancel animation timer
         try:
-            # Stop overlay timer before closing
+            if self.cancel_animation_timer.isActive():
+                self.cancel_animation_timer.stop()
+        except Exception as e:
+            self.logger.debug(f"Error stopping cancel animation timer: {e}")
+        
+        # Stop overlay timer and close
+        try:
             if hasattr(self.overlay, 'timer') and self.overlay.timer.isActive():
                 self.overlay.timer.stop()
             self.overlay.close()
         except Exception as e:
             self.logger.debug(f"Error closing overlay: {e}")
         
+        # Hide and cleanup system tray
         try:
+            self.tray_manager.hide()
+            self.tray_manager.setParent(None)
+        except Exception as e:
+            self.logger.debug(f"Error hiding system tray: {e}")
+        
+        # Close main window (force quit to bypass minimize to tray)
+        try:
+            self.main_window._force_quit = True
             self.main_window.close()
         except Exception as e:
             self.logger.debug(f"Error closing main window: {e}")

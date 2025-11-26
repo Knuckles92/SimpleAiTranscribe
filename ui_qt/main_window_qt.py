@@ -49,6 +49,7 @@ class ModernMainWindow(QMainWindow):
         self.is_recording = False
         self.current_model = config.MODEL_CHOICES[0]
         self.test_loading_screen_instance = None  # Keep reference to prevent GC
+        self._force_quit = False  # Flag to bypass minimize to tray on close
         
         # Window sizing for sidebar toggle
         self._base_width = 580  # Optimal width without sidebar
@@ -220,7 +221,9 @@ class ModernMainWindow(QMainWindow):
         file_menu = menubar.addMenu("File")
         file_menu.addAction("Settings", self.open_settings)
         file_menu.addAction("Hotkeys", self.open_hotkey_settings)
-        file_menu.addAction("Exit", self.close)
+        file_menu.addSeparator()
+        file_menu.addAction("Minimize to Tray", self.minimize_to_tray)
+        file_menu.addAction("Exit", self.quit_application)
 
         # View menu
         view_menu = menubar.addMenu("View")
@@ -385,6 +388,18 @@ class ModernMainWindow(QMainWindow):
         self.logger.info("Showing about dialog")
         self.about_requested.emit()
 
+    def minimize_to_tray(self):
+        """Minimize the window to the system tray."""
+        self.logger.info("Minimizing to tray")
+        self.hide()
+
+    def quit_application(self):
+        """Quit the application completely (bypasses minimize to tray)."""
+        self.logger.info("Quitting application")
+        self._force_quit = True
+        from PyQt6.QtWidgets import QApplication
+        QApplication.instance().quit()
+
     def toggle_history(self):
         """Toggle the history sidebar visibility."""
         self.logger.info("Toggling history sidebar")
@@ -493,6 +508,12 @@ class ModernMainWindow(QMainWindow):
         except Exception as e:
             self.logger.debug(f"Error destroying loading screen: {e}")
         
+        # If force quit is set, close immediately
+        if self._force_quit:
+            self.logger.info("Force quit - closing application")
+            event.accept()
+            return
+        
         # Check if minimize to tray is enabled (default: True)
         try:
             settings = settings_manager.load_all_settings()
@@ -502,7 +523,7 @@ class ModernMainWindow(QMainWindow):
             minimize_tray = True  # Default to True on error
         
         if minimize_tray:
-            # Hide window instead of closing
+            # Hide window instead of closing (X button behavior)
             event.ignore()
             try:
                 self.hide()

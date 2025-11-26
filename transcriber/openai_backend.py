@@ -194,7 +194,24 @@ class OpenAIBackend(TranscriptionBackend):
         self.model_type = model_type
         logging.info(f"Model type changed to: {model_type}")
     
+    def cleanup(self):
+        """Clean up OpenAI client resources."""
+        try:
+            if self.client is not None:
+                logging.info(f"Cleaning up OpenAI backend ({self.model_type})...")
+                
+                # Cancel any ongoing transcription
+                self.should_cancel = True
+                
+                # Close the client (releases any connection pools)
+                self.client.close()
+                self.client = None
+                
+                logging.info(f"OpenAI backend ({self.model_type}) cleaned up successfully")
+        except Exception as e:
+            logging.debug(f"Error during OpenAI backend cleanup: {e}")
+    
     @property
     def name(self) -> str:
         """Get the backend name with model info."""
-        return f"OpenAI ({self.model_type})" 
+        return f"OpenAI ({self.model_type})"

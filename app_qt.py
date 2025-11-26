@@ -447,6 +447,16 @@ class ApplicationController(QObject):
 
     def cleanup(self):
         """Cleanup resources."""
+        logging.info("Starting application cleanup...")
+        
+        # Cancel any ongoing transcription first
+        try:
+            if self.current_backend and self.current_backend.is_transcribing:
+                logging.info("Cancelling ongoing transcription...")
+                self.current_backend.cancel_transcription()
+        except Exception as e:
+            logging.debug(f"Error cancelling transcription: {e}")
+        
         try:
             if self.hotkey_manager:
                 self.hotkey_manager.cleanup()
@@ -459,15 +469,33 @@ class ApplicationController(QObject):
         except Exception as e:
             logging.debug(f"Error during recorder cleanup: {e}")
         
+        # Shutdown executor and wait briefly for pending tasks
         try:
+            self.executor.shutdown(wait=True, cancel_futures=True)
+        except TypeError:
+            # Python < 3.9 doesn't support cancel_futures
             self.executor.shutdown(wait=False)
         except Exception as e:
             logging.debug(f"Error during executor shutdown: {e}")
+        
+        # Clean up all transcription backends (especially important for LocalWhisper)
+        try:
+            for backend_name, backend in self.transcription_backends.items():
+                try:
+                    logging.info(f"Cleaning up transcription backend: {backend_name}")
+                    backend.cleanup()
+                except Exception as e:
+                    logging.debug(f"Error cleaning up {backend_name} backend: {e}")
+            self.transcription_backends.clear()
+            self.current_backend = None
+        except Exception as e:
+            logging.debug(f"Error during transcription backends cleanup: {e}")
         
         try:
             self.ui_controller.cleanup()
         except Exception as e:
             logging.debug(f"Error during UI controller cleanup: {e}")
+        
         logging.info("Application controller cleaned up")
 
 
