@@ -120,7 +120,7 @@ class HotkeyManager:
         modifiers = parts[:-1]  # Everything else are modifiers
         
         # Check if main key matches
-        if event.name.lower() != main_key:
+        if not event.name or event.name.lower() != main_key:
             return False
             
         # Check modifiers

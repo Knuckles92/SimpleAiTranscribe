@@ -21,6 +21,7 @@ from hotkey_manager import HotkeyManager
 from settings import settings_manager
 from transcriber import TranscriptionBackend, LocalWhisperBackend, OpenAIBackend
 from audio_processor import audio_processor
+from history_manager import history_manager
 
 
 def setup_logging():
@@ -55,6 +56,12 @@ class ApplicationController(QObject):
         # Transcription backends
         self.transcription_backends: Dict[str, TranscriptionBackend] = {}
         self.current_backend: Optional[TranscriptionBackend] = None
+        
+        # Track current model for history
+        self._current_model_name: str = "local_whisper"
+        
+        # Track source audio file for history (to save recording)
+        self._pending_audio_file: Optional[str] = None
 
         # Setup components
         self._setup_transcription_backends()
@@ -103,6 +110,7 @@ class ApplicationController(QObject):
         self.ui_controller.on_record_cancel = self.cancel_recording
         self.ui_controller.on_model_changed = self.on_model_changed
         self.ui_controller.on_hotkeys_changed = self.update_hotkeys
+        self.ui_controller.on_retranscribe = self.retranscribe_audio
 
     def update_hotkeys(self, hotkeys: Dict[str, str]):
         """Update application hotkeys."""
@@ -182,6 +190,9 @@ class ApplicationController(QObject):
             self._on_transcription_error("Audio file is empty or corrupted")
             return
 
+        # Track the audio file for history saving
+        self._pending_audio_file = config.RECORDED_AUDIO_FILE
+
         # Start transcription in background
         try:
             needs_splitting, file_size_mb = audio_processor.check_file_size(
@@ -224,6 +235,84 @@ class ApplicationController(QObject):
             logging.info("Transcription cancelled")
         else:
             self.status_update.emit("Cancelled")
+
+    def retranscribe_audio(self, audio_file_path: str):
+        """Re-transcribe an existing audio file.
+        
+        Args:
+            audio_file_path: Path to the audio file to transcribe.
+        """
+        if not os.path.exists(audio_file_path):
+            logging.error(f"Audio file not found for re-transcription: {audio_file_path}")
+            self.status_update.emit("Error: Audio file not found")
+            return
+        
+        logging.info(f"Re-transcribing audio file: {audio_file_path}")
+        
+        # Track the audio file for history (won't re-save since it's already in recordings)
+        self._pending_audio_file = None  # Don't duplicate the recording
+        
+        # Show processing status
+        self.status_update.emit("Processing...")
+        
+        # Start transcription in background
+        try:
+            needs_splitting, file_size_mb = audio_processor.check_file_size(audio_file_path)
+            
+            if needs_splitting:
+                logging.info(f"Large file ({file_size_mb:.2f} MB), using split workflow")
+                self.status_update.emit(f"Processing large file ({file_size_mb:.1f} MB)...")
+                self.executor.submit(self._retranscribe_large_audio, audio_file_path)
+            else:
+                self.executor.submit(self._retranscribe_audio_file, audio_file_path)
+                
+        except Exception as e:
+            logging.error(f"Failed to start re-transcription: {e}")
+            self._on_transcription_error(f"Failed to process audio: {e}")
+    
+    def _retranscribe_audio_file(self, audio_file_path: str):
+        """Re-transcribe a single audio file in background thread."""
+        try:
+            self.status_update.emit("Transcribing...")
+            transcribed_text = self.current_backend.transcribe(audio_file_path)
+            self.transcription_completed.emit(transcribed_text)
+        except Exception as e:
+            logging.error(f"Re-transcription failed: {e}")
+            self.transcription_failed.emit(str(e))
+    
+    def _retranscribe_large_audio(self, audio_file_path: str):
+        """Re-transcribe a large audio file by splitting into chunks."""
+        chunk_files = []
+        try:
+            def progress_callback(message):
+                self.status_update.emit(message)
+            
+            chunk_files = audio_processor.split_audio_file(audio_file_path, progress_callback)
+            
+            if not chunk_files:
+                raise Exception("Failed to split audio file")
+            
+            # Transcribe chunks
+            if hasattr(self.current_backend, 'transcribe_chunks'):
+                self.status_update.emit(f"Transcribing {len(chunk_files)} chunks...")
+                transcribed_text = self.current_backend.transcribe_chunks(chunk_files)
+            else:
+                transcriptions = []
+                for i, chunk_file in enumerate(chunk_files):
+                    self.status_update.emit(f"Transcribing chunk {i+1}/{len(chunk_files)}...")
+                    transcriptions.append(self.current_backend.transcribe(chunk_file))
+                transcribed_text = audio_processor.combine_transcriptions(transcriptions)
+            
+            self.transcription_completed.emit(transcribed_text)
+            
+        except Exception as e:
+            logging.error(f"Large audio re-transcription failed: {e}")
+            self.transcription_failed.emit(str(e))
+        finally:
+            try:
+                audio_processor.cleanup_temp_files()
+            except Exception as cleanup_error:
+                logging.warning(f"Failed to cleanup temp files: {cleanup_error}")
 
     def _transcribe_audio(self):
         """Transcribe audio in background thread."""
@@ -285,6 +374,22 @@ class ApplicationController(QObject):
 
         # Hide overlay after completion
         self.ui_controller.hide_overlay()
+        
+        # Save to history (with audio file if available)
+        try:
+            history_manager.add_entry(
+                text=transcribed_text,
+                model=self._current_model_name,
+                source_audio_file=self._pending_audio_file
+            )
+            # Refresh the history sidebar
+            self.ui_controller.refresh_history()
+            logging.info("Transcription saved to history")
+        except Exception as e:
+            logging.error(f"Failed to save transcription to history: {e}")
+        finally:
+            # Clear the pending audio file
+            self._pending_audio_file = None
 
         # Load settings
         settings = settings_manager.load_all_settings()
@@ -325,6 +430,7 @@ class ApplicationController(QObject):
         model_value = config.MODEL_VALUE_MAP.get(model_name)
         if model_value and model_value in self.transcription_backends:
             self.current_backend = self.transcription_backends[model_value]
+            self._current_model_name = model_value
             settings_manager.save_model_selection(model_value)
             logging.info(f"Switched to model: {model_value}")
 

@@ -15,6 +15,13 @@ from ui_qt.widgets.cards import (
     StatCard,
 )
 from ui_qt.widgets.hotkey_display import HotkeyDisplay
+from ui_qt.widgets.history_sidebar import (
+    HistorySidebar,
+    HistoryToggleButton,
+    HistoryEdgeTab,
+    HistoryItemWidget,
+    RecordingItemWidget,
+)
 
 __all__ = [
     "ModernButton",
@@ -27,4 +34,9 @@ __all__ = [
     "HeaderCard",
     "StatCard",
     "HotkeyDisplay",
+    "HistorySidebar",
+    "HistoryToggleButton",
+    "HistoryEdgeTab",
+    "HistoryItemWidget",
+    "RecordingItemWidget",
 ]

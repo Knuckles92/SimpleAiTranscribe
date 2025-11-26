@@ -6,7 +6,7 @@ import logging
 from typing import Optional, Callable
 from PyQt6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
-    QLabel, QComboBox, QTextEdit, QFrame
+    QLabel, QComboBox, QTextEdit, QFrame, QPushButton
 )
 from PyQt6.QtCore import Qt, QTimer, pyqtSignal
 from PyQt6.QtGui import QFont, QIcon, QPixmap
@@ -16,8 +16,10 @@ from settings import settings_manager
 from ui_qt.loading_screen_qt import ModernLoadingScreen
 from ui_qt.widgets import (
     HeaderCard, Card, PrimaryButton, DangerButton,
-    SuccessButton, ControlPanel, ModernButton, HotkeyDisplay
+    SuccessButton, ControlPanel, ModernButton, HotkeyDisplay,
+    HistorySidebar, HistoryEdgeTab
 )
+from history_manager import history_manager
 
 
 class ModernMainWindow(QMainWindow):
@@ -31,6 +33,8 @@ class ModernMainWindow(QMainWindow):
     hotkeys_requested = pyqtSignal()
     overlay_toggle_requested = pyqtSignal()
     about_requested = pyqtSignal()
+    history_toggle_requested = pyqtSignal()
+    retranscribe_requested = pyqtSignal(str)  # Emits audio file path
 
     def __init__(self):
         """Initialize the main window."""
@@ -38,18 +42,26 @@ class ModernMainWindow(QMainWindow):
         self.logger = logging.getLogger(__name__)
         self.setWindowTitle("Audio Recorder - Modern Interface")
         self.setMinimumSize(500, 600)
-        self.setMaximumWidth(900)
+        self.setMaximumWidth(1220)  # Increased to accommodate sidebar
+        self.resize(604, 700)  # Initial size: base_width + edge_tab_width (580 + 24)
 
         # State
         self.is_recording = False
         self.current_model = config.MODEL_CHOICES[0]
         self.test_loading_screen_instance = None  # Keep reference to prevent GC
+        
+        # Window sizing for sidebar toggle
+        self._base_width = 580  # Optimal width without sidebar
+        self._sidebar_width = 320  # HistorySidebar.EXPANDED_WIDTH
+        self._edge_tab_width = 24  # HistoryEdgeTab width
 
         # Callbacks (will be set by controller)
         self.on_record_start: Optional[Callable] = None
         self.on_record_stop: Optional[Callable] = None
         self.on_record_cancel: Optional[Callable] = None
         self.on_model_changed: Optional[Callable] = None
+        self.on_retranscribe: Optional[Callable] = None
+        self.on_show_copied_animation: Optional[Callable] = None
 
         # Setup UI
         self._setup_ui()
@@ -62,10 +74,16 @@ class ModernMainWindow(QMainWindow):
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
 
-        # Main layout (root)
-        root_layout = QVBoxLayout(central_widget)
+        # Main layout (root) - horizontal to support sidebar
+        root_layout = QHBoxLayout(central_widget)
         root_layout.setContentsMargins(0, 0, 0, 0)
         root_layout.setSpacing(0)
+
+        # Main content area (left side)
+        main_area = QWidget()
+        main_area_layout = QVBoxLayout(main_area)
+        main_area_layout.setContentsMargins(0, 0, 0, 0)
+        main_area_layout.setSpacing(0)
 
         # Content Container (Centered)
         content_container = QWidget()
@@ -85,7 +103,7 @@ class ModernMainWindow(QMainWindow):
         content_container.setMaximumWidth(700) # Slightly narrower for cleaner look
         content_container.setMinimumWidth(500)
 
-        root_layout.addLayout(center_wrapper)
+        main_area_layout.addLayout(center_wrapper)
 
         # Model selection card
         model_card = Card()
@@ -161,6 +179,22 @@ class ModernMainWindow(QMainWindow):
         content_layout.addLayout(hotkey_layout)
         content_layout.addStretch() # Push everything up
 
+        # Add main area to root layout
+        root_layout.addWidget(main_area, stretch=1)
+
+        # History edge tab (always visible toggle button)
+        self.history_edge_tab = HistoryEdgeTab()
+        self.history_edge_tab.clicked.connect(self.toggle_history)
+        root_layout.addWidget(self.history_edge_tab)
+
+        # History sidebar (right side)
+        self.history_sidebar = HistorySidebar()
+        self.history_sidebar.entry_selected.connect(self._on_history_entry_selected)
+        self.history_sidebar.entry_copied.connect(self._on_history_entry_copied)
+        self.history_sidebar.entry_deleted.connect(self._on_history_entry_deleted)
+        self.history_sidebar.retranscribe_requested.connect(self._on_retranscribe_requested)
+        root_layout.addWidget(self.history_sidebar)
+
     def _setup_menu(self):
         """Setup the menu bar."""
         menubar = self.menuBar()
@@ -190,6 +224,8 @@ class ModernMainWindow(QMainWindow):
 
         # View menu
         view_menu = menubar.addMenu("View")
+        view_menu.addAction("History", self.toggle_history)
+        view_menu.addSeparator()
         view_menu.addAction("Show Overlay", self.toggle_overlay)
         view_menu.addAction("Show Loading Screen", self.test_loading_screen)
 
@@ -348,6 +384,105 @@ class ModernMainWindow(QMainWindow):
         """Show about dialog."""
         self.logger.info("Showing about dialog")
         self.about_requested.emit()
+
+    def toggle_history(self):
+        """Toggle the history sidebar visibility."""
+        self.logger.info("Toggling history sidebar")
+        self.history_sidebar.toggle()
+        # Update the edge tab arrow direction
+        self.history_edge_tab.set_expanded(self.history_sidebar.is_expanded)
+        
+        # Resize window to accommodate sidebar
+        self._resize_for_sidebar(self.history_sidebar.is_expanded)
+        
+        self.history_toggle_requested.emit()
+    
+    def _resize_for_sidebar(self, expanded: bool):
+        """Resize window when sidebar is toggled.
+        
+        Args:
+            expanded: True if sidebar is being expanded, False if collapsed.
+        """
+        current_height = self.height()
+        
+        if expanded:
+            # Expand window to fit sidebar
+            new_width = self._base_width + self._sidebar_width + self._edge_tab_width
+        else:
+            # Collapse window back to base size
+            new_width = self._base_width + self._edge_tab_width
+        
+        # Animate the resize for smooth transition
+        self._animate_resize(new_width, current_height)
+    
+    def _animate_resize(self, target_width: int, target_height: int):
+        """Animate window resize.
+        
+        Args:
+            target_width: Target window width.
+            target_height: Target window height.
+        """
+        from PyQt6.QtCore import QPropertyAnimation, QEasingCurve, QRect
+        
+        # Create animation for geometry
+        if not hasattr(self, '_resize_animation'):
+            self._resize_animation = QPropertyAnimation(self, b"geometry")
+            self._resize_animation.setDuration(250)
+            self._resize_animation.setEasingCurve(QEasingCurve.Type.OutCubic)
+        
+        current_geo = self.geometry()
+        target_geo = QRect(current_geo.x(), current_geo.y(), target_width, target_height)
+        
+        self._resize_animation.stop()
+        self._resize_animation.setStartValue(current_geo)
+        self._resize_animation.setEndValue(target_geo)
+        self._resize_animation.start()
+
+    def refresh_history(self):
+        """Refresh the history sidebar content."""
+        self.history_sidebar.refresh()
+
+    def _on_history_entry_selected(self, entry_id: str):
+        """Handle history entry selection - show full transcription and copy to clipboard."""
+        entry = history_manager.get_entry_by_id(entry_id)
+        if entry:
+            self.transcription_text.setText(entry.text)
+            
+            # Copy to clipboard
+            try:
+                from PyQt6.QtWidgets import QApplication
+                clipboard = QApplication.clipboard()
+                clipboard.setText(entry.text)
+                self.set_status("Copied to clipboard")
+                QTimer.singleShot(2000, lambda: self.set_status("Ready to record"))
+                
+                # Show the copied animation
+                if self.on_show_copied_animation:
+                    self.on_show_copied_animation()
+                
+                self.logger.info(f"Loaded and copied history entry: {entry_id[:8]}...")
+            except Exception as e:
+                self.logger.error(f"Failed to copy to clipboard: {e}")
+                self.logger.info(f"Loaded history entry: {entry_id[:8]}...")
+
+    def _on_history_entry_copied(self, entry_id: str):
+        """Handle history entry copied notification."""
+        self.set_status("Copied to clipboard")
+        # Auto-clear status after delay
+        QTimer.singleShot(2000, lambda: self.set_status("Ready to record"))
+
+    def _on_history_entry_deleted(self, entry_id: str):
+        """Handle history entry deleted notification."""
+        self.set_status("Entry deleted")
+        # Auto-clear status after delay
+        QTimer.singleShot(2000, lambda: self.set_status("Ready to record"))
+
+    def _on_retranscribe_requested(self, audio_file_path: str):
+        """Handle re-transcription request."""
+        self.logger.info(f"Re-transcribe requested: {audio_file_path}")
+        self.retranscribe_requested.emit(audio_file_path)
+        if self.on_retranscribe:
+            self.on_retranscribe(audio_file_path)
 
     def closeEvent(self, event):
         """Handle window close event."""

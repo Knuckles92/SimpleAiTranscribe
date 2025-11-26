@@ -48,6 +48,7 @@ class UIController(QObject):
         self.on_record_cancel: Optional[Callable] = None
         self.on_model_changed: Optional[Callable] = None
         self.on_hotkeys_changed: Optional[Callable] = None
+        self.on_retranscribe: Optional[Callable] = None
 
         # Timer to hide overlay after cancel animation completes
         self.cancel_animation_timer = QTimer()
@@ -65,6 +66,13 @@ class UIController(QObject):
         self.main_window.hotkeys_requested.connect(self.open_hotkey_dialog)
         self.main_window.overlay_toggle_requested.connect(self.toggle_overlay)
         self.main_window.about_requested.connect(self.show_about_dialog)
+        self.main_window.retranscribe_requested.connect(self._on_retranscribe_requested)
+        
+        # Set up the main window's retranscribe callback
+        self.main_window.on_retranscribe = self._handle_retranscribe
+        
+        # Set up the copied animation callback
+        self.main_window.on_show_copied_animation = self.show_copied_animation
 
         # Tray manager signals
         self.tray_manager.show_requested.connect(self._on_tray_show)
@@ -254,6 +262,10 @@ class UIController(QObject):
         """Hide the overlay."""
         self.overlay.hide()
 
+    def show_copied_animation(self):
+        """Show the copied to clipboard animation overlay."""
+        self.overlay.show_at_cursor(self.overlay.STATE_COPIED)
+
     def toggle_overlay(self):
         """Toggle the overlay visibility."""
         if self.overlay.isVisible():
@@ -344,6 +356,20 @@ class UIController(QObject):
     def get_model_value(self) -> str:
         """Get the selected model value."""
         return self.main_window.get_model_value()
+
+    def refresh_history(self):
+        """Refresh the history sidebar."""
+        self.main_window.refresh_history()
+
+    def _on_retranscribe_requested(self, audio_file_path: str):
+        """Handle re-transcription request from main window signal."""
+        self._handle_retranscribe(audio_file_path)
+
+    def _handle_retranscribe(self, audio_file_path: str):
+        """Handle re-transcription request."""
+        self.logger.info(f"Re-transcribe requested: {audio_file_path}")
+        if self.on_retranscribe:
+            self.on_retranscribe(audio_file_path)
 
     def cleanup(self):
         """Cleanup resources."""

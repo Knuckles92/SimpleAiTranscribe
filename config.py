@@ -16,6 +16,11 @@ class AppConfig:
     LOG_FILE: str = "audio_recorder.log"
     ENV_FILE: str = ".env"
     
+    # History and recordings
+    HISTORY_FILE: str = "transcription_history.json"
+    RECORDINGS_FOLDER: str = "recordings"
+    MAX_SAVED_RECORDINGS: int = 3
+    
     # Audio settings
     CHUNK_SIZE: int = 1024
     AUDIO_FORMAT: type = np.int16  # NumPy dtype for audio format

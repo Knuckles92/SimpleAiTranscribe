@@ -59,6 +59,7 @@ class ModernWaveformOverlay(QWidget):
     STATE_CANCELING = "canceling"
     STATE_STT_ENABLE = "stt_enable"
     STATE_STT_DISABLE = "stt_disable"
+    STATE_COPIED = "copied"
 
     def __init__(self):
         """Initialize the overlay."""
@@ -141,6 +142,8 @@ class ModernWaveformOverlay(QWidget):
                 self._draw_stt_enable_state(painter)
             elif self.current_state == self.STATE_STT_DISABLE:
                 self._draw_stt_disable_state(painter)
+            elif self.current_state == self.STATE_COPIED:
+                self._draw_copied_state(painter)
         except Exception as e:
             # Log error but don't crash the overlay
             self.logger.error(f"Error drawing waveform frame: {e}", exc_info=True)
@@ -352,6 +355,61 @@ class ModernWaveformOverlay(QWidget):
         painter.setFont(QFont("Segoe UI", 10, QFont.Weight.Bold))
         painter.drawText(rect.adjusted(0, h - 25, 0, 0), Qt.AlignmentFlag.AlignCenter, "Disabled")
 
+    def _draw_copied_state(self, painter: QPainter):
+        """Draw copied to clipboard state with sparkle particle effect."""
+        rect = self.rect()
+        w, h = rect.width(), rect.height()
+
+        # Draw clipboard icon first (behind particles) - fades in after particles converge
+        if self.animation_time > 0.3:
+            progress = min(1.0, (self.animation_time - 0.3) / 0.3)
+            alpha = int(220 * progress)
+            
+            # Draw a stylized clipboard/document icon
+            icon_color = QColor(0, 180, 255, alpha)
+            painter.setPen(QPen(icon_color, 2))
+            
+            # Clipboard body
+            cx, cy = w // 2, h // 2 - 5
+            painter.drawRoundedRect(cx - 12, cy - 10, 24, 28, 3, 3)
+            
+            # Clipboard clip at top
+            painter.drawRect(cx - 6, cy - 14, 12, 6)
+            
+            # Lines representing text
+            painter.setPen(QPen(icon_color, 1.5))
+            painter.drawLine(cx - 7, cy + 2, cx + 7, cy + 2)
+            painter.drawLine(cx - 7, cy + 8, cx + 5, cy + 8)
+
+        # Draw particles on top
+        painter.setPen(Qt.PenStyle.NoPen)
+        for particle in self.stt_particles:
+            color = particle.get_color()
+            painter.setBrush(color)
+            size = particle.size * particle.life
+            painter.drawEllipse(QRectF(
+                particle.x - size, particle.y - size,
+                size * 2, size * 2
+            ))
+
+            # Glow effect for brighter particles
+            if particle.life > 0.3:
+                glow_color = QColor(color)
+                glow_color.setAlpha(100)
+                painter.setBrush(Qt.BrushStyle.NoBrush)
+                painter.setPen(QPen(glow_color, 1))
+                glow_size = size + 3
+                painter.drawEllipse(QRectF(
+                    particle.x - glow_size, particle.y - glow_size,
+                    glow_size * 2, glow_size * 2
+                ))
+                painter.setPen(Qt.PenStyle.NoPen)
+
+        # Status text
+        painter.setPen(QPen(QColor(224, 224, 255)))
+        painter.setFont(QFont("Segoe UI", 10, QFont.Weight.Bold))
+        painter.drawText(rect.adjusted(0, h - 25, 0, 0), Qt.AlignmentFlag.AlignCenter, "Copied!")
+
     def _update_animation(self):
         """Update animation time and redraw."""
         # Calculate delta time
@@ -370,7 +428,7 @@ class ModernWaveformOverlay(QWidget):
             if self.cancel_progress >= 1.0:
                 self.set_state(self.STATE_IDLE)
                 self.timer.stop()
-        elif self.current_state in [self.STATE_STT_ENABLE, self.STATE_STT_DISABLE]:
+        elif self.current_state in [self.STATE_STT_ENABLE, self.STATE_STT_DISABLE, self.STATE_COPIED]:
             # Update particles
             self._update_stt_particles(delta_time)
 
@@ -388,11 +446,13 @@ class ModernWaveformOverlay(QWidget):
             if state == self.STATE_CANCELING and self.style:
                 self.style.set_canceling_start_time(time.time())
 
-            # Initialize particles for STT states
+            # Initialize particles for STT and copied states
             if state == self.STATE_STT_ENABLE:
                 self._init_power_up_particles()
             elif state == self.STATE_STT_DISABLE:
                 self._init_power_down_particles()
+            elif state == self.STATE_COPIED:
+                self._init_copied_particles()
             else:
                 self.stt_particles = []
 
@@ -405,7 +465,7 @@ class ModernWaveformOverlay(QWidget):
             self.logger.debug(f"Overlay state changed to: {state}")
 
             # Auto-hide after delay for certain states
-            if state in [self.STATE_STT_ENABLE, self.STATE_STT_DISABLE]:
+            if state in [self.STATE_STT_ENABLE, self.STATE_STT_DISABLE, self.STATE_COPIED]:
                 self.hidden_timer.start(1500)
 
     def _init_power_up_particles(self):
@@ -460,6 +520,33 @@ class ModernWaveformOverlay(QWidget):
             particle.size = random.uniform(3.0, 6.0)  # Larger particles
             self.stt_particles.append(particle)
 
+    def _init_copied_particles(self):
+        """Initialize particles for copied animation - sparkle converging effect."""
+        self.stt_particles = []
+        center_x = self.overlay_width // 2
+        center_y = self.overlay_height // 2 - 5
+
+        # Create particles around the edges that will converge to center with sparkle effect
+        for i in range(50):
+            # Spawn from random positions around edges
+            angle = (i / 50) * 2 * math.pi + random.uniform(-0.3, 0.3)
+            radius = random.uniform(45, 80)
+
+            x = center_x + radius * math.cos(angle)
+            y = center_y + radius * math.sin(angle)
+
+            # Velocity towards center with slight swirl
+            speed = random.uniform(50, 90)
+            vx = -math.cos(angle) * speed + random.uniform(-10, 10)
+            vy = -math.sin(angle) * speed + random.uniform(-10, 10)
+
+            # Cyan/blue hues for copy action
+            hue = random.uniform(180, 220)
+
+            particle = STTParticle(x, y, vx, vy, hue)
+            particle.size = random.uniform(2.5, 5.0)
+            self.stt_particles.append(particle)
+
     def _update_stt_particles(self, dt: float):
         """Update STT particle positions and apply forces."""
         center_x = self.overlay_width // 2
@@ -467,8 +554,8 @@ class ModernWaveformOverlay(QWidget):
 
         alive_particles = []
         for particle in self.stt_particles:
-            if self.current_state == self.STATE_STT_ENABLE:
-                # Power up: attract to center with swirl
+            if self.current_state in [self.STATE_STT_ENABLE, self.STATE_COPIED]:
+                # Power up / Copy: attract to center with swirl
                 dx = center_x - particle.x
                 dy = center_y - particle.y
                 distance = math.sqrt(dx * dx + dy * dy)
@@ -480,7 +567,7 @@ class ModernWaveformOverlay(QWidget):
 
                     # Strong attraction + swirl
                     attraction = 800 / (distance + 5)
-                    swirl = 200
+                    swirl = 200 if self.current_state == self.STATE_STT_ENABLE else 150
 
                     particle.vx += (nx * attraction - ny * swirl) * dt
                     particle.vy += (ny * attraction + nx * swirl) * dt
