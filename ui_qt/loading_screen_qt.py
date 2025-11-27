@@ -114,7 +114,7 @@ class ModernLoadingScreen(QWidget):
         # Title
         painter.setPen(self.text_color)
         painter.setFont(QFont("Segoe UI", 16, QFont.Weight.Bold))
-        painter.drawText(QRectF(0, h - 90, w, 30), Qt.AlignmentFlag.AlignCenter, "Audio Recorder")
+        painter.drawText(QRectF(0, h - 90, w, 30), Qt.AlignmentFlag.AlignCenter, "OpenWhisper")
         
         # Status
         painter.setPen(self.accent_color)

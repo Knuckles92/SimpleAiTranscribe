@@ -327,8 +327,8 @@ class UIController(QObject):
         """Show the about dialog."""
         QMessageBox.about(
             self.main_window,
-            "About Audio Recorder",
-            "Audio Recorder with Speech-to-Text\n\n"
+            "About OpenWhisper",
+            "OpenWhisper - Speech-to-Text Application\n\n"
             "Record audio and turn it into text. Works offline with local Whisper or online with OpenAI.\n\n"
             "Features:\n"
             "• Local or cloud transcription\n"

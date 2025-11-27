@@ -1,5 +1,5 @@
 """
-Audio recording functionality for the Audio Recorder application.
+Audio recording functionality for the OpenWhisper application.
 """
 import sounddevice as sd
 import wave

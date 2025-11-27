@@ -4,6 +4,8 @@ Main application bootstrap
 import logging
 import os
 import sys
+import subprocess
+import platform
 import pyperclip
 import keyboard
 from pathlib import Path
@@ -13,6 +15,37 @@ from concurrent.futures import ThreadPoolExecutor
 from PyQt6.QtCore import QObject, pyqtSignal
 
 from config import config
+
+
+def _patch_subprocess_for_windows():
+    """Patch subprocess.Popen to hide console windows on Windows.
+    
+    This prevents the console flash when running with pythonw.exe,
+    especially when whisper calls ffmpeg internally via subprocess.
+    """
+    if platform.system() != "Windows":
+        return
+    
+    # Store the original Popen
+    _original_popen = subprocess.Popen
+    
+    class _NoConsolePopen(_original_popen):
+        """Popen wrapper that adds CREATE_NO_WINDOW flag on Windows."""
+        
+        def __init__(self, *args, **kwargs):
+            # Add CREATE_NO_WINDOW to creationflags if not already set
+            if 'creationflags' not in kwargs:
+                kwargs['creationflags'] = subprocess.CREATE_NO_WINDOW
+            elif not (kwargs['creationflags'] & subprocess.CREATE_NO_WINDOW):
+                kwargs['creationflags'] |= subprocess.CREATE_NO_WINDOW
+            super().__init__(*args, **kwargs)
+    
+    # Replace subprocess.Popen globally
+    subprocess.Popen = _NoConsolePopen
+
+
+# Apply the subprocess patch immediately on import (before whisper is loaded)
+_patch_subprocess_for_windows()
 from ui_qt.app import QtApplication
 from ui_qt.loading_screen_qt import ModernLoadingScreen
 from ui_qt.ui_controller import UIController
@@ -504,7 +537,7 @@ def main():
     # Setup logging
     setup_logging()
     logging.info("=" * 60)
-    logging.info("Starting Audio Recorder with Modern PyQt6 UI")
+    logging.info("Starting OpenWhisper with Modern PyQt6 UI")
     logging.info("=" * 60)
 
     # Create Qt application

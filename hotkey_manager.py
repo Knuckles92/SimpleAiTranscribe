@@ -1,5 +1,5 @@
 """
-Hotkey management for the Audio Recorder application.
+Hotkey management for the OpenWhisper application.
 """
 import keyboard
 import time

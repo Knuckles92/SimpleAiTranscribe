@@ -1,5 +1,5 @@
 """
-PyQt6 UI package for Audio Recorder.
+PyQt6 UI package for OpenWhisper.
 Modern, professional interface with clean design.
 """
 from ui_qt.app import QtApplication

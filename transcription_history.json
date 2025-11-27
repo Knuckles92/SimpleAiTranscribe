@@ -1,6 +1,20 @@
 {
   "entries": [
     {
+      "id": "29baf298-ae1c-4fb1-ae82-e331c2fc8a1f",
+      "text": "Alright, let's see if this thing works.",
+      "timestamp": "2025-11-26T18:06:00.934890",
+      "model": "local_whisper",
+      "audio_file": "recording_20251126_180600.wav"
+    },
+    {
+      "id": "d6e685bc-189c-4710-ada2-cbaa59940976",
+      "text": "Alright, let's see if this thing actually works.",
+      "timestamp": "2025-11-26T18:00:30.129952",
+      "model": "local_whisper",
+      "audio_file": "recording_20251126_180030.wav"
+    },
+    {
       "id": "4072451f-441c-478b-be8d-faa9137b4ab6",
       "text": "Instead of having the hotkeys shown at the bottom of the window, maybe we could incorporate them into the actual buttons like record, stop and cancel, like in the middle of the button or something.",
       "timestamp": "2025-11-26T14:09:55.394439",
@@ -12,14 +26,14 @@
       "text": "Please make these functionality changes when the user goes file exit that should still that should close the whole program down. We should add a minimize to tray button on the main menu but then if they hit the X in the top right corner that should minimize it to the tray too because right now the only way to exit is to right click on the tray icon and hit exit there.",
       "timestamp": "2025-11-26T13:04:19.349977",
       "model": "local_whisper",
-      "audio_file": "recording_20251126_130419.wav"
+      "audio_file": null
     },
     {
       "id": "9d970147-0d0a-4d04-80d2-29363971db17",
       "text": "Alright, looks like it's working pretty good.",
       "timestamp": "2025-11-26T01:27:25.172474",
       "model": "local_whisper",
-      "audio_file": "recording_20251126_012725.wav"
+      "audio_file": null
     },
     {
       "id": "7268e649-81b2-4ae0-a1fd-b28924e167d8",

@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document describes the migration from PyAudio to SoundDevice for the whisper_local audio recording application, completed on 2025-11-16.
+This document describes the migration from PyAudio to SoundDevice for the OpenWhisper audio recording application, completed on 2025-11-16.
 
 ## Rationale for Migration
 

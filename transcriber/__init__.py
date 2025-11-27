@@ -1,5 +1,5 @@
 """
-Transcription backends for the Audio Recorder application.
+Transcription backends for the OpenWhisper application.
 """
 from .base import TranscriptionBackend
 from .local_backend import LocalWhisperBackend

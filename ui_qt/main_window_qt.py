@@ -40,7 +40,7 @@ class ModernMainWindow(QMainWindow):
         """Initialize the main window."""
         super().__init__()
         self.logger = logging.getLogger(__name__)
-        self.setWindowTitle("Audio Recorder - Modern Interface")
+        self.setWindowTitle("OpenWhisper")
         self.setMinimumSize(500, 600)
         self.setMaximumWidth(1220)  # Increased to accommodate sidebar
         self.resize(604, 700)  # Initial size: base_width + edge_tab_width (580 + 24)

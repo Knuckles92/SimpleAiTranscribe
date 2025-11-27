@@ -1,3 +1,3 @@
 """
-Test package for the Audio Recorder application.
+Test package for the OpenWhisper application.
 """ 

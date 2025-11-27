@@ -27,10 +27,11 @@ class FFmpegManager:
         """
         try:
             # Try to run ffmpeg -version
-            result = subprocess.run(['ffmpeg', '-version'], 
-                                  capture_output=True, 
-                                  text=True, 
-                                  timeout=5)
+            # Use CREATE_NO_WINDOW on Windows to prevent console flash when using pythonw
+            kwargs = {'capture_output': True, 'text': True, 'timeout': 5}
+            if platform.system() == "Windows":
+                kwargs['creationflags'] = subprocess.CREATE_NO_WINDOW
+            result = subprocess.run(['ffmpeg', '-version'], **kwargs)
             if result.returncode == 0:
                 # ffmpeg found in PATH
                 return 'ffmpeg'
@@ -92,10 +93,11 @@ class FFmpegManager:
         if ffmpeg_path and os.path.exists(ffmpeg_path):
             # Verify it's actually ffmpeg
             try:
-                result = subprocess.run([ffmpeg_path, '-version'], 
-                                      capture_output=True, 
-                                      text=True, 
-                                      timeout=5)
+                # Use CREATE_NO_WINDOW on Windows to prevent console flash when using pythonw
+                kwargs = {'capture_output': True, 'text': True, 'timeout': 5}
+                if platform.system() == "Windows":
+                    kwargs['creationflags'] = subprocess.CREATE_NO_WINDOW
+                result = subprocess.run([ffmpeg_path, '-version'], **kwargs)
                 if result.returncode == 0 and 'ffmpeg' in result.stdout.lower():
                     return ffmpeg_path
                 else:

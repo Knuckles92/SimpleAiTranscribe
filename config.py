@@ -1,5 +1,5 @@
 """
-Configuration constants for the Audio Recorder application.
+Configuration constants for the OpenWhisper application.
 """
 from dataclasses import dataclass
 from typing import Dict, Tuple
@@ -8,12 +8,12 @@ import numpy as np
 
 @dataclass
 class AppConfig:
-    """Centralized configuration for the Audio Recorder application."""
+    """Centralized configuration for the OpenWhisper application."""
     
     # File paths
-    SETTINGS_FILE: str = "audio_recorder_settings.json"
+    SETTINGS_FILE: str = "openwhisper_settings.json"
     RECORDED_AUDIO_FILE: str = "recorded_audio.wav"
-    LOG_FILE: str = "audio_recorder.log"
+    LOG_FILE: str = "openwhisper.log"
     ENV_FILE: str = ".env"
     
     # History and recordings

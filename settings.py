@@ -1,5 +1,5 @@
 """
-Settings management for the Audio Recorder application.
+Settings management for the OpenWhisper application.
 """
 import json
 import os

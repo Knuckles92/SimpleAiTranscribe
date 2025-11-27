@@ -1,4 +1,4 @@
-# Audio Recorder with Speech-to-Text
+# OpenWhisper
 
 A modular desktop application for recording audio and transcribing it to text using either local Whisper models or OpenAI API. Features a modern PyQt6 GUI, system tray integration, global keyboard shortcuts, and real-time status overlay with automatic text pasting.
 
@@ -150,8 +150,8 @@ The application uses these optimized audio settings:
 - **Customizable Colors**: Each style has configurable color schemes
 
 #### Settings Files
-- **Main Settings**: `audio_recorder_settings.json` (persistent configuration)
-- **Log File**: `audio_recorder.log` (application events and errors)
+- **Main Settings**: `openwhisper_settings.json` (persistent configuration)
+- **Log File**: `openwhisper.log` (application events and errors)
 - **Temporary Files**: `recorded_audio.wav` (current recording, overwritten each time)
 - **Environment**: `.env` file support for API keys and configuration
 
@@ -172,7 +172,7 @@ The application uses these optimized audio settings:
 **Recording fails:**
 - Check microphone permissions in Windows settings
 - Ensure no other applications are exclusively using the microphone
-- Review `audio_recorder.log` for detailed error information
+- Review `openwhisper.log` for detailed error information
 - Try restarting the application if audio device enumeration fails
 
 **Application won't start:**
@@ -189,7 +189,7 @@ The application uses these optimized audio settings:
 **Large file transcription issues:**
 - Files over 23MB are automatically split using silence detection
 - Ensure sufficient disk space for temporary chunk files
-- Check `audio_recorder.log` for splitting progress and any errors
+- Check `openwhisper.log` for splitting progress and any errors
 
 ### Performance Notes
 - **First Local Run**: Whisper model download (~150MB) may take a few minutes depending on internet speed
