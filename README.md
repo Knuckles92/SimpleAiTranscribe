@@ -59,7 +59,7 @@ All hotkeys can be remapped in the settings.
 
 ## License
 
-Just use the thing.
+MIT License. Just use the thing.
 
 
 
