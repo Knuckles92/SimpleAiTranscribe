@@ -77,7 +77,7 @@ See `requirements.txt` for a complete list of dependencies.
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/Knuckles92/SimpleAiTranscribe
+   git clone https://github.com/Knuckles92/OpenWhisper
    ```
 
 2. **Install dependencies:**

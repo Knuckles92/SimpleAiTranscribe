@@ -22,6 +22,10 @@ from ui_qt.widgets.history_sidebar import (
     HistoryItemWidget,
     RecordingItemWidget,
 )
+from ui_qt.widgets.collapsible_transcription import (
+    CollapsibleTranscriptionCard,
+    TranscriptionEdgeTab,
+)
 
 __all__ = [
     "ModernButton",
@@ -39,4 +43,6 @@ __all__ = [
     "HistoryEdgeTab",
     "HistoryItemWidget",
     "RecordingItemWidget",
+    "CollapsibleTranscriptionCard",
+    "TranscriptionEdgeTab",
 ]

@@ -17,7 +17,7 @@ from ui_qt.loading_screen_qt import ModernLoadingScreen
 from ui_qt.widgets import (
     HeaderCard, Card, PrimaryButton, DangerButton,
     SuccessButton, ControlPanel, ModernButton,
-    HistorySidebar, HistoryEdgeTab
+    HistorySidebar, HistoryEdgeTab, CollapsibleTranscriptionCard
 )
 from history_manager import history_manager
 
@@ -55,6 +55,10 @@ class ModernMainWindow(QMainWindow):
         self._base_width = 580  # Optimal width without sidebar
         self._sidebar_width = 320  # HistorySidebar.EXPANDED_WIDTH
         self._edge_tab_width = 24  # HistoryEdgeTab width
+        
+        # Window sizing for transcription toggle
+        self._transcription_height = 290  # CollapsibleTranscriptionCard expanded height
+        self._transcription_edge_height = 24  # Edge tab height when collapsed
 
         # Callbacks (will be set by controller)
         self.on_record_start: Optional[Callable] = None
@@ -150,23 +154,14 @@ class ModernMainWindow(QMainWindow):
 
         content_layout.addWidget(control_panel)
 
-        # Transcription display card
-        transcription_card = HeaderCard("Transcription")
-
-        self.transcription_text = QTextEdit()
-        self.transcription_text.setReadOnly(True)
-        self.transcription_text.setMinimumHeight(250) # Adjusted height
-        self.transcription_text.setFont(QFont("Segoe UI", 13))
-        self.transcription_text.setPlaceholderText(
-            "Transcription will appear here...\n"
-            "Start recording to begin."
-        )
-
-        transcription_card.layout.addWidget(self.transcription_text)
-
-        content_layout.addWidget(transcription_card)
+        # Collapsible transcription display
+        self.transcription_card = CollapsibleTranscriptionCard()
+        self.transcription_card.toggled.connect(self._on_transcription_toggled)
         
-        content_layout.addWidget(transcription_card)
+        # Store reference to the text widget for compatibility
+        self.transcription_text = self.transcription_card.transcription_text
+        
+        content_layout.addWidget(self.transcription_card)
         
         content_layout.addStretch() # Push everything up
 
@@ -218,6 +213,7 @@ class ModernMainWindow(QMainWindow):
         # View menu
         view_menu = menubar.addMenu("View")
         view_menu.addAction("History", self.toggle_history)
+        view_menu.addAction("Transcription", self.toggle_transcription)
         view_menu.addSeparator()
         view_menu.addAction("Show Overlay", self.toggle_overlay)
         view_menu.addAction("Show Loading Screen", self.test_loading_screen)
@@ -442,6 +438,45 @@ class ModernMainWindow(QMainWindow):
         self._resize_animation.setStartValue(current_geo)
         self._resize_animation.setEndValue(target_geo)
         self._resize_animation.start()
+    
+    def _on_transcription_toggled(self, expanded: bool):
+        """Handle transcription panel toggle.
+        
+        Args:
+            expanded: True if transcription is being expanded, False if collapsed.
+        """
+        self.logger.info(f"Transcription panel {'expanded' if expanded else 'collapsed'}")
+        self._resize_for_transcription(expanded)
+    
+    def _resize_for_transcription(self, expanded: bool):
+        """Resize window when transcription panel is toggled.
+        
+        Args:
+            expanded: True if transcription is being expanded, False if collapsed.
+        """
+        current_width = self.width()
+        current_height = self.height()
+        
+        # Calculate height difference
+        height_diff = self._transcription_height - self._transcription_edge_height
+        
+        if expanded:
+            # Expand window to fit transcription
+            new_height = current_height + height_diff
+        else:
+            # Collapse window to save space
+            new_height = current_height - height_diff
+        
+        # Ensure minimum height
+        new_height = max(new_height, self.minimumHeight())
+        
+        # Animate the resize for smooth transition
+        self._animate_resize(current_width, new_height)
+    
+    def toggle_transcription(self):
+        """Toggle the transcription panel visibility."""
+        self.logger.info("Toggling transcription panel")
+        self.transcription_card.toggle()
 
     def refresh_history(self):
         """Refresh the history sidebar content."""
@@ -451,6 +486,10 @@ class ModernMainWindow(QMainWindow):
         """Handle history entry selection - show full transcription and copy to clipboard."""
         entry = history_manager.get_entry_by_id(entry_id)
         if entry:
+            # Expand transcription panel if collapsed to show the selected entry
+            if not self.transcription_card.is_expanded:
+                self.transcription_card.expand()
+            
             self.transcription_text.setText(entry.text)
             
             # Copy to clipboard
