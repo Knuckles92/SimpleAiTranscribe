@@ -36,8 +36,8 @@ class HistoryItemWidget(QFrame):
     def _setup_ui(self):
         """Setup the widget UI."""
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(12, 10, 12, 10)
-        layout.setSpacing(6)
+        layout.setContentsMargins(14, 12, 14, 12)
+        layout.setSpacing(8)
         
         # Top row: timestamp and model badge
         top_row = QHBoxLayout()
@@ -87,25 +87,29 @@ class HistoryItemWidget(QFrame):
         """Apply custom styling."""
         self.setStyleSheet("""
             QFrame#historyItem {
-                background-color: #2c2c2e;
-                border-radius: 10px;
-                border: 1px solid #3a3a3c;
+                background-color: rgba(44, 44, 46, 0.5);
+                border-radius: 12px;
+                border: 1px solid rgba(255, 255, 255, 0.05);
             }
             QFrame#historyItem:hover {
-                background-color: #3a3a3c;
-                border: 1px solid #48484a;
+                background-color: rgba(58, 58, 60, 0.6);
+                border: 1px solid rgba(255, 255, 255, 0.1);
             }
             QLabel#historyTimestamp {
-                color: #8e8e93;
+                color: #98989d;
+                background-color: transparent;
             }
             QLabel#modelBadge {
-                color: #0a84ff;
-                background-color: rgba(10, 132, 255, 0.15);
-                padding: 2px 8px;
-                border-radius: 4px;
+                color: #64d2ff;
+                background-color: rgba(10, 132, 255, 0.12);
+                padding: 3px 10px;
+                border-radius: 8px;
+                font-weight: 600;
             }
             QLabel#historyPreview {
-                color: #f5f5f7;
+                color: #e5e5e7;
+                background-color: transparent;
+                line-height: 1.4;
             }
         """)
     
@@ -114,19 +118,25 @@ class HistoryItemWidget(QFrame):
         menu = QMenu(self)
         menu.setStyleSheet("""
             QMenu {
-                background-color: #2c2c2e;
+                background-color: rgba(44, 44, 46, 0.95);
                 color: #f5f5f7;
-                border: 1px solid #3a3a3c;
-                border-radius: 8px;
-                padding: 4px;
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                border-radius: 10px;
+                padding: 6px;
             }
             QMenu::item {
-                padding: 6px 24px 6px 12px;
-                border-radius: 4px;
+                padding: 8px 28px 8px 14px;
+                border-radius: 6px;
+                font-size: 13px;
             }
             QMenu::item:selected {
                 background-color: #0a84ff;
                 color: #ffffff;
+            }
+            QMenu::separator {
+                background-color: rgba(255, 255, 255, 0.08);
+                height: 1px;
+                margin: 4px 8px;
             }
         """)
         
@@ -210,30 +220,33 @@ class RecordingItemWidget(QFrame):
         """Apply custom styling."""
         self.setStyleSheet("""
             QFrame#recordingItem {
-                background-color: #2c2c2e;
-                border-radius: 10px;
-                border: 1px solid #3a3a3c;
+                background-color: rgba(44, 44, 46, 0.5);
+                border-radius: 12px;
+                border: 1px solid rgba(255, 255, 255, 0.05);
             }
             QLabel#recordingTimestamp {
-                color: #f5f5f7;
+                color: #e5e5e7;
+                background-color: transparent;
             }
             QLabel#recordingSize {
-                color: #8e8e93;
+                color: #98989d;
+                background-color: transparent;
             }
             QPushButton#retranscribeBtn {
-                background-color: #30d158;
-                color: #ffffff;
-                border: none;
-                border-radius: 6px;
-                padding: 6px 14px;
+                background-color: rgba(48, 209, 88, 0.15);
+                color: #32d74b;
+                border: 1px solid rgba(48, 209, 88, 0.3);
+                border-radius: 8px;
+                padding: 6px 16px;
                 font-size: 12px;
                 font-weight: 600;
             }
             QPushButton#retranscribeBtn:hover {
-                background-color: #28cd41;
+                background-color: rgba(48, 209, 88, 0.25);
+                border: 1px solid rgba(48, 209, 88, 0.5);
             }
             QPushButton#retranscribeBtn:pressed {
-                background-color: #248a3d;
+                background-color: rgba(48, 209, 88, 0.35);
             }
         """)
 
@@ -297,26 +310,26 @@ class HistorySidebar(QWidget):
         content_layout.addLayout(header_layout)
         
         # Recordings section
-        recordings_header = QLabel("Recent Recordings")
+        recordings_header = QLabel("RECENT RECORDINGS")
         recordings_header.setObjectName("sectionHeader")
-        recordings_header.setFont(QFont("Segoe UI", 12, QFont.Weight.DemiBold))
+        recordings_header.setFont(QFont("Segoe UI", 11, QFont.Weight.DemiBold))
         content_layout.addWidget(recordings_header)
         
         # Recordings container
         self.recordings_container = QVBoxLayout()
-        self.recordings_container.setSpacing(8)
+        self.recordings_container.setSpacing(12)
         content_layout.addLayout(self.recordings_container)
         
         # Divider
         divider = QFrame()
         divider.setFrameShape(QFrame.Shape.HLine)
-        divider.setStyleSheet("background-color: #3a3a3c; max-height: 1px;")
+        divider.setStyleSheet("background-color: rgba(255, 255, 255, 0.06); max-height: 1px; margin: 8px 0px;")
         content_layout.addWidget(divider)
         
         # History section
-        history_header = QLabel("Transcription History")
+        history_header = QLabel("TRANSCRIPTION HISTORY")
         history_header.setObjectName("sectionHeader")
-        history_header.setFont(QFont("Segoe UI", 12, QFont.Weight.DemiBold))
+        history_header.setFont(QFont("Segoe UI", 11, QFont.Weight.DemiBold))
         content_layout.addWidget(history_header)
         
         # Scrollable history list
@@ -328,7 +341,7 @@ class HistorySidebar(QWidget):
         self.history_list_widget = QWidget()
         self.history_list_layout = QVBoxLayout(self.history_list_widget)
         self.history_list_layout.setContentsMargins(0, 0, 0, 0)
-        self.history_list_layout.setSpacing(8)
+        self.history_list_layout.setSpacing(12)
         self.history_list_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
         
         self.scroll_area.setWidget(self.history_list_widget)
@@ -346,17 +359,22 @@ class HistorySidebar(QWidget):
         self.setStyleSheet("""
             QWidget#historySidebar {
                 background-color: #1c1c1e;
-                border-left: 1px solid #3a3a3c;
+                border-left: 1px solid rgba(255, 255, 255, 0.08);
             }
             QWidget#sidebarContent {
                 background-color: #1c1c1e;
             }
             QLabel#sidebarHeader {
                 color: #ffffff;
+                font-weight: 700;
             }
             QLabel#sectionHeader {
-                color: #8e8e93;
+                color: #98989d;
                 padding-top: 4px;
+                letter-spacing: 0.5px;
+                text-transform: uppercase;
+                font-size: 10px;
+                font-weight: 600;
             }
             QPushButton#sidebarCloseBtn {
                 background-color: transparent;
@@ -367,7 +385,7 @@ class HistorySidebar(QWidget):
                 font-weight: bold;
             }
             QPushButton#sidebarCloseBtn:hover {
-                background-color: #3a3a3c;
+                background-color: rgba(255, 255, 255, 0.1);
                 color: #ffffff;
             }
             QScrollArea#historyScrollArea {
