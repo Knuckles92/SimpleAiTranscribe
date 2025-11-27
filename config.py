@@ -106,68 +106,6 @@ class AppConfig:
         
         if self.WAVEFORM_STYLE_CONFIGS is None:
             self.WAVEFORM_STYLE_CONFIGS = {
-                'modern': {
-                    'bar_count': 20,
-                    'bar_width': 8,
-                    'bar_spacing': 2,
-                    'bg_color': '#1a1a1a',
-                    'accent_color': '#00d4ff',
-                    'secondary_color': '#0099cc',
-                    'text_color': '#ffffff',
-                    'danger_color': '#ff4444',
-                    'pulse_speed': 2.0,
-                    'pulse_amplitude': 0.3,
-                    'wave_speed': 3.0,
-                    'smoothing_factor': 0.1
-                },
-                'retro': {
-                    'bar_count': 16,
-                    'bar_width': 10,
-                    'bar_spacing': 3,
-                    'bg_color': '#0a0a0a',
-                    'neon_pink': '#ff00ff',
-                    'neon_cyan': '#00ffff',
-                    'neon_purple': '#8000ff',
-                    'neon_green': '#00ff00',
-                    'text_color': '#ffffff',
-                    'grid_speed': 1.5,
-                    'scanline_speed': 8.0,
-                    'glitch_intensity': 0.05,
-                    'glow_intensity': 1.5,
-                    'chromatic_aberration': True,
-                    'scanlines_enabled': True,
-                    'vhs_noise': True
-                },
-                'minimalist': {
-                    'line_count': 18,
-                    'line_width': 2,
-                    'line_spacing': 8,
-                    'bg_color': '#f8f8f8',
-                    'primary_color': '#4a4a4a',
-                    'accent_color': '#6b9bd2',
-                    'subtle_color': '#c0c0c0',
-                    'text_color': '#333333',
-                    'breathing_speed': 0.8,
-                    'ripple_speed': 1.2,
-                    'fade_speed': 0.6,
-                    'smoothing': 0.05
-                },
-                'spectrum': {
-                    'spectrum_bars': 24,
-                    'inner_radius': 25,
-                    'outer_radius': 45,
-                    'bar_width': 4,
-                    'bg_color': '#000000',
-                    'center_color': '#ffffff',
-                    'text_color': '#ffffff',
-                    'use_rainbow': True,
-                    'rainbow_saturation': 0.9,
-                    'rainbow_brightness': 1.0,
-                    'rotation_speed': 1.0,
-                    'spiral_speed': 2.0,
-                    'pulse_speed': 1.5,
-                    'decay_rate': 0.95
-                },
                 'particle': {
                     'max_particles': 150,
                     'emission_rate': 30,
@@ -182,33 +120,6 @@ class AppConfig:
                     'glow_effect': True,
                     'turbulence_strength': 10,
                     'color_shift_speed': 50
-                },
-                'neonmatrix': {
-                    'bg_color': '#0a0f14',
-                    'primary': '#39ff14',
-                    'secondary': '#00e5ff',
-                    'alert': '#ff2a6d',
-                    'text_color': '#d0f5ff',
-                    'bar_count': 18,
-                    'bar_width': 7,
-                    'bar_spacing': 3,
-                    'rain_columns': 24,
-                    'rain_speed': 110.0,
-                    'glow_intensity': 0.4,
-                },
-                'galaxywarp': {
-                    'bg_color': '#050510',
-                    'star_color': '#b0d8ff',
-                    'accent': '#7a5cff',
-                    'accent2': '#ff9d00',
-                    'text_color': '#e8f0ff',
-                    'star_count': 120,
-                    'star_speed': 1.6,
-                    'star_depth': 0.995,
-                    'ring_count': 4,
-                    'ring_thickness': 3,
-                    'ripple_speed': 1.8,
-                    'ripple_gain': 22.0,
                 }
             }
 

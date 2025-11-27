@@ -216,8 +216,8 @@ class SettingsManager:
             if style_name in config.WAVEFORM_STYLE_CONFIGS:
                 return config.WAVEFORM_STYLE_CONFIGS[style_name].copy()
             else:
-                # Return modern style as ultimate fallback
-                return config.WAVEFORM_STYLE_CONFIGS['modern'].copy()
+                # Return particle style as ultimate fallback
+                return config.WAVEFORM_STYLE_CONFIGS['particle'].copy()
     
     def save_style_config(self, style_name: str, config_dict: Dict[str, Any]) -> None:
         """Save configuration for a specific waveform style.

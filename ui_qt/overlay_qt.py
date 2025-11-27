@@ -89,7 +89,7 @@ class ModernWaveformOverlay(QWidget):
         # Load waveform style
         current_style, style_configs = settings_manager.load_waveform_style_settings()
         try:
-            style_config = style_configs.get(current_style, config.WAVEFORM_STYLE_CONFIGS.get('modern', {}))
+            style_config = style_configs.get(current_style, config.WAVEFORM_STYLE_CONFIGS.get('particle', {}))
             self.style: BaseWaveformStyle = style_factory.create_style(
                 current_style,
                 self.overlay_width,
@@ -97,9 +97,9 @@ class ModernWaveformOverlay(QWidget):
                 style_config
             )
         except (ValueError, KeyError):
-            # Fallback to modern style if loading fails
-            self.logger.warning(f"Failed to load style '{current_style}', using modern")
-            self.style = style_factory.create_style('modern', self.overlay_width, self.overlay_height)
+            # Fallback to particle style if loading fails
+            self.logger.warning(f"Failed to load style '{current_style}', using particle")
+            self.style = style_factory.create_style('particle', self.overlay_width, self.overlay_height)
 
         # Animation
         self.timer = QTimer()
