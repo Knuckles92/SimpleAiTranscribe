@@ -2,7 +2,10 @@
 
 A desktop app for recording audio and transcribing it to text using local Whisper models or OpenAI API. Features a modern PyQt6 GUI, system tray integration, global hotkeys, and auto-paste.
 
-![Cursor_SXmCo8iVjs](https://github.com/user-attachments/assets/d3976d71-adbf-444a-b7b4-1565f1f55b8e)
+![Cursor_wTPeidZjsL](https://github.com/user-attachments/assets/ef87747a-4e41-47e4-b93a-20c9e833a570)
+
+![Cursor_eyykcjebiU](https://github.com/user-attachments/assets/c57070d4-69be-45f6-a73d-dcaa08294dac)
+
 
 <img width="924" height="700" alt="image" src="https://github.com/user-attachments/assets/b2f2d6c8-6f8c-424b-9add-8d6095108042" />
 
@@ -57,5 +60,6 @@ All hotkeys can be remapped in the settings.
 ## License
 
 Just use the thing.
+
 
 
