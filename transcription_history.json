@@ -1,6 +1,13 @@
 {
   "entries": [
     {
+      "id": "f9cce798-a48e-4aa2-83d2-f494664dd189",
+      "text": "Can we implement an arrow like we did for the side history bar but do that for the like transcription text area it would streamline the front UI quite a bit. Make sure it has all the correct animations and resizing things that need to happen as well.",
+      "timestamp": "2025-11-26T18:14:31.041026",
+      "model": "local_whisper",
+      "audio_file": "recording_20251126_181431.wav"
+    },
+    {
       "id": "29baf298-ae1c-4fb1-ae82-e331c2fc8a1f",
       "text": "Alright, let's see if this thing works.",
       "timestamp": "2025-11-26T18:06:00.934890",
@@ -19,7 +26,7 @@
       "text": "Instead of having the hotkeys shown at the bottom of the window, maybe we could incorporate them into the actual buttons like record, stop and cancel, like in the middle of the button or something.",
       "timestamp": "2025-11-26T14:09:55.394439",
       "model": "local_whisper",
-      "audio_file": "recording_20251126_140955.wav"
+      "audio_file": null
     },
     {
       "id": "27076911-c42a-4607-852c-c97d25ee378a",
