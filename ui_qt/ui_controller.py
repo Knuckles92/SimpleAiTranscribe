@@ -6,7 +6,7 @@ Bridges between UI and application logic.
 import logging
 from typing import Optional, Callable, List
 from PyQt6.QtCore import QTimer, pyqtSignal, QObject
-from PyQt6.QtWidgets import QMessageBox
+from PyQt6.QtWidgets import QMessageBox, QFileDialog
 
 from config import config
 from ui_qt.main_window_qt import ModernMainWindow
@@ -14,6 +14,8 @@ from ui_qt.overlay_qt import ModernWaveformOverlay
 from ui_qt.system_tray_qt import SystemTrayManager
 from ui_qt.dialogs.settings_dialog import SettingsDialog
 from ui_qt.dialogs.hotkey_dialog import HotkeyDialog
+from ui_qt.dialogs.upload_preview_dialog import UploadPreviewDialog
+from audio_processor import audio_processor
 
 
 class UIController(QObject):
@@ -49,6 +51,7 @@ class UIController(QObject):
         self.on_model_changed: Optional[Callable] = None
         self.on_hotkeys_changed: Optional[Callable] = None
         self.on_retranscribe: Optional[Callable] = None
+        self.on_upload_audio: Optional[Callable] = None  # Callback for audio file upload
 
         # Timer to hide overlay after cancel animation completes
         self.cancel_animation_timer = QTimer()
@@ -67,6 +70,7 @@ class UIController(QObject):
         self.main_window.overlay_toggle_requested.connect(self.toggle_overlay)
         self.main_window.about_requested.connect(self.show_about_dialog)
         self.main_window.retranscribe_requested.connect(self._on_retranscribe_requested)
+        self.main_window.upload_audio_requested.connect(self.open_upload_audio_dialog)
         
         # Set up the main window's retranscribe callback
         self.main_window.on_retranscribe = self._handle_retranscribe
@@ -310,6 +314,67 @@ class UIController(QObject):
                 
         dialog.on_hotkeys_save = on_hotkeys_save
         dialog.exec()
+
+    def open_upload_audio_dialog(self):
+        """Open file dialog to select an audio file for transcription."""
+        self.logger.info("Opening upload audio dialog")
+        
+        # Define supported audio formats
+        audio_filters = "Audio Files (*.wav *.mp3 *.m4a *.ogg *.flac *.wma);;WAV Files (*.wav);;MP3 Files (*.mp3);;All Files (*.*)"
+        
+        file_path, _ = QFileDialog.getOpenFileName(
+            self.main_window,
+            "Select Audio File",
+            "",
+            audio_filters
+        )
+        
+        if not file_path:
+            self.logger.info("Audio file selection cancelled")
+            return
+        
+        self.logger.info(f"Selected audio file: {file_path}")
+        
+        # Analyze the file and show preview
+        try:
+            preview = audio_processor.preview_file(file_path)
+            
+            # Show preview dialog
+            dialog = UploadPreviewDialog(preview, self.main_window)
+            dialog.on_proceed = self._handle_upload_audio
+            dialog.exec()
+            
+        except FileNotFoundError as e:
+            self.logger.error(f"File not found: {e}")
+            QMessageBox.warning(
+                self.main_window,
+                "File Not Found",
+                f"The selected file could not be found:\n{file_path}"
+            )
+        except ValueError as e:
+            self.logger.error(f"Invalid audio file: {e}")
+            QMessageBox.warning(
+                self.main_window,
+                "Invalid Audio File",
+                f"The selected file could not be read as audio.\n\nError: {e}"
+            )
+        except Exception as e:
+            self.logger.error(f"Error analyzing audio file: {e}")
+            QMessageBox.critical(
+                self.main_window,
+                "Error",
+                f"Failed to analyze audio file:\n{e}"
+            )
+
+    def _handle_upload_audio(self, file_path: str):
+        """Handle the audio file upload after user confirms in preview dialog.
+        
+        Args:
+            file_path: Path to the audio file to transcribe.
+        """
+        self.logger.info(f"Processing uploaded audio: {file_path}")
+        if self.on_upload_audio:
+            self.on_upload_audio(file_path)
 
     def update_hotkey_display(self, hotkeys: dict):
         """

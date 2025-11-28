@@ -144,6 +144,7 @@ class ApplicationController(QObject):
         self.ui_controller.on_model_changed = self.on_model_changed
         self.ui_controller.on_hotkeys_changed = self.update_hotkeys
         self.ui_controller.on_retranscribe = self.retranscribe_audio
+        self.ui_controller.on_upload_audio = self.upload_audio_file
 
     def update_hotkeys(self, hotkeys: Dict[str, str]):
         """Update application hotkeys."""
@@ -301,6 +302,43 @@ class ApplicationController(QObject):
                 
         except Exception as e:
             logging.error(f"Failed to start re-transcription: {e}")
+            self._on_transcription_error(f"Failed to process audio: {e}")
+
+    def upload_audio_file(self, audio_file_path: str):
+        """Transcribe an uploaded audio file.
+        
+        This method handles manually uploaded audio files, processing them
+        through the standard transcription pipeline with chunking support.
+        
+        Args:
+            audio_file_path: Path to the uploaded audio file.
+        """
+        if not os.path.exists(audio_file_path):
+            logging.error(f"Uploaded audio file not found: {audio_file_path}")
+            self.status_update.emit("Error: Audio file not found")
+            return
+        
+        logging.info(f"Processing uploaded audio file: {audio_file_path}")
+        
+        # For uploaded files, we don't save to recordings folder (it's already external)
+        self._pending_audio_file = None
+        
+        # Show processing status
+        self.status_update.emit("Processing uploaded file...")
+        
+        # Start transcription in background using the same flow as retranscribe
+        try:
+            needs_splitting, file_size_mb = audio_processor.check_file_size(audio_file_path)
+            
+            if needs_splitting:
+                logging.info(f"Large uploaded file ({file_size_mb:.2f} MB), using split workflow")
+                self.status_update.emit(f"Processing large file ({file_size_mb:.1f} MB)...")
+                self.executor.submit(self._retranscribe_large_audio, audio_file_path)
+            else:
+                self.executor.submit(self._retranscribe_audio_file, audio_file_path)
+                
+        except Exception as e:
+            logging.error(f"Failed to process uploaded audio: {e}")
             self._on_transcription_error(f"Failed to process audio: {e}")
     
     def _retranscribe_audio_file(self, audio_file_path: str):

@@ -8,9 +8,40 @@ import numpy as np
 import tempfile
 import logging
 import shutil
-from typing import List, Tuple, Optional
+from dataclasses import dataclass, field
+from typing import List, Tuple, Optional, Dict, Any
 from pathlib import Path
 from config import config
+
+
+@dataclass
+class AudioFilePreview:
+    """Preview information for an audio file."""
+    file_path: str
+    file_name: str
+    file_size_mb: float
+    duration_seconds: float
+    sample_rate: int
+    channels: int
+    needs_splitting: bool
+    estimated_chunks: int
+    chunk_durations: List[float] = field(default_factory=list)  # Estimated duration of each chunk in seconds
+    
+    @property
+    def duration_formatted(self) -> str:
+        """Get duration as formatted string (e.g., '2m 30s' or '45s')."""
+        minutes = int(self.duration_seconds // 60)
+        seconds = int(self.duration_seconds % 60)
+        if minutes > 0:
+            return f"{minutes}m {seconds}s"
+        return f"{seconds}s"
+    
+    @property
+    def file_size_formatted(self) -> str:
+        """Get file size as formatted string."""
+        if self.file_size_mb >= 1:
+            return f"{self.file_size_mb:.1f} MB"
+        return f"{self.file_size_mb * 1024:.0f} KB"
 
 
 class AudioProcessor:
@@ -42,6 +73,83 @@ class AudioProcessor:
             logging.info("File exceeds size limit, splitting will be required")
         
         return needs_splitting, file_size_mb
+    
+    def preview_file(self, file_path: str) -> AudioFilePreview:
+        """Analyze an audio file and return preview information.
+        
+        This method provides metadata about the file including estimated
+        chunk information without actually splitting the file.
+        
+        Args:
+            file_path: Path to the audio file to analyze.
+            
+        Returns:
+            AudioFilePreview with file metadata and chunk estimates.
+            
+        Raises:
+            FileNotFoundError: If the file doesn't exist.
+            ValueError: If the file format is not supported.
+        """
+        if not os.path.exists(file_path):
+            raise FileNotFoundError(f"Audio file not found: {file_path}")
+        
+        file_name = os.path.basename(file_path)
+        file_size_bytes = os.path.getsize(file_path)
+        file_size_mb = file_size_bytes / (1024 * 1024)
+        
+        # Load audio to get duration and metadata
+        try:
+            audio_data, sample_rate = self._load_audio_data(file_path)
+        except Exception as e:
+            raise ValueError(f"Failed to read audio file: {e}")
+        
+        # Calculate duration
+        duration_seconds = len(audio_data) / sample_rate
+        
+        # Get channel count from the file
+        with wave.open(file_path, 'rb') as wav_file:
+            channels = wav_file.getnchannels()
+        
+        # Check if splitting is needed
+        needs_splitting = file_size_mb > config.MAX_FILE_SIZE_MB
+        
+        # Estimate chunks
+        chunk_durations = []
+        if needs_splitting:
+            # Use the same logic as _find_split_points to estimate chunks
+            split_points = self._find_split_points(audio_data, sample_rate)
+            
+            if not split_points:
+                # Fallback to time-based splits
+                split_points = self._generate_time_based_splits(len(audio_data), sample_rate)
+            
+            # Calculate chunk durations from split points
+            start_idx = 0
+            for end_idx in split_points + [len(audio_data)]:
+                chunk_samples = end_idx - start_idx
+                chunk_duration = chunk_samples / sample_rate
+                chunk_durations.append(chunk_duration)
+                start_idx = end_idx
+            
+            estimated_chunks = len(chunk_durations)
+        else:
+            estimated_chunks = 1
+            chunk_durations = [duration_seconds]
+        
+        logging.info(f"Audio preview: {file_name}, {file_size_mb:.2f} MB, "
+                    f"{duration_seconds:.1f}s, {estimated_chunks} chunk(s)")
+        
+        return AudioFilePreview(
+            file_path=file_path,
+            file_name=file_name,
+            file_size_mb=file_size_mb,
+            duration_seconds=duration_seconds,
+            sample_rate=sample_rate,
+            channels=channels,
+            needs_splitting=needs_splitting,
+            estimated_chunks=estimated_chunks,
+            chunk_durations=chunk_durations
+        )
     
     def split_audio_file(self, input_file: str, progress_callback: Optional[callable] = None) -> List[str]:
         """Split audio file into smaller chunks using silence detection.

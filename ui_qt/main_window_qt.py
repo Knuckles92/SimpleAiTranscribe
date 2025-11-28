@@ -35,6 +35,7 @@ class ModernMainWindow(QMainWindow):
     about_requested = pyqtSignal()
     history_toggle_requested = pyqtSignal()
     retranscribe_requested = pyqtSignal(str)  # Emits audio file path
+    upload_audio_requested = pyqtSignal()  # Request to upload audio file
 
     def __init__(self):
         """Initialize the main window."""
@@ -209,6 +210,8 @@ class ModernMainWindow(QMainWindow):
 
         # File menu
         file_menu = menubar.addMenu("File")
+        file_menu.addAction("Upload Audio File...", self.upload_audio_file)
+        file_menu.addSeparator()
         file_menu.addAction("Settings", self.open_settings)
         file_menu.addAction("Hotkeys", self.open_hotkey_settings)
         file_menu.addSeparator()
@@ -339,6 +342,11 @@ class ModernMainWindow(QMainWindow):
         """Open hotkey settings dialog."""
         self.logger.info("Opening hotkey settings")
         self.hotkeys_requested.emit()
+
+    def upload_audio_file(self):
+        """Request to upload an audio file for transcription."""
+        self.logger.info("Upload audio file requested")
+        self.upload_audio_requested.emit()
 
     def toggle_overlay(self):
         """Toggle the overlay visibility."""
