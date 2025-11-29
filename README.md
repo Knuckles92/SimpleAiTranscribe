@@ -19,6 +19,16 @@ A desktop app for recording audio and transcribing it to text using local Whispe
 - **System Tray** – Minimize to tray, always accessible
 - **Smart Splitting** – Large audio files split automatically to avoid API limits
 
+## GPU Acceleration
+
+For significantly faster transcription speeds, install CUDA support:
+
+```bash
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+```
+
+With an NVIDIA GPU and CUDA enabled, local Whisper runs 5-10x faster than CPU-only. The app uses float32 precision by default for best accuracy. You can verify GPU detection in the status bar when the app starts.
+
 ## Installation
 
 ```bash
