@@ -254,7 +254,18 @@ class SettingsDialog(QDialog):
         whisper_title.setStyleSheet("color: #a0a0c0; font-weight: bold;")
         layout.addWidget(whisper_title)
 
+        # Whisper Model selection
+        model_label = QLabel("Model:")
+        model_label.setStyleSheet("color: #e0e0ff;")
+        layout.addWidget(model_label)
+
+        self.whisper_model_combo = QComboBox()
+        self.whisper_model_combo.addItems(config.WHISPER_MODEL_CHOICES)
+        self.whisper_model_combo.setMinimumHeight(36)
+        layout.addWidget(self.whisper_model_combo)
+
         # Device selection
+        layout.addSpacing(8)
         device_label = QLabel("Device:")
         device_label.setStyleSheet("color: #e0e0ff;")
         layout.addWidget(device_label)
@@ -343,8 +354,13 @@ class SettingsDialog(QDialog):
             self.minimize_tray_check.setChecked(settings.get('minimize_tray', True))
 
             # Load whisper engine settings
+            whisper_model = settings.get('whisper_model', config.DEFAULT_WHISPER_MODEL)
             whisper_device = settings.get('whisper_device', 'auto')
             whisper_compute = settings.get('whisper_compute_type', 'auto')
+
+            model_index = self.whisper_model_combo.findText(whisper_model)
+            if model_index >= 0:
+                self.whisper_model_combo.setCurrentIndex(model_index)
 
             device_index = self.whisper_device_combo.findText(whisper_device)
             if device_index >= 0:
@@ -373,17 +389,24 @@ class SettingsDialog(QDialog):
             settings = settings_manager.load_all_settings()
 
             # Check if whisper engine settings changed
+            old_whisper_model = settings.get('whisper_model', config.DEFAULT_WHISPER_MODEL)
             old_device = settings.get('whisper_device', 'auto')
             old_compute = settings.get('whisper_compute_type', 'auto')
+            new_whisper_model = self.whisper_model_combo.currentText()
             new_device = self.whisper_device_combo.currentText()
             new_compute = self.whisper_compute_combo.currentText()
-            whisper_settings_changed = (old_device != new_device or old_compute != new_compute)
+            whisper_settings_changed = (
+                old_whisper_model != new_whisper_model or
+                old_device != new_device or
+                old_compute != new_compute
+            )
 
             # Update with new values
             settings['selected_model'] = model_internal
             settings['auto_paste'] = self.auto_paste_check.isChecked()
             settings['copy_clipboard'] = self.copy_clipboard_check.isChecked()
             settings['minimize_tray'] = self.minimize_tray_check.isChecked()
+            settings['whisper_model'] = new_whisper_model
             settings['whisper_device'] = new_device
             settings['whisper_compute_type'] = new_compute
 

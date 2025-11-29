@@ -21,23 +21,30 @@ class LocalWhisperBackend(TranscriptionBackend):
         """Initialize the local faster-whisper backend.
 
         Args:
-            model_name: Whisper model name to use. Uses config default if None.
+            model_name: Whisper model name to use. Reads from settings if None,
+                       falls back to config default.
                        Available: tiny, base, small, medium, large-v2, large-v3, turbo, distil-large-v3
         """
         super().__init__()
-        self.model_name = model_name or config.DEFAULT_WHISPER_MODEL
+        # Read model from settings if not explicitly provided
+        if model_name is None:
+            from settings import settings_manager
+            settings = settings_manager.load_all_settings()
+            model_name = settings.get('whisper_model', config.DEFAULT_WHISPER_MODEL)
+        self.model_name = model_name
         self.model: Optional[WhisperModel] = None
         self._device: Optional[str] = None
         self._compute_type: Optional[str] = None
         self._load_model()
 
-    def _detect_device(self) -> Tuple[str, str]:
-        """Auto-detect the best device and compute type for transcription.
+    def _detect_hardware(self) -> Tuple[str, str, str]:
+        """Auto-detect the best device, compute type, and model for transcription.
 
         Returns:
-            Tuple of (device, compute_type) where:
+            Tuple of (device, compute_type, model) where:
             - device: "cuda" for GPU or "cpu" for CPU
             - compute_type: "float16" for GPU, "int8" for CPU
+            - model: "turbo" for GPU, "base" for CPU
         """
         # Check user settings first, then config overrides
         from settings import settings_manager
@@ -45,31 +52,37 @@ class LocalWhisperBackend(TranscriptionBackend):
 
         device = settings.get('whisper_device', config.FASTER_WHISPER_DEVICE)
         compute_type = settings.get('whisper_compute_type', config.FASTER_WHISPER_COMPUTE_TYPE)
+        model = settings.get('whisper_model', config.DEFAULT_WHISPER_MODEL)
 
-        if device == "auto" or compute_type == "auto":
-            # Auto-detect based on CUDA availability
+        # Auto-detect based on CUDA availability
+        has_cuda = False
+        if device == "auto" or compute_type == "auto" or model == "auto":
             try:
                 import torch
-                if torch.cuda.is_available():
-                    detected_device = "cuda"
-                    detected_compute = "float16"
-                    logging.info("CUDA detected - using GPU acceleration with float16")
-                else:
-                    detected_device = "cpu"
-                    detected_compute = "int8"
-                    logging.info("No CUDA available - using CPU with int8 quantization")
+                has_cuda = torch.cuda.is_available()
             except ImportError:
+                has_cuda = False
+
+            if has_cuda:
+                detected_device = "cuda"
+                detected_compute = "float16"
+                detected_model = "turbo"
+                logging.info("CUDA detected - using GPU acceleration with float16 and turbo model")
+            else:
                 detected_device = "cpu"
                 detected_compute = "int8"
-                logging.info("PyTorch not available - using CPU with int8 quantization")
+                detected_model = "base"
+                logging.info("No CUDA available - using CPU with int8 quantization and base model")
 
             # Apply auto-detected values only where needed
             if device == "auto":
                 device = detected_device
             if compute_type == "auto":
                 compute_type = detected_compute
+            if model == "auto":
+                model = detected_model
 
-        return device, compute_type
+        return device, compute_type, model
 
     def _load_model(self):
         """Load the faster-whisper model with auto device detection."""
@@ -241,10 +254,15 @@ class LocalWhisperBackend(TranscriptionBackend):
         """Reload the Whisper model with a different model name.
 
         Args:
-            model_name: New model name to load. Uses current if None.
+            model_name: New model name to load. Reads from settings if None.
         """
         if model_name:
             self.model_name = model_name
+        else:
+            # Read from settings when no explicit model provided
+            from settings import settings_manager
+            settings = settings_manager.load_all_settings()
+            self.model_name = settings.get('whisper_model', config.DEFAULT_WHISPER_MODEL)
         # Clean up existing model first
         self.cleanup()
         self._load_model()
@@ -293,9 +311,9 @@ class LocalWhisperBackend(TranscriptionBackend):
 
     @property
     def device_info(self) -> str:
-        """Get current device and compute type info."""
+        """Get current device, compute type, and model info."""
         if self._device and self._compute_type:
-            return f"{self._device} ({self._compute_type})"
+            return f"{self.model_name} | {self._device} ({self._compute_type})"
         return "Not initialized"
 
     @property

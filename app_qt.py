@@ -587,6 +587,14 @@ class ApplicationController(QObject):
             settings_manager.save_model_selection(model_value)
             logging.info(f"Switched to model: {model_value}")
 
+            # Show device info only for local whisper, hide for API backends
+            if model_value == 'local_whisper':
+                local_backend = self.transcription_backends.get('local_whisper')
+                if local_backend and hasattr(local_backend, 'device_info'):
+                    self.ui_controller.set_device_info(local_backend.device_info)
+            else:
+                self.ui_controller.set_device_info("")
+
     def update_status_with_auto_hide(self, status: str):
         """Update status with auto-hide after delay."""
         # Use signals for thread-safe UI updates (called from hotkey thread)

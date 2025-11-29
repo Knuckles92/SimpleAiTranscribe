@@ -2,7 +2,7 @@
 Configuration constants for the OpenWhisper application.
 """
 from dataclasses import dataclass
-from typing import Dict, Tuple
+from typing import Dict, List, Tuple
 import numpy as np
 
 
@@ -39,7 +39,10 @@ class AppConfig:
     )
     
     MODEL_VALUE_MAP: Dict[str, str] = None
-    
+
+    # Whisper model choices for faster-whisper
+    WHISPER_MODEL_CHOICES: List[str] = None
+
     # UI settings
     MAIN_WINDOW_SIZE: str = "300x200"
     LOADING_WINDOW_SIZE: str = "300x300"
@@ -80,8 +83,8 @@ class AppConfig:
     SILENCE_DURATION_SEC: float = 0.5  # Duration of silence needed for split point
     OVERLAP_DURATION_SEC: float = 2.0  # Overlap between chunks to avoid word cutoffs
     
-    # Whisper model
-    DEFAULT_WHISPER_MODEL: str = "base"
+    # Whisper model - "auto" selects based on hardware (turbo for GPU, base for CPU)
+    DEFAULT_WHISPER_MODEL: str = "auto"
 
     # Faster-whisper settings
     FASTER_WHISPER_DEVICE: str = "auto"  # "auto", "cuda", "cpu"
@@ -110,7 +113,23 @@ class AppConfig:
                 'API: GPT-4o Transcribe': 'api_gpt4o',
                 'API: GPT-4o Mini Transcribe': 'api_gpt4o_mini'
             }
-        
+
+        if self.WHISPER_MODEL_CHOICES is None:
+            self.WHISPER_MODEL_CHOICES = [
+                # Auto-select based on hardware (turbo for GPU, base for CPU)
+                "auto",
+                # Standard models
+                "tiny", "tiny.en",
+                "base", "base.en",
+                "small", "small.en",
+                "medium", "medium.en",
+                "large-v1", "large-v2", "large-v3",
+                "turbo",
+                # Distil models (faster, English-focused)
+                "distil-small.en", "distil-medium.en",
+                "distil-large-v2", "distil-large-v3"
+            ]
+
         if self.WAVEFORM_STYLE_CONFIGS is None:
             self.WAVEFORM_STYLE_CONFIGS = {
                 'particle': {
