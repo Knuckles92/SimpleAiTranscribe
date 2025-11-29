@@ -1,265 +1,234 @@
 """
-Local Whisper transcription backend with ffmpeg detection and configuration.
+Local Whisper transcription backend using faster-whisper for optimized performance.
+
+This backend uses faster-whisper (CTranslate2) which provides:
+- Up to 4x faster transcription than openai-whisper
+- Lower memory usage through quantization
+- Built-in VAD (Voice Activity Detection) for silence skipping
+- No external FFmpeg dependency (uses PyAV)
 """
-import whisper
 import logging
-import os
-import subprocess
-import platform
-from typing import Optional, List
-from pathlib import Path
-import tkinter as tk
-from tkinter import filedialog, messagebox
+from typing import Optional, List, Tuple
+from faster_whisper import WhisperModel
 from .base import TranscriptionBackend
 from config import config
-from settings import settings_manager
-
-
-class FFmpegManager:
-    """Manages ffmpeg detection and configuration."""
-    
-    @staticmethod
-    def detect_ffmpeg() -> Optional[str]:
-        """Detect if ffmpeg is available in PATH.
-        
-        Returns:
-            Path to ffmpeg executable if found, None otherwise.
-        """
-        try:
-            # Try to run ffmpeg -version
-            # Use CREATE_NO_WINDOW on Windows to prevent console flash when using pythonw
-            kwargs = {'capture_output': True, 'text': True, 'timeout': 5}
-            if platform.system() == "Windows":
-                kwargs['creationflags'] = subprocess.CREATE_NO_WINDOW
-            result = subprocess.run(['ffmpeg', '-version'], **kwargs)
-            if result.returncode == 0:
-                # ffmpeg found in PATH
-                return 'ffmpeg'
-        except (subprocess.TimeoutExpired, subprocess.CalledProcessError, FileNotFoundError):
-            pass
-        
-        # Check common installation paths on Windows
-        if platform.system() == "Windows":
-            common_paths = [
-                r"C:\ffmpeg\bin\ffmpeg.exe",
-                r"C:\Program Files\ffmpeg\bin\ffmpeg.exe",
-                r"C:\Program Files (x86)\ffmpeg\bin\ffmpeg.exe",
-                r"C:\tools\ffmpeg\bin\ffmpeg.exe",
-            ]
-            
-            for path in common_paths:
-                if os.path.exists(path):
-                    return path
-        
-        return None
-    
-    @staticmethod
-    def prompt_for_ffmpeg_path() -> Optional[str]:
-        """Prompt user to select ffmpeg executable location.
-        
-        Returns:
-            Path to selected ffmpeg executable, or None if cancelled.
-        """
-        root = tk.Tk()
-        root.withdraw()  # Hide the main window
-        
-        # Show informative message first
-        message = ("FFmpeg was not found in your system PATH.\n\n"
-                  "FFmpeg is required for local Whisper transcription.\n"
-                  "Please locate your ffmpeg.exe file.\n\n"
-                  "Common locations:\n"
-                  "• C:\\ffmpeg\\bin\\ffmpeg.exe\n"
-                  "• C:\\Program Files\\ffmpeg\\bin\\ffmpeg.exe\n"
-                  "• Or wherever you installed FFmpeg")
-        
-        messagebox.showinfo("FFmpeg Not Found", message)
-        
-        # Open file dialog to select ffmpeg.exe
-        if platform.system() == "Windows":
-            file_types = [("Executable files", "*.exe"), ("All files", "*.*")]
-            initial_name = "ffmpeg.exe"
-        else:
-            file_types = [("All files", "*.*")]
-            initial_name = "ffmpeg"
-        
-        ffmpeg_path = filedialog.askopenfilename(
-            title="Select FFmpeg Executable",
-            filetypes=file_types,
-            initialfile=initial_name
-        )
-        
-        root.destroy()
-        
-        if ffmpeg_path and os.path.exists(ffmpeg_path):
-            # Verify it's actually ffmpeg
-            try:
-                # Use CREATE_NO_WINDOW on Windows to prevent console flash when using pythonw
-                kwargs = {'capture_output': True, 'text': True, 'timeout': 5}
-                if platform.system() == "Windows":
-                    kwargs['creationflags'] = subprocess.CREATE_NO_WINDOW
-                result = subprocess.run([ffmpeg_path, '-version'], **kwargs)
-                if result.returncode == 0 and 'ffmpeg' in result.stdout.lower():
-                    return ffmpeg_path
-                else:
-                    messagebox.showerror("Invalid FFmpeg", 
-                                       "The selected file does not appear to be a valid FFmpeg executable.")
-            except Exception as e:
-                messagebox.showerror("FFmpeg Test Failed", 
-                                   f"Could not verify FFmpeg executable: {e}")
-        
-        return None
-    
-    @staticmethod
-    def configure_whisper_ffmpeg(ffmpeg_path: str):
-        """Configure whisper to use specific ffmpeg path.
-        
-        Args:
-            ffmpeg_path: Path to ffmpeg executable.
-        """
-        # Set environment variable for ffmpeg
-        os.environ['FFMPEG_BINARY'] = ffmpeg_path
-        
-        # Also add the directory to PATH if it's not there
-        ffmpeg_dir = os.path.dirname(ffmpeg_path)
-        current_path = os.environ.get('PATH', '')
-        if ffmpeg_dir not in current_path:
-            os.environ['PATH'] = f"{ffmpeg_dir}{os.pathsep}{current_path}"
 
 
 class LocalWhisperBackend(TranscriptionBackend):
-    """Local Whisper model transcription backend with ffmpeg handling."""
-    
+    """Local Whisper model transcription backend using faster-whisper."""
+
     def __init__(self, model_name: str = None):
-        """Initialize the local Whisper backend.
-        
+        """Initialize the local faster-whisper backend.
+
         Args:
             model_name: Whisper model name to use. Uses config default if None.
+                       Available: tiny, base, small, medium, large-v2, large-v3, turbo, distil-large-v3
         """
         super().__init__()
         self.model_name = model_name or config.DEFAULT_WHISPER_MODEL
-        self.model: Optional[whisper.Whisper] = None
-        self.ffmpeg_configured = False
-        self._setup_ffmpeg()
+        self.model: Optional[WhisperModel] = None
+        self._device: Optional[str] = None
+        self._compute_type: Optional[str] = None
         self._load_model()
-    
-    def _setup_ffmpeg(self):
-        """Setup ffmpeg configuration."""
-        # Check if we already have a saved ffmpeg path
-        settings = settings_manager.load_all_settings()
-        saved_ffmpeg_path = settings.get('ffmpeg_path')
-        
-        if saved_ffmpeg_path and os.path.exists(saved_ffmpeg_path):
-            logging.info(f"Using saved ffmpeg path: {saved_ffmpeg_path}")
-            FFmpegManager.configure_whisper_ffmpeg(saved_ffmpeg_path)
-            self.ffmpeg_configured = True
-            return
-        
-        # Try to detect ffmpeg automatically
-        detected_path = FFmpegManager.detect_ffmpeg()
-        if detected_path:
-            logging.info(f"FFmpeg detected at: {detected_path}")
-            if detected_path != 'ffmpeg':  # If it's a full path, configure it
-                FFmpegManager.configure_whisper_ffmpeg(detected_path)
-            self.ffmpeg_configured = True
-            return
-        
-        logging.warning("FFmpeg not detected automatically")
-        self.ffmpeg_configured = False
-    
+
+    def _detect_device(self) -> Tuple[str, str]:
+        """Auto-detect the best device and compute type for transcription.
+
+        Returns:
+            Tuple of (device, compute_type) where:
+            - device: "cuda" for GPU or "cpu" for CPU
+            - compute_type: "float16" for GPU, "int8" for CPU
+        """
+        # Check config overrides first
+        device = config.FASTER_WHISPER_DEVICE
+        compute_type = config.FASTER_WHISPER_COMPUTE_TYPE
+
+        if device == "auto" or compute_type == "auto":
+            # Auto-detect based on CUDA availability
+            try:
+                import torch
+                if torch.cuda.is_available():
+                    detected_device = "cuda"
+                    detected_compute = "float16"
+                    logging.info("CUDA detected - using GPU acceleration with float16")
+                else:
+                    detected_device = "cpu"
+                    detected_compute = "int8"
+                    logging.info("No CUDA available - using CPU with int8 quantization")
+            except ImportError:
+                detected_device = "cpu"
+                detected_compute = "int8"
+                logging.info("PyTorch not available - using CPU with int8 quantization")
+
+            # Apply auto-detected values only where needed
+            if device == "auto":
+                device = detected_device
+            if compute_type == "auto":
+                compute_type = detected_compute
+
+        return device, compute_type
+
     def _load_model(self):
-        """Load the Whisper model."""
+        """Load the faster-whisper model with auto device detection."""
         try:
-            logging.info(f"Loading Whisper model: {self.model_name}")
-            self.model = whisper.load_model(self.model_name)
-            logging.info("Whisper model loaded successfully")
+            self._device, self._compute_type = self._detect_device()
+
+            logging.info(f"Loading faster-whisper model: {self.model_name} "
+                        f"(device={self._device}, compute_type={self._compute_type})")
+
+            self.model = WhisperModel(
+                self.model_name,
+                device=self._device,
+                compute_type=self._compute_type
+            )
+
+            logging.info("Faster-whisper model loaded successfully")
+
         except Exception as e:
-            error_msg = str(e).lower()
-            if 'winerror 2' in error_msg or 'file not found' in error_msg:
-                logging.error("Whisper model loading failed due to missing ffmpeg")
-                self._handle_ffmpeg_missing()
-            else:
-                logging.error(f"Failed to load Whisper model: {e}")
-                self.model = None
-    
-    def _handle_ffmpeg_missing(self):
-        """Handle the case when ffmpeg is missing."""
-        if not self.ffmpeg_configured:
-            logging.info("Prompting user for ffmpeg location...")
-            ffmpeg_path = FFmpegManager.prompt_for_ffmpeg_path()
-            
-            if ffmpeg_path:
-                # Save the path for future use
-                settings = settings_manager.load_all_settings()
-                settings['ffmpeg_path'] = ffmpeg_path
-                settings_manager.save_all_settings(settings)
-                
-                # Configure whisper to use this path
-                FFmpegManager.configure_whisper_ffmpeg(ffmpeg_path)
-                self.ffmpeg_configured = True
-                
-                logging.info(f"FFmpeg configured at: {ffmpeg_path}")
-                
-                # Try loading the model again
-                try:
-                    self.model = whisper.load_model(self.model_name)
-                    logging.info("Whisper model loaded successfully after ffmpeg configuration")
-                except Exception as e:
-                    logging.error(f"Model loading still failed after ffmpeg configuration: {e}")
-                    self.model = None
-            else:
-                logging.warning("User cancelled ffmpeg selection. Local Whisper will not be available.")
-                self.model = None
-    
+            logging.error(f"Failed to load faster-whisper model: {e}")
+            self.model = None
+
     def transcribe(self, audio_file_path: str) -> str:
-        """Transcribe audio file using local Whisper model.
-        
+        """Transcribe audio file using faster-whisper model.
+
         Args:
             audio_file_path: Path to the audio file to transcribe.
-            
+
         Returns:
             Transcribed text.
-            
+
         Raises:
             Exception: If transcription fails or model is not available.
         """
         if not self.is_available():
-            raise Exception("Local Whisper model is not available. Please check ffmpeg installation.")
-        
+            raise Exception("Faster-whisper model is not available.")
+
         try:
             self.is_transcribing = True
             self.reset_cancel_flag()
-            
-            logging.info("Processing audio with local Whisper model...")
-            result = self.model.transcribe(audio_file_path)
-            
-            if self.should_cancel:
-                logging.info("Transcription cancelled by user")
-                raise Exception("Transcription cancelled")
-            
-            transcribed_text = result['text'].strip()
-            logging.info(f"Local transcription complete. Length: {len(transcribed_text)} characters")
-            
+
+            logging.info(f"Processing audio with faster-whisper (VAD={config.FASTER_WHISPER_VAD_ENABLED})...")
+
+            # Configure VAD parameters if enabled
+            vad_params = None
+            if config.FASTER_WHISPER_VAD_ENABLED:
+                vad_params = dict(
+                    min_silence_duration_ms=config.FASTER_WHISPER_VAD_MIN_SILENCE_MS
+                )
+
+            # Transcribe - returns a generator of segments and transcription info
+            segments, info = self.model.transcribe(
+                audio_file_path,
+                beam_size=config.FASTER_WHISPER_BEAM_SIZE,
+                vad_filter=config.FASTER_WHISPER_VAD_ENABLED,
+                vad_parameters=vad_params
+            )
+
+            logging.info(f"Detected language: {info.language} "
+                        f"(probability: {info.language_probability:.2f})")
+
+            # Iterate through segments to get transcribed text
+            # Note: segments is a generator - transcription happens as we iterate
+            text_parts = []
+            for segment in segments:
+                if self.should_cancel:
+                    logging.info("Transcription cancelled by user")
+                    raise Exception("Transcription cancelled")
+                text_parts.append(segment.text)
+
+            transcribed_text = " ".join(text_parts).strip()
+
+            # Clean up extra whitespace
+            import re
+            transcribed_text = re.sub(r'\s+', ' ', transcribed_text)
+
+            logging.info(f"Transcription complete. Length: {len(transcribed_text)} characters")
+
             return transcribed_text
-            
+
         except Exception as e:
-            error_msg = str(e).lower()
-            if 'winerror 2' in error_msg or 'file not found' in error_msg:
-                logging.error("Transcription failed due to ffmpeg issue")
-                # Try to reconfigure ffmpeg
-                self._handle_ffmpeg_missing()
-                if self.is_available():
-                    # If model is now available, retry once
-                    logging.info("Retrying transcription after ffmpeg reconfiguration...")
-                    return self.transcribe(audio_file_path)
-            
-            logging.error(f"Local transcription failed: {e}")
+            if "cancelled" not in str(e).lower():
+                logging.error(f"Transcription failed: {e}")
             raise
         finally:
             self.is_transcribing = False
-    
+
+    def transcribe_chunks(self, chunk_files: List[str]) -> str:
+        """Transcribe multiple audio chunk files efficiently with faster-whisper.
+
+        Args:
+            chunk_files: List of paths to audio chunk files.
+
+        Returns:
+            Combined transcribed text from all chunks.
+
+        Raises:
+            Exception: If transcription fails or model is not available.
+        """
+        if not self.is_available():
+            raise Exception("Faster-whisper model is not available.")
+
+        try:
+            self.is_transcribing = True
+            self.reset_cancel_flag()
+
+            transcriptions = []
+
+            # Configure VAD parameters if enabled
+            vad_params = None
+            if config.FASTER_WHISPER_VAD_ENABLED:
+                vad_params = dict(
+                    min_silence_duration_ms=config.FASTER_WHISPER_VAD_MIN_SILENCE_MS
+                )
+
+            for i, chunk_file in enumerate(chunk_files):
+                if self.should_cancel:
+                    logging.info("Chunked transcription cancelled by user")
+                    raise Exception("Transcription cancelled")
+
+                logging.info(f"Processing chunk {i+1}/{len(chunk_files)}: {chunk_file}")
+
+                # Transcribe individual chunk
+                segments, info = self.model.transcribe(
+                    chunk_file,
+                    beam_size=config.FASTER_WHISPER_BEAM_SIZE,
+                    vad_filter=config.FASTER_WHISPER_VAD_ENABLED,
+                    vad_parameters=vad_params
+                )
+
+                # Collect text from segments
+                text_parts = []
+                for segment in segments:
+                    if self.should_cancel:
+                        logging.info("Transcription cancelled during chunk processing")
+                        raise Exception("Transcription cancelled")
+                    text_parts.append(segment.text)
+
+                chunk_text = " ".join(text_parts).strip()
+                transcriptions.append(chunk_text)
+
+                logging.info(f"Chunk {i+1}/{len(chunk_files)} completed. "
+                           f"Length: {len(chunk_text)} characters")
+
+            # Combine transcriptions using audio_processor
+            from audio_processor import audio_processor
+            combined_text = audio_processor.combine_transcriptions(transcriptions)
+
+            logging.info(f"Chunked transcription complete. "
+                        f"Total length: {len(combined_text)} characters")
+
+            return combined_text
+
+        except Exception as e:
+            if "cancelled" not in str(e).lower():
+                logging.error(f"Chunked transcription failed: {e}")
+            raise
+        finally:
+            self.is_transcribing = False
+
     def is_available(self) -> bool:
-        """Check if the local Whisper model is available.
-        
+        """Check if the faster-whisper model is available.
+
         Returns:
             True if model is loaded and available, False otherwise.
         """
@@ -267,98 +236,36 @@ class LocalWhisperBackend(TranscriptionBackend):
 
     def reload_model(self, model_name: str = None):
         """Reload the Whisper model with a different model name.
-        
+
         Args:
             model_name: New model name to load. Uses current if None.
         """
         if model_name:
             self.model_name = model_name
+        # Clean up existing model first
+        self.cleanup()
         self._load_model()
-    
-    def transcribe_chunks(self, chunk_files: List[str]) -> str:
-        """Transcribe multiple audio chunk files efficiently with local Whisper.
-        
-        Args:
-            chunk_files: List of paths to audio chunk files.
-            
-        Returns:
-            Combined transcribed text from all chunks.
-            
-        Raises:
-            Exception: If transcription fails or model is not available.
-        """
-        if not self.is_available():
-            raise Exception("Local Whisper model is not available. Please check ffmpeg installation.")
-        
-        try:
-            self.is_transcribing = True
-            self.reset_cancel_flag()
-            
-            transcriptions = []
-            
-            for i, chunk_file in enumerate(chunk_files):
-                if self.should_cancel:
-                    logging.info("Chunked transcription cancelled by user")
-                    raise Exception("Transcription cancelled")
-                
-                logging.info(f"Processing chunk {i+1}/{len(chunk_files)} with local Whisper: {chunk_file}")
-                
-                # Transcribe individual chunk
-                result = self.model.transcribe(chunk_file)
-                chunk_text = result['text'].strip()
-                transcriptions.append(chunk_text)
-                
-                logging.info(f"Chunk {i+1}/{len(chunk_files)} completed. Length: {len(chunk_text)} characters")
-            
-            # Combine transcriptions
-            from audio_processor import audio_processor
-            combined_text = audio_processor.combine_transcriptions(transcriptions)
-            
-            logging.info(f"Local chunked transcription complete. Total length: {len(combined_text)} characters")
-            return combined_text
-            
-        except Exception as e:
-            logging.error(f"Local chunked transcription failed: {e}")
-            raise
-        finally:
-            self.is_transcribing = False
 
-    def reset_ffmpeg_config(self):
-        """Reset ffmpeg configuration and prompt user again."""
-        # Remove saved ffmpeg path
-        settings = settings_manager.load_all_settings()
-        if 'ffmpeg_path' in settings:
-            del settings['ffmpeg_path']
-            settings_manager.save_all_settings(settings)
-        
-        # Reset configuration state
-        self.ffmpeg_configured = False
-        self.model = None
-        
-        # Try setup again
-        self._setup_ffmpeg()
-        self._load_model()
-    
     def cleanup(self):
-        """Clean up Whisper model and release resources.
-        
+        """Clean up faster-whisper model and release resources.
+
         This unloads the model from memory (including GPU memory if applicable).
         """
         try:
             if self.model is not None:
                 logging.info("Cleaning up LocalWhisperBackend - unloading model...")
-                
+
                 # Cancel any ongoing transcription
                 self.should_cancel = True
-                
+
                 # Delete the model to free memory
                 del self.model
                 self.model = None
-                
-                # Force garbage collection to release GPU memory
+
+                # Force garbage collection to release memory
                 import gc
                 gc.collect()
-                
+
                 # If using CUDA, clear GPU cache
                 try:
                     import torch
@@ -369,13 +276,21 @@ class LocalWhisperBackend(TranscriptionBackend):
                     pass  # torch not available, skip GPU cleanup
                 except Exception as e:
                     logging.debug(f"Error clearing CUDA cache: {e}")
-                
+
                 logging.info("LocalWhisperBackend cleaned up successfully")
         except Exception as e:
             logging.debug(f"Error during LocalWhisperBackend cleanup: {e}")
-    
+
     @property
     def name(self) -> str:
         """Get the backend name with model info."""
-        status = "Ready" if self.is_available() else "FFmpeg Required"
-        return f"LocalWhisper ({self.model_name}) - {status}"
+        device_info = f"{self._device}/{self._compute_type}" if self._device else "not loaded"
+        status = "Ready" if self.is_available() else "Not Available"
+        return f"FasterWhisper ({self.model_name}, {device_info}) - {status}"
+
+    @property
+    def device_info(self) -> str:
+        """Get current device and compute type info."""
+        if self._device and self._compute_type:
+            return f"{self._device} ({self._compute_type})"
+        return "Not initialized"

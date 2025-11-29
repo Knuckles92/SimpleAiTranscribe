@@ -82,6 +82,13 @@ class AppConfig:
     
     # Whisper model
     DEFAULT_WHISPER_MODEL: str = "base"
+
+    # Faster-whisper settings
+    FASTER_WHISPER_DEVICE: str = "auto"  # "auto", "cuda", "cpu"
+    FASTER_WHISPER_COMPUTE_TYPE: str = "auto"  # "auto", "float16", "int8", "float32"
+    FASTER_WHISPER_VAD_ENABLED: bool = True
+    FASTER_WHISPER_VAD_MIN_SILENCE_MS: int = 500
+    FASTER_WHISPER_BEAM_SIZE: int = 5
     
     # Waveform style settings
     CURRENT_WAVEFORM_STYLE: str = "particle"
