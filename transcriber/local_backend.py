@@ -294,3 +294,12 @@ class LocalWhisperBackend(TranscriptionBackend):
         if self._device and self._compute_type:
             return f"{self._device} ({self._compute_type})"
         return "Not initialized"
+
+    @property
+    def requires_file_splitting(self) -> bool:
+        """faster-whisper can handle files of any size without splitting.
+
+        The library processes audio in a streaming fashion and can handle
+        arbitrarily long audio files without memory issues.
+        """
+        return False

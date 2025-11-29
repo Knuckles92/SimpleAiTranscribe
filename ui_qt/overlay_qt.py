@@ -60,6 +60,8 @@ class ModernWaveformOverlay(QWidget):
     STATE_STT_ENABLE = "stt_enable"
     STATE_STT_DISABLE = "stt_disable"
     STATE_COPIED = "copied"
+    STATE_LARGE_FILE_SPLITTING = "large_file_splitting"
+    STATE_LARGE_FILE_PROCESSING = "large_file_processing"
 
     def __init__(self):
         """Initialize the overlay."""
@@ -85,6 +87,12 @@ class ModernWaveformOverlay(QWidget):
         self.animation_time = 0.0
         self.cancel_progress = 0.0
         self.stt_particles: List[STTParticle] = []
+
+        # Large file information for warning states
+        self.large_file_info = {
+            'file_size_mb': 0.0,
+            'chunk_count': 0
+        }
 
         # Load waveform style
         current_style, style_configs = settings_manager.load_waveform_style_settings()
@@ -144,6 +152,10 @@ class ModernWaveformOverlay(QWidget):
                 self._draw_stt_disable_state(painter)
             elif self.current_state == self.STATE_COPIED:
                 self._draw_copied_state(painter)
+            elif self.current_state == self.STATE_LARGE_FILE_SPLITTING:
+                self._draw_large_file_splitting_state(painter)
+            elif self.current_state == self.STATE_LARGE_FILE_PROCESSING:
+                self._draw_large_file_processing_state(painter)
         except Exception as e:
             # Log error but don't crash the overlay
             self.logger.error(f"Error drawing waveform frame: {e}", exc_info=True)
@@ -409,6 +421,97 @@ class ModernWaveformOverlay(QWidget):
         painter.setPen(QPen(QColor(224, 224, 255)))
         painter.setFont(QFont("Segoe UI", 10, QFont.Weight.Bold))
         painter.drawText(rect.adjusted(0, h - 25, 0, 0), Qt.AlignmentFlag.AlignCenter, "Copied!")
+
+    def set_large_file_info(self, file_size_mb: float, chunk_count: int = 0):
+        """Set information about the large file being processed.
+
+        Args:
+            file_size_mb: File size in megabytes.
+            chunk_count: Number of chunks (for splitting backends).
+        """
+        self.large_file_info = {
+            'file_size_mb': file_size_mb,
+            'chunk_count': chunk_count
+        }
+
+    def _draw_large_file_splitting_state(self, painter: QPainter):
+        """Draw large file splitting warning (for API backends)."""
+        rect = self.rect()
+        w, h = rect.width(), rect.height()
+
+        # Animated scissors icon in amber
+        progress = (self.animation_time * 2) % 1.0
+        center_x, center_y = w // 2, h // 2 - 10
+
+        # Scissors blades animation (opening/closing)
+        blade_angle = 12 + 8 * math.sin(progress * math.pi * 2)
+
+        amber = QColor(251, 191, 36)
+        painter.setPen(QPen(amber, 3))
+
+        # Draw scissors (two crossing blades)
+        # Top blade
+        painter.drawLine(
+            int(center_x - 18), int(center_y - blade_angle),
+            int(center_x + 12), int(center_y + 2)
+        )
+        # Bottom blade
+        painter.drawLine(
+            int(center_x - 18), int(center_y + blade_angle),
+            int(center_x + 12), int(center_y - 2)
+        )
+        # Handle circles
+        painter.setBrush(Qt.BrushStyle.NoBrush)
+        painter.drawEllipse(int(center_x - 24), int(center_y - blade_angle - 5), 10, 10)
+        painter.drawEllipse(int(center_x - 24), int(center_y + blade_angle - 5), 10, 10)
+
+        # Status text with file size
+        painter.setPen(QPen(amber))
+        painter.setFont(QFont("Segoe UI", 10, QFont.Weight.Bold))
+        text = f"Splitting ({self.large_file_info['file_size_mb']:.1f} MB)..."
+        painter.drawText(rect.adjusted(0, h - 25, 0, 0), Qt.AlignmentFlag.AlignCenter, text)
+
+    def _draw_large_file_processing_state(self, painter: QPainter):
+        """Draw large file processing info (for local backend)."""
+        rect = self.rect()
+        w, h = rect.width(), rect.height()
+
+        # Animated timer/clock in cyan
+        progress = (self.animation_time * 0.5) % 1.0
+        center_x, center_y = w // 2, h // 2 - 10
+        radius = 18
+
+        cyan = QColor(0, 212, 255)
+        painter.setPen(QPen(cyan, 2))
+        painter.setBrush(Qt.BrushStyle.NoBrush)
+
+        # Clock circle
+        painter.drawEllipse(center_x - radius, center_y - radius, radius * 2, radius * 2)
+
+        # Clock hands (rotating)
+        hand_angle = progress * 2 * math.pi - math.pi / 2
+        hand_length = radius - 5
+        hand_x = center_x + int(hand_length * math.cos(hand_angle))
+        hand_y = center_y + int(hand_length * math.sin(hand_angle))
+        painter.drawLine(center_x, center_y, hand_x, hand_y)
+
+        # Short hour hand
+        hour_angle = progress * 2 * math.pi / 12 - math.pi / 2
+        hour_length = radius - 10
+        hour_x = center_x + int(hour_length * math.cos(hour_angle))
+        hour_y = center_y + int(hour_length * math.sin(hour_angle))
+        painter.setPen(QPen(cyan, 3))
+        painter.drawLine(center_x, center_y, hour_x, hour_y)
+
+        # Center dot
+        painter.setBrush(QBrush(cyan))
+        painter.drawEllipse(center_x - 3, center_y - 3, 6, 6)
+
+        # Status text with file size
+        painter.setPen(QPen(cyan))
+        painter.setFont(QFont("Segoe UI", 10, QFont.Weight.Bold))
+        text = f"Processing ({self.large_file_info['file_size_mb']:.1f} MB)..."
+        painter.drawText(rect.adjusted(0, h - 25, 0, 0), Qt.AlignmentFlag.AlignCenter, text)
 
     def _update_animation(self):
         """Update animation time and redraw."""

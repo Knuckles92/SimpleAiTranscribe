@@ -68,6 +68,7 @@ class UIController(QObject):
         self.main_window.settings_requested.connect(self.open_settings_dialog)
         self.main_window.hotkeys_requested.connect(self.open_hotkey_dialog)
         self.main_window.overlay_toggle_requested.connect(self.toggle_overlay)
+        self.main_window.test_overlay_requested.connect(self._on_test_overlay_requested)
         self.main_window.about_requested.connect(self.show_about_dialog)
         self.main_window.retranscribe_requested.connect(self._on_retranscribe_requested)
         self.main_window.upload_audio_requested.connect(self.open_upload_audio_dialog)
@@ -264,6 +265,33 @@ class UIController(QObject):
             self.hide_overlay()
         else:
             self.show_overlay()
+
+    def _on_test_overlay_requested(self, state: str):
+        """Handle test overlay state request from menu."""
+        self.logger.info(f"Testing overlay state: {state}")
+
+        # Map state string to overlay state constant
+        state_map = {
+            "recording": self.overlay.STATE_RECORDING,
+            "processing": self.overlay.STATE_PROCESSING,
+            "transcribing": self.overlay.STATE_TRANSCRIBING,
+            "canceling": self.overlay.STATE_CANCELING,
+            "stt_enable": self.overlay.STATE_STT_ENABLE,
+            "stt_disable": self.overlay.STATE_STT_DISABLE,
+            "copied": self.overlay.STATE_COPIED,
+            "large_file_splitting": self.overlay.STATE_LARGE_FILE_SPLITTING,
+            "large_file_processing": self.overlay.STATE_LARGE_FILE_PROCESSING,
+        }
+
+        overlay_state = state_map.get(state)
+        if overlay_state:
+            # Set test file info for large file states
+            if state in ["large_file_splitting", "large_file_processing"]:
+                self.overlay.set_large_file_info(42.5)  # Test with 42.5 MB
+
+            self.overlay.show_at_cursor(overlay_state)
+        else:
+            self.logger.warning(f"Unknown overlay state: {state}")
 
     def _start_cancel_animation(self):
         """Show the cancel animation and schedule hide."""

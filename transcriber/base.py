@@ -44,7 +44,19 @@ class TranscriptionBackend(ABC):
     def reset_cancel_flag(self):
         """Reset the cancellation flag."""
         self.should_cancel = False
-    
+
+    @property
+    def requires_file_splitting(self) -> bool:
+        """Whether this backend requires large files to be split.
+
+        Override in subclasses to indicate if the backend has file size limits.
+        Default is True (conservative - assumes splitting is needed).
+
+        Returns:
+            True if large files should be split, False if backend can handle any size.
+        """
+        return True
+
     def transcribe_chunks(self, chunk_files: List[str]) -> str:
         """Transcribe multiple audio chunk files and combine results.
         

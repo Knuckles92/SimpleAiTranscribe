@@ -215,3 +215,12 @@ class OpenAIBackend(TranscriptionBackend):
     def name(self) -> str:
         """Get the backend name with model info."""
         return f"OpenAI ({self.model_type})"
+
+    @property
+    def requires_file_splitting(self) -> bool:
+        """OpenAI API has a 25MB file size limit.
+
+        Files larger than 25MB must be split into smaller chunks
+        before being sent to the API.
+        """
+        return True

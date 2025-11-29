@@ -237,10 +237,20 @@ class ApplicationController(QObject):
                 config.RECORDED_AUDIO_FILE
             )
 
-            if needs_splitting:
-                logging.info(f"Large file ({file_size_mb:.2f} MB), using split workflow")
-                self.status_update.emit(f"Processing large file ({file_size_mb:.1f} MB)...")
+            # Only split if backend requires it (OpenAI has 25MB limit, local doesn't)
+            should_split = needs_splitting and self.current_backend.requires_file_splitting
+
+            if should_split:
+                logging.info(f"Large file ({file_size_mb:.2f} MB), backend requires splitting")
+                self._show_large_file_overlay(file_size_mb, is_splitting=True)
+                self.status_update.emit(f"Splitting large file ({file_size_mb:.1f} MB)...")
                 self.executor.submit(self._transcribe_large_audio)
+            elif needs_splitting:
+                # Large file but local backend can handle it without splitting
+                logging.info(f"Large file ({file_size_mb:.2f} MB), processing without splitting")
+                self._show_large_file_overlay(file_size_mb, is_splitting=False)
+                self.status_update.emit(f"Processing large file ({file_size_mb:.1f} MB)...")
+                self.executor.submit(self._transcribe_audio)
             else:
                 self.executor.submit(self._transcribe_audio)
 
@@ -296,14 +306,24 @@ class ApplicationController(QObject):
         # Start transcription in background
         try:
             needs_splitting, file_size_mb = audio_processor.check_file_size(audio_file_path)
-            
-            if needs_splitting:
-                logging.info(f"Large file ({file_size_mb:.2f} MB), using split workflow")
-                self.status_update.emit(f"Processing large file ({file_size_mb:.1f} MB)...")
+
+            # Only split if backend requires it (OpenAI has 25MB limit, local doesn't)
+            should_split = needs_splitting and self.current_backend.requires_file_splitting
+
+            if should_split:
+                logging.info(f"Large file ({file_size_mb:.2f} MB), backend requires splitting")
+                self._show_large_file_overlay(file_size_mb, is_splitting=True)
+                self.status_update.emit(f"Splitting large file ({file_size_mb:.1f} MB)...")
                 self.executor.submit(self._retranscribe_large_audio, audio_file_path)
+            elif needs_splitting:
+                # Large file but local backend can handle it without splitting
+                logging.info(f"Large file ({file_size_mb:.2f} MB), processing without splitting")
+                self._show_large_file_overlay(file_size_mb, is_splitting=False)
+                self.status_update.emit(f"Processing large file ({file_size_mb:.1f} MB)...")
+                self.executor.submit(self._retranscribe_audio_file, audio_file_path)
             else:
                 self.executor.submit(self._retranscribe_audio_file, audio_file_path)
-                
+
         except Exception as e:
             logging.error(f"Failed to start re-transcription: {e}")
             self._on_transcription_error(f"Failed to process audio: {e}")
@@ -333,14 +353,24 @@ class ApplicationController(QObject):
         # Start transcription in background using the same flow as retranscribe
         try:
             needs_splitting, file_size_mb = audio_processor.check_file_size(audio_file_path)
-            
-            if needs_splitting:
-                logging.info(f"Large uploaded file ({file_size_mb:.2f} MB), using split workflow")
-                self.status_update.emit(f"Processing large file ({file_size_mb:.1f} MB)...")
+
+            # Only split if backend requires it (OpenAI has 25MB limit, local doesn't)
+            should_split = needs_splitting and self.current_backend.requires_file_splitting
+
+            if should_split:
+                logging.info(f"Large uploaded file ({file_size_mb:.2f} MB), backend requires splitting")
+                self._show_large_file_overlay(file_size_mb, is_splitting=True)
+                self.status_update.emit(f"Splitting large file ({file_size_mb:.1f} MB)...")
                 self.executor.submit(self._retranscribe_large_audio, audio_file_path)
+            elif needs_splitting:
+                # Large file but local backend can handle it without splitting
+                logging.info(f"Large uploaded file ({file_size_mb:.2f} MB), processing without splitting")
+                self._show_large_file_overlay(file_size_mb, is_splitting=False)
+                self.status_update.emit(f"Processing large file ({file_size_mb:.1f} MB)...")
+                self.executor.submit(self._retranscribe_audio_file, audio_file_path)
             else:
                 self.executor.submit(self._retranscribe_audio_file, audio_file_path)
-                
+
         except Exception as e:
             logging.error(f"Failed to process uploaded audio: {e}")
             self._on_transcription_error(f"Failed to process audio: {e}")
@@ -519,6 +549,21 @@ class ApplicationController(QObject):
             self.stt_state_changed.emit(True)
         elif status == "STT Disabled":
             self.stt_state_changed.emit(False)
+
+    def _show_large_file_overlay(self, file_size_mb: float, is_splitting: bool):
+        """Show appropriate overlay for large file processing.
+
+        Args:
+            file_size_mb: Size of the file in megabytes.
+            is_splitting: True if file will be split (OpenAI), False otherwise (local).
+        """
+        overlay = self.ui_controller.overlay
+        overlay.set_large_file_info(file_size_mb)
+
+        if is_splitting:
+            overlay.show_at_cursor(overlay.STATE_LARGE_FILE_SPLITTING)
+        else:
+            overlay.show_at_cursor(overlay.STATE_LARGE_FILE_PROCESSING)
 
     def cleanup(self):
         """Cleanup resources."""

@@ -36,6 +36,7 @@ class ModernMainWindow(QMainWindow):
     history_toggle_requested = pyqtSignal()
     retranscribe_requested = pyqtSignal(str)  # Emits audio file path
     upload_audio_requested = pyqtSignal()  # Request to upload audio file
+    test_overlay_requested = pyqtSignal(str)  # Emits overlay state to test
 
     def __init__(self):
         """Initialize the main window."""
@@ -224,6 +225,21 @@ class ModernMainWindow(QMainWindow):
         view_menu.addSeparator()
         view_menu.addAction("Show Overlay", self.toggle_overlay)
         view_menu.addAction("Show Loading Screen", self.test_loading_screen)
+        view_menu.addSeparator()
+
+        # Test Overlays submenu
+        test_overlays_menu = view_menu.addMenu("Test Overlays")
+        test_overlays_menu.addAction("Recording", lambda: self.test_overlay("recording"))
+        test_overlays_menu.addAction("Processing", lambda: self.test_overlay("processing"))
+        test_overlays_menu.addAction("Transcribing", lambda: self.test_overlay("transcribing"))
+        test_overlays_menu.addAction("Canceling", lambda: self.test_overlay("canceling"))
+        test_overlays_menu.addSeparator()
+        test_overlays_menu.addAction("STT Enable", lambda: self.test_overlay("stt_enable"))
+        test_overlays_menu.addAction("STT Disable", lambda: self.test_overlay("stt_disable"))
+        test_overlays_menu.addAction("Copied", lambda: self.test_overlay("copied"))
+        test_overlays_menu.addSeparator()
+        test_overlays_menu.addAction("Large File Splitting (Amber)", lambda: self.test_overlay("large_file_splitting"))
+        test_overlays_menu.addAction("Large File Processing (Cyan)", lambda: self.test_overlay("large_file_processing"))
 
         # Help menu
         help_menu = menubar.addMenu("Help")
@@ -352,6 +368,11 @@ class ModernMainWindow(QMainWindow):
         """Toggle the overlay visibility."""
         self.logger.info("Toggling overlay")
         self.overlay_toggle_requested.emit()
+
+    def test_overlay(self, state: str):
+        """Test a specific overlay state."""
+        self.logger.info(f"Testing overlay state: {state}")
+        self.test_overlay_requested.emit(state)
 
     def test_loading_screen(self):
         """Show the loading screen for testing purposes."""
