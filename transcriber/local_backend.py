@@ -21,9 +21,9 @@ class LocalWhisperBackend(TranscriptionBackend):
         """Initialize the local faster-whisper backend.
 
         Args:
-            model_name: Whisper model name to use. Reads from settings if None,
-                       falls back to config default.
-                       Available: tiny, base, small, medium, large-v2, large-v3, turbo, distil-large-v3
+            model_name: Whisper model name to use. Reads from settings if None.
+                       Use "auto" to auto-select based on hardware (turbo for GPU, base for CPU).
+                       Available: auto, tiny, base, small, medium, large-v2, large-v3, turbo, distil-large-v3
         """
         super().__init__()
         # Read model from settings if not explicitly provided
@@ -31,7 +31,7 @@ class LocalWhisperBackend(TranscriptionBackend):
             from settings import settings_manager
             settings = settings_manager.load_all_settings()
             model_name = settings.get('whisper_model', config.DEFAULT_WHISPER_MODEL)
-        self.model_name = model_name
+        self.model_name = model_name  # May be "auto", resolved in _load_model
         self.model: Optional[WhisperModel] = None
         self._device: Optional[str] = None
         self._compute_type: Optional[str] = None
@@ -85,9 +85,13 @@ class LocalWhisperBackend(TranscriptionBackend):
         return device, compute_type, model
 
     def _load_model(self):
-        """Load the faster-whisper model with auto device detection."""
+        """Load the faster-whisper model with auto hardware detection."""
         try:
-            self._device, self._compute_type = self._detect_device()
+            self._device, self._compute_type, detected_model = self._detect_hardware()
+
+            # Use detected model if current model is "auto"
+            if self.model_name == "auto":
+                self.model_name = detected_model
 
             logging.info(f"Loading faster-whisper model: {self.model_name} "
                         f"(device={self._device}, compute_type={self._compute_type})")
