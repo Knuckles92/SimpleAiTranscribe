@@ -662,12 +662,25 @@ def main():
 
         app_controller = ApplicationController(ui_controller)
 
+        # Get device info from local whisper backend and show to user
+        local_backend = app_controller.transcription_backends.get('local_whisper')
+        if local_backend and hasattr(local_backend, 'device_info'):
+            device_info = local_backend.device_info
+            loading_screen.update_progress(f"Using {device_info}")
+            QCoreApplication.processEvents()
+            logging.info(f"Whisper device: {device_info}")
+
         # Hide loading screen and show main window
         loading_screen.destroy()
         loading_screen = None
 
         # Show main window
         ui_controller.show_main_window()
+
+        # Show device info in status bar
+        if local_backend and hasattr(local_backend, 'device_info'):
+            device_info = local_backend.device_info
+            ui_controller.set_status(f"Ready - {device_info}")
 
         logging.info("Application initialization complete")
         logging.info("Starting event loop")
