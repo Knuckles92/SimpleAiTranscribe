@@ -1,6 +1,10 @@
 """
 Main application bootstrap
 """
+import warnings
+
+warnings.filterwarnings("ignore", message="pkg_resources is deprecated")
+
 import logging
 import os
 import sys
