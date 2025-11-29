@@ -248,6 +248,45 @@ class SettingsDialog(QDialog):
         title.setStyleSheet("color: #e0e0ff;")
         layout.addWidget(title)
 
+        # Whisper Engine Settings section
+        layout.addSpacing(12)
+        whisper_title = QLabel("Whisper Engine")
+        whisper_title.setStyleSheet("color: #a0a0c0; font-weight: bold;")
+        layout.addWidget(whisper_title)
+
+        # Device selection
+        device_label = QLabel("Device:")
+        device_label.setStyleSheet("color: #e0e0ff;")
+        layout.addWidget(device_label)
+
+        self.whisper_device_combo = QComboBox()
+        self.whisper_device_combo.addItems(["auto", "cuda", "cpu"])
+        self.whisper_device_combo.setMinimumHeight(36)
+        layout.addWidget(self.whisper_device_combo)
+
+        # Compute type selection
+        layout.addSpacing(8)
+        compute_label = QLabel("Compute Type:")
+        compute_label.setStyleSheet("color: #e0e0ff;")
+        layout.addWidget(compute_label)
+
+        self.whisper_compute_combo = QComboBox()
+        self.whisper_compute_combo.addItems(["auto", "float16", "float32", "int8"])
+        self.whisper_compute_combo.setMinimumHeight(36)
+        layout.addWidget(self.whisper_compute_combo)
+
+        # Info label
+        compute_info = QLabel("Changes require restarting the whisper engine")
+        compute_info.setStyleSheet("color: #808090; font-size: 10px; font-style: italic;")
+        layout.addWidget(compute_info)
+
+        # Separator
+        layout.addSpacing(16)
+        separator = QFrame()
+        separator.setFrameShape(QFrame.Shape.HLine)
+        separator.setStyleSheet("background-color: #404060;")
+        layout.addWidget(separator)
+
         # Max file size
         layout.addSpacing(12)
         max_size_label = QLabel("Maximum File Size (MB):")
@@ -303,6 +342,18 @@ class SettingsDialog(QDialog):
             self.copy_clipboard_check.setChecked(settings.get('copy_clipboard', True))
             self.minimize_tray_check.setChecked(settings.get('minimize_tray', True))
 
+            # Load whisper engine settings
+            whisper_device = settings.get('whisper_device', 'auto')
+            whisper_compute = settings.get('whisper_compute_type', 'auto')
+
+            device_index = self.whisper_device_combo.findText(whisper_device)
+            if device_index >= 0:
+                self.whisper_device_combo.setCurrentIndex(device_index)
+
+            compute_index = self.whisper_compute_combo.findText(whisper_compute)
+            if compute_index >= 0:
+                self.whisper_compute_combo.setCurrentIndex(compute_index)
+
             self.logger.info("Settings loaded successfully")
         except Exception as e:
             self.logger.error(f"Failed to load settings: {e}")
@@ -321,11 +372,20 @@ class SettingsDialog(QDialog):
             # Load existing settings
             settings = settings_manager.load_all_settings()
 
+            # Check if whisper engine settings changed
+            old_device = settings.get('whisper_device', 'auto')
+            old_compute = settings.get('whisper_compute_type', 'auto')
+            new_device = self.whisper_device_combo.currentText()
+            new_compute = self.whisper_compute_combo.currentText()
+            whisper_settings_changed = (old_device != new_device or old_compute != new_compute)
+
             # Update with new values
             settings['selected_model'] = model_internal
             settings['auto_paste'] = self.auto_paste_check.isChecked()
             settings['copy_clipboard'] = self.copy_clipboard_check.isChecked()
             settings['minimize_tray'] = self.minimize_tray_check.isChecked()
+            settings['whisper_device'] = new_device
+            settings['whisper_compute_type'] = new_compute
 
             # Save to file
             settings_manager.save_all_settings(settings)
@@ -335,6 +395,10 @@ class SettingsDialog(QDialog):
             # Call callback if set
             if self.on_settings_save:
                 self.on_settings_save(settings)
+
+            # Emit signal with whisper reload flag
+            settings['_whisper_settings_changed'] = whisper_settings_changed
+            self.settings_changed.emit(settings)
 
             self.accept()
         except Exception as e:

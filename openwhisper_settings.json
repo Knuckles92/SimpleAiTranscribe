@@ -1,0 +1,8 @@
+{
+  "selected_model": "local_whisper",
+  "auto_paste": true,
+  "copy_clipboard": true,
+  "minimize_tray": true,
+  "whisper_device": "cuda",
+  "whisper_compute_type": "float32"
+}

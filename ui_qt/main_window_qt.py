@@ -122,8 +122,17 @@ class ModernMainWindow(QMainWindow):
         self.model_combo.setMinimumHeight(40) # Slightly reduced height
         self.model_combo.setFont(QFont("Segoe UI", 12))
 
+        # Device info label (shows CUDA/CPU status)
+        self.device_info_label = QLabel("")
+        self.device_info_label.setObjectName("deviceInfoLabel")
+        self.device_info_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.device_info_label.setFont(QFont("Segoe UI", 10))
+        self.device_info_label.setStyleSheet("color: #8888aa; margin-top: 4px;")
+        self.device_info_label.hide()  # Hidden until device info is set
+
         model_card.layout.addWidget(model_label)
         model_card.layout.addWidget(self.model_combo)
+        model_card.layout.addWidget(self.device_info_label)
 
         content_layout.addWidget(model_card)
 
@@ -329,6 +338,18 @@ class ModernMainWindow(QMainWindow):
     def set_status(self, status_text: str):
         """Update the status label."""
         self.status_label.setText(status_text)
+
+    def set_device_info(self, device_info: str):
+        """Set the device info label (e.g., 'cuda (float16)').
+
+        Args:
+            device_info: Device information string to display.
+        """
+        if device_info:
+            self.device_info_label.setText(device_info)
+            self.device_info_label.show()
+        else:
+            self.device_info_label.hide()
 
     def set_transcription(self, text: str):
         """Set the transcription text."""

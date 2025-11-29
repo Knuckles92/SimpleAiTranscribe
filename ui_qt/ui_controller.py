@@ -52,6 +52,7 @@ class UIController(QObject):
         self.on_hotkeys_changed: Optional[Callable] = None
         self.on_retranscribe: Optional[Callable] = None
         self.on_upload_audio: Optional[Callable] = None  # Callback for audio file upload
+        self.on_whisper_settings_changed: Optional[Callable] = None  # Callback for whisper engine reload
 
         # Timer to hide overlay after cancel animation completes
         self.cancel_animation_timer = QTimer()
@@ -217,6 +218,14 @@ class UIController(QObject):
         """Set transcription text."""
         self.transcription_received.emit(text)
 
+    def set_device_info(self, device_info: str):
+        """Set the persistent device info display (e.g., 'cuda (float16)').
+
+        Args:
+            device_info: Device information string to display.
+        """
+        self.main_window.set_device_info(device_info)
+
     def set_status(self, status: str):
         """Set status message and update overlay state based on status."""
         self.status_changed.emit(status)
@@ -342,7 +351,15 @@ class UIController(QObject):
         """Open the settings dialog."""
         dialog = SettingsDialog(self.main_window)
         # Connect hotkey button in settings to hotkey dialog
-        dialog.tabs.setCurrentIndex(0) # Default to general
+        dialog.tabs.setCurrentIndex(0)  # Default to general
+
+        # Connect settings changed signal
+        def on_settings_changed(settings: dict):
+            if settings.get('_whisper_settings_changed', False):
+                if self.on_whisper_settings_changed:
+                    self.on_whisper_settings_changed()
+
+        dialog.settings_changed.connect(on_settings_changed)
         dialog.exec()
 
     def open_hotkey_dialog(self):

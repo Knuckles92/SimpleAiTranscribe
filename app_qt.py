@@ -150,6 +150,7 @@ class ApplicationController(QObject):
         self.ui_controller.on_hotkeys_changed = self.update_hotkeys
         self.ui_controller.on_retranscribe = self.retranscribe_audio
         self.ui_controller.on_upload_audio = self.upload_audio_file
+        self.ui_controller.on_whisper_settings_changed = self.reload_whisper_model
 
     def update_hotkeys(self, hotkeys: Dict[str, str]):
         """Update application hotkeys."""
@@ -158,6 +159,26 @@ class ApplicationController(QObject):
             self.hotkey_manager.update_hotkeys(hotkeys)
             settings_manager.save_hotkey_settings(hotkeys)
             self.ui_controller.set_status("Hotkeys updated")
+
+    def reload_whisper_model(self):
+        """Reload the local whisper model with current settings."""
+        logging.info("Reloading whisper model...")
+        self.ui_controller.set_status("Reloading whisper engine...")
+
+        local_backend = self.transcription_backends.get('local_whisper')
+        if local_backend:
+            # Reload the model (will pick up new settings)
+            local_backend.reload_model()
+
+            # Update the device info display
+            if hasattr(local_backend, 'device_info'):
+                self.ui_controller.set_device_info(local_backend.device_info)
+                logging.info(f"Whisper reloaded: {local_backend.device_info}")
+
+            self.ui_controller.set_status("Whisper engine reloaded")
+        else:
+            logging.warning("Local whisper backend not found")
+            self.ui_controller.set_status("Ready")
 
     def _setup_audio_level_callback(self):
         """Setup audio level callback for waveform display."""
@@ -704,10 +725,10 @@ def main():
         # Show main window
         ui_controller.show_main_window()
 
-        # Show device info in status bar
+        # Show device info in persistent label
         if local_backend and hasattr(local_backend, 'device_info'):
             device_info = local_backend.device_info
-            ui_controller.set_status(f"Ready - {device_info}")
+            ui_controller.set_device_info(device_info)
 
         logging.info("Application initialization complete")
         logging.info("Starting event loop")

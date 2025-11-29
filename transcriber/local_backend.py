@@ -39,9 +39,12 @@ class LocalWhisperBackend(TranscriptionBackend):
             - device: "cuda" for GPU or "cpu" for CPU
             - compute_type: "float16" for GPU, "int8" for CPU
         """
-        # Check config overrides first
-        device = config.FASTER_WHISPER_DEVICE
-        compute_type = config.FASTER_WHISPER_COMPUTE_TYPE
+        # Check user settings first, then config overrides
+        from settings import settings_manager
+        settings = settings_manager.load_all_settings()
+
+        device = settings.get('whisper_device', config.FASTER_WHISPER_DEVICE)
+        compute_type = settings.get('whisper_compute_type', config.FASTER_WHISPER_COMPUTE_TYPE)
 
         if device == "auto" or compute_type == "auto":
             # Auto-detect based on CUDA availability
