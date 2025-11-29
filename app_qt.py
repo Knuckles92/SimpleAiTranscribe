@@ -81,6 +81,7 @@ class ApplicationController(QObject):
     transcription_failed = pyqtSignal(str)
     status_update = pyqtSignal(str)
     stt_state_changed = pyqtSignal(bool)  # True = enabled, False = disabled
+    recording_state_changed = pyqtSignal(bool)  # True = started, False = stopped
 
     def __init__(self, ui_controller: UIController):
         """Initialize the application controller."""
@@ -173,6 +174,7 @@ class ApplicationController(QObject):
         self.transcription_failed.connect(self._on_transcription_error)
         self.status_update.connect(self.ui_controller.set_status)
         self.stt_state_changed.connect(self._on_stt_state_changed)
+        self.recording_state_changed.connect(self._on_recording_state_changed)
 
     def _on_stt_state_changed(self, enabled: bool):
         """Handle STT state change on main thread."""
@@ -181,10 +183,23 @@ class ApplicationController(QObject):
         else:
             self.ui_controller.overlay.show_at_cursor(self.ui_controller.overlay.STATE_STT_DISABLE)
 
+    def _on_recording_state_changed(self, is_recording: bool):
+        """Handle recording state change on main thread.
+
+        This ensures UI state is synchronized when recording is triggered via hotkeys.
+        """
+        # Update ui_controller and main_window state on the main thread
+        self.ui_controller.is_recording = is_recording
+        if self.ui_controller.main_window.is_recording != is_recording:
+            self.ui_controller.main_window.is_recording = is_recording
+            self.ui_controller.main_window._update_recording_state()
+
     def start_recording(self):
         """Start audio recording."""
         if self.recorder.start_recording():
             logging.info("Recording started")
+            # Emit signal to update UI state (thread-safe for hotkey triggers)
+            self.recording_state_changed.emit(True)
             # Emit status to trigger overlay display
             self.status_update.emit("Recording...")
         else:
@@ -196,6 +211,8 @@ class ApplicationController(QObject):
             self.status_update.emit("Failed to stop recording")
             return
 
+        # Emit signal to update UI state (thread-safe for hotkey triggers)
+        self.recording_state_changed.emit(False)
         # Emit processing status to show overlay
         self.status_update.emit("Processing...")
 
@@ -261,7 +278,10 @@ class ApplicationController(QObject):
             self._on_transcription_error(f"Failed to process audio: {e}")
 
     def toggle_recording(self):
-        """Toggle between starting and stopping recording."""
+        """Toggle between starting and stopping recording.
+
+        Uses signals to ensure thread-safe UI updates when triggered via hotkeys.
+        """
         logging.info(f"Toggle recording. Current state: {self.recorder.is_recording}")
         if not self.recorder.is_recording:
             self.start_recording()
@@ -269,12 +289,19 @@ class ApplicationController(QObject):
             self.stop_recording()
 
     def cancel_recording(self):
-        """Cancel recording or transcription."""
+        """Cancel recording or transcription.
+
+        Uses signals to ensure thread-safe UI updates when triggered via hotkeys.
+        """
         logging.info(f"Cancel called. Recording: {self.recorder.is_recording}")
 
         if self.recorder.is_recording:
+            # Emit signal to update UI state (thread-safe for hotkey triggers)
+            self.recording_state_changed.emit(False)
+            # Perform the actual cancellation
             self.recorder.stop_recording()
             self.recorder.clear_recording_data()
+            # Emit status to show cancel animation (set_status handles the animation)
             self.status_update.emit("Recording cancelled")
             logging.info("Recording cancelled")
         elif self.current_backend and self.current_backend.is_transcribing:

@@ -171,6 +171,11 @@ class UIController(QObject):
         self.is_recording = True
         self.logger.info("Recording started")
 
+        # Sync main window state (important for hotkey-triggered recordings)
+        if not self.main_window.is_recording:
+            self.main_window.is_recording = True
+            self.main_window._update_recording_state()
+
         if self.on_record_start:
             self.on_record_start()
 
@@ -181,6 +186,11 @@ class UIController(QObject):
         self.is_recording = False
         self.logger.info("Recording stopped")
 
+        # Sync main window state (important for hotkey-triggered recordings)
+        if self.main_window.is_recording:
+            self.main_window.is_recording = False
+            self.main_window._update_recording_state()
+
         if self.on_record_stop:
             self.on_record_stop()
 
@@ -190,6 +200,11 @@ class UIController(QObject):
         """Cancel recording."""
         self.is_recording = False
         self.logger.info("Recording canceled")
+
+        # Sync main window state (important for hotkey-triggered cancellations)
+        if self.main_window.is_recording:
+            self.main_window.is_recording = False
+            self.main_window._update_recording_state()
 
         if self.on_record_cancel:
             self.on_record_cancel()
