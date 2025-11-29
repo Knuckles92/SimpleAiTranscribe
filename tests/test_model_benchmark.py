@@ -378,10 +378,53 @@ class ModelBenchmark:
                 error=error_msg
             )
     
+    def _print_local_whisper_config(self):
+        """Print local whisper configuration details."""
+        if 'local_whisper' not in self.backends:
+            return
+
+        backend = self.backends['local_whisper']
+
+        print("\n" + "=" * 80)
+        print("Local Whisper Configuration")
+        print("=" * 80)
+
+        # Model info
+        print(f"\n  Model:        {backend.model_name}")
+        print(f"  Device:       {backend._device}")
+        print(f"  Compute Type: {backend._compute_type}")
+
+        # Additional CUDA info if using GPU
+        if backend._device == "cuda":
+            try:
+                import torch
+                if torch.cuda.is_available():
+                    gpu_name = torch.cuda.get_device_name(0)
+                    gpu_memory = torch.cuda.get_device_properties(0).total_memory / (1024**3)
+                    print(f"  GPU:          {gpu_name}")
+                    print(f"  GPU Memory:   {gpu_memory:.1f} GB")
+
+                    # CUDA version
+                    cuda_version = torch.version.cuda
+                    print(f"  CUDA Version: {cuda_version}")
+            except Exception as e:
+                print(f"  GPU Info:     (could not retrieve: {e})")
+
+        # VAD settings from config
+        try:
+            print(f"\n  VAD Enabled:  {config.FASTER_WHISPER_VAD_ENABLED}")
+            print(f"  Beam Size:    {config.FASTER_WHISPER_BEAM_SIZE}")
+            if config.FASTER_WHISPER_VAD_ENABLED:
+                print(f"  VAD Min Silence: {config.FASTER_WHISPER_VAD_MIN_SILENCE_MS}ms")
+        except AttributeError:
+            pass  # Config attributes not available
+
+        print("")
+
     def run_benchmark(self, durations: List[float] = [10.0, 30.0, 120.0]):
         """
         Run benchmark tests for all models and durations.
-        
+
         Args:
             durations: List of audio durations in seconds to test
         """
@@ -391,6 +434,9 @@ class ModelBenchmark:
         print(f"\nTesting {len(self.backends)} models with {len(durations)} audio durations")
         print(f"Models: {', '.join(self.backends.keys())}")
         print(f"Durations: {', '.join([f'{d}s' for d in durations])}")
+
+        # Print local whisper configuration if available
+        self._print_local_whisper_config()
         print("\n" + "=" * 80)
         
         # Generate test audio files
