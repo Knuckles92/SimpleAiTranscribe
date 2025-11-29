@@ -530,9 +530,16 @@ class ApplicationController(QObject):
         
         # Save to history (with audio file if available)
         try:
+            # Get detailed model info for local whisper
+            model_info = self._current_model_name
+            if self._current_model_name == 'local_whisper':
+                local_backend = self.transcription_backends.get('local_whisper')
+                if local_backend and hasattr(local_backend, 'device_info'):
+                    model_info = f"local_whisper ({local_backend.device_info})"
+
             history_manager.add_entry(
                 text=transcribed_text,
-                model=self._current_model_name,
+                model=model_info,
                 source_audio_file=self._pending_audio_file
             )
             # Refresh the history sidebar
